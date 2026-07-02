@@ -62,6 +62,31 @@
     .cand-term { font-size:30px; font-weight:800; margin:2px 0 6px; }
     .cand-meta { color:#4a5168; font-size:14px; margin-bottom:18px; } .cand-meta b { color:var(--ink); }
     .llm-hint { display:inline-block; font-size:12px; color:var(--muted); background:#f1f3f9; padding:3px 10px; border-radius:8px; margin-bottom:8px; } .llm-hint b { color:var(--brand-d); }
+    /* 집필(M5) */
+    .llm-box { background:#f6f8ff; border:1px solid #e0e6ff; border-radius:10px; padding:12px 14px; margin:14px 0; }
+    .llm-box h3 { margin:0 0 8px; font-size:13px; color:var(--brand-d); }
+    .llm-box .row { display:flex; gap:10px; padding:4px 0; font-size:13px; } .llm-box .k { color:var(--muted); min-width:64px; } .llm-box .v { color:var(--ink); flex:1; white-space:pre-wrap; }
+    .diff-box { border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin:14px 0; }
+    .diff-box h3 { margin:0 0 8px; font-size:13px; }
+    .drow { display:flex; gap:10px; padding:5px 0; border-top:1px solid var(--line); font-size:14px; } .drow:first-of-type { border-top:none; }
+    .drow .dl { min-width:56px; color:var(--muted); font-weight:700; font-size:12px; padding-top:2px; } .drow .dv { flex:1; white-space:pre-wrap; line-height:1.55; }
+    .diff-box mark { background:#fff2a8; color:#6b4e00; border-radius:3px; padding:0 2px; }
+    .write-form { display:grid; grid-template-columns:1fr 1fr; gap:12px 16px; margin-top:16px; }
+    .wf { display:flex; flex-direction:column; gap:4px; } .wf label { font-size:12px; font-weight:700; color:var(--muted); }
+    .wf:has(textarea) { grid-column:1 / -1; }
+    .w-field { width:100%; padding:7px 9px; border:1px solid var(--line); border-radius:8px; font-family:inherit; font-size:13px; box-sizing:border-box; }
+    .w-field:focus { outline:none; border-color:var(--brand); }
+    textarea.w-field { resize:vertical; }
+    .wf-sec { grid-column:1 / -1; font-weight:800; color:var(--brand-d); margin-top:8px; border-top:1px dashed var(--line); padding-top:12px; }
+    .write-cols { display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:stretch; margin:14px 0; }
+    @media (max-width:900px){ .write-cols { grid-template-columns:1fr; } }
+    .stage-sec { border:1px solid var(--line); border-radius:12px; padding:14px 16px; display:flex; flex-direction:column; }
+    .stage-sec .write-form { grid-template-columns:1fr; margin-top:10px; }
+    .ss-foot { margin-top:auto; padding-top:12px; }
+    .stage-sec.s1 { background:#fff5f5; border-left:4px solid #f0a3a3; }
+    .stage-sec.s2 { background:#f4f8ff; border-left:4px solid #a3c0f0; }
+    .ss-head { font-weight:800; font-size:15px; margin-bottom:6px; } .ss-head .ss-who { font-weight:600; font-size:12px; color:var(--muted); margin-left:8px; }
+    .w-field.changed { background:#dbe9ff; border-color:#6f9bf0; }
     .prior { background:#f7f8ff; border:1px solid #e2e6fb; border-radius:10px; padding:10px 12px; font-size:13px; margin-bottom:12px; } .prior .lab { color:var(--brand-d); font-weight:700; }
     .stages.two { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
     .stage-panel { border:1px solid var(--line); border-radius:12px; padding:14px 16px; background:#fcfcff; margin-top:10px; }
@@ -290,6 +315,7 @@
               <option value="2차완료">2차 검수 완료</option>
             </select>
           </div>
+          <button id="btn-add-item" class="btn ghost" onclick="addNewWriteItem()" style="display:none;width:100%;margin-bottom:8px">+ 새 항목 추가</button>
           <div id="list"></div>
         </aside>
         <div class="detail-col" id="detail"><div class="placeholder">왼쪽에서 신어 후보 항목을 선택하세요.</div></div>
@@ -419,6 +445,7 @@
       $('view-projects').classList.toggle('hidden', v!=='projects');
       $('view-home').classList.toggle('hidden', v!=='home');
       $('view-work').classList.toggle('hidden', v!=='mine' && v!=='all');
+      $('btn-add-item').style.display=((v==='mine'||v==='all') && MODE==='write')?'block':'none';
       $('view-researchers').classList.toggle('hidden', v!=='researchers');
       if(v==='projects') renderProjects();
       else if(v==='home'){ loadProgress(); loadAssign(); }
@@ -675,7 +702,8 @@
         var st=String(it['상태']||'미작업');
         var v1=String(it['1차 판별']||'').trim(), v2=String(it['2차 판별']||'').trim();
         var label;
-        if(MODE==='agree'){ label = v1 || '미작업'; }
+        if(MODE==='write'){ label = statusLabel(st); }
+        else if(MODE==='agree'){ label = v1 || '미작업'; }
         else if(v1 && v2){ label = v1+' · '+v2+' · '+(v1===v2?'일치':'불일치'); }
         else if(v1){ label = v1; }
         else { label = '미작업'; }
@@ -725,6 +753,7 @@
     }
     function renderDetail(){
       var it=ITEMS[CUR];
+      if(MODE==='write'){ renderWriteDetail(it); return; }
       SEL={'1차':it['1차 판별']||'','2차':it['2차 판별']||''};
       var w1=canEdit(it,1), w2=canEdit(it,2);
       window.__activeStage = (MODE==='agree') ? '1차'
@@ -748,6 +777,116 @@
         + '<div class="ex-foot"><span>작성일 '+ymd(it['용례 일자'])+'</span><span>'+link(it['용례 URL'],'기사문 링크')+'</span><span>'+link(it['검색 URL'],'〈네이버 뉴스〉 검색 화면 링크')+'</span></div></div>';
       h += '<details class="llm-detail"><summary>LLM 판단 근거 자세히</summary><div class="row"><div class="k">LLM 판단 기준</div><div class="v">'+esc(it['LLM 판단 기준']||'-')+'</div></div><div class="row"><div class="k">LLM 판단 근거</div><div class="v">'+esc(it['LLM 판단 근거']||'-')+'</div></div></details>';
       $('detail').innerHTML=h;
+    }
+    // ── 집필(M5) ──
+    var FIELD_67=['교육','문학','민속','언어','역사','철학','인문 일반','경영','경제','군사','매체','법률','복지','심리','정치','행정','사회 일반','동물','물리','생명','수학','식물','지구','지리','천문','천연자원','해양','화학','환경','자연 일반','공업','광업','농업','서비스업','수산업','임업','산업 일반','수의','식품','약학','의학','한의','보건 일반','건설','교통','기계','재료','전기·전자','정보·통신','공학 일반','체육','연기','영상','무용','음악','미술','복식','공예','예체능 일반','가톨릭','기독교','불교','종교 일반','인명','지명','책명','고유명 일반'];
+    var FIELD_15=['인간','삶','식생활','의생활','주생활','사회생활','경제생활','교육','종교','문화','정치와 행정','자연','동식물','개념','보건·의학'];
+    function tok_(s){ return String(s||'').trim().split(/\s+/).filter(Boolean); }
+    function wordDiff_(prev, cur){
+      if(!String(cur||'').trim()) return '<span class="kbd">(없음)</span>';
+      var pset={}; tok_(prev).forEach(function(w){ pset[w]=(pset[w]||0)+1; });
+      return tok_(cur).map(function(w){ if(pset[w]>0){ pset[w]--; return esc(w); } return '<mark>'+esc(w)+'</mark>'; }).join(' ');
+    }
+    function refRow_(k,v){ return '<div class="row"><div class="k">'+esc(k)+'</div><div class="v">'+esc(v||'-')+'</div></div>'; }
+    function mark2(el){ el.classList.toggle('changed', String(el.value)!==String(el.getAttribute('data-orig')||'')); }
+    function toggleCond(el){ var sec=el.closest('.stage-sec'); if(!sec) return; var t=el.getAttribute('data-target'); var f=sec.querySelector('[data-f="'+t+'"],[data-f2="'+t+'"]'); if(f) f.disabled=(el.value!==el.getAttribute('data-enable')); }
+    function renderWriteDetail(it){
+      var isW=(ME.isManager||ME.name===String(it['작업자']||'').trim());
+      var isR=(ME.isManager||ME.name===String(it['검수자']||'').trim());
+      var canField=isW||isR;   // 집필 필드: 작업자 또는 검수자(전수 수정)
+      var TPL={'원어':'()','품사':'「」','어원':'【】','용례':'¶','수정 용례':'¶','용례 출처':'≪≫'};   // 빈 칸에 기호 미리 채움
+      function pv(f){ var x=it[f]||''; if(x) return x;
+        if(f==='X년 Y월 신어'){ var m=String(it['추출 시기']||'').match(/(\d{4})\.(\d{1,2})/); return m ? '【'+m[1]+'년 '+parseInt(m[2],10)+'월 신어】' : '【    년   월 신어】'; }
+        return TPL[f]||''; }
+      function ea(s){ return esc(String(s==null?'':s)).replace(/"/g,'&quot;'); }   // 속성값 이스케이프
+      function inp(f,ed){ return '<input class="w-field" data-f="'+esc(f)+'" value="'+ea(pv(f))+'"'+(ed?'':' readonly')+'>'; }
+      function ta(f,rows,ed){ return '<textarea class="w-field" data-f="'+esc(f)+'" rows="'+(rows||2)+'"'+(ed?'':' readonly')+'>'+esc(pv(f))+'</textarea>'; }
+      function dl(f,list,ed){ return '<input class="w-field" data-f="'+esc(f)+'" list="'+list+'" value="'+ea(pv(f))+'" placeholder="선택"'+(ed?'':' readonly')+'>'; }
+      function fld(label,ctrl){ return '<div class="wf"><label>'+esc(label)+'</label>'+ctrl+'</div>'; }
+      // 2차 검수 = 1차 표시값 그대로 복사(프리필 포함), 변경 시 하이라이트
+      function inp2(f,ed){ var v=pv(f); return '<input class="w-field w2" data-f2="'+esc(f)+'" data-orig="'+ea(v)+'" value="'+ea(v)+'" oninput="mark2(this)"'+(ed?'':' readonly')+'>'; }
+      function ta2(f,rows,ed){ var v=pv(f); return '<textarea class="w-field w2" data-f2="'+esc(f)+'" data-orig="'+ea(v)+'" rows="'+(rows||2)+'" oninput="mark2(this)"'+(ed?'':' readonly')+'>'+esc(v)+'</textarea>'; }
+      function dl2(f,list,ed){ var v=pv(f); return '<input class="w-field w2" data-f2="'+esc(f)+'" data-orig="'+ea(v)+'" list="'+list+'" value="'+ea(v)+'" placeholder="선택" oninput="mark2(this)"'+(ed?'':' readonly')+'>'; }
+      // 조건부 선택(단어/구 → 품사, 일상어/전문어 → 전문 분야). two=2차
+      function cond(f,opts,target,enableVal,two,ed){ var v=it[f]||'', a=two?'data-f2':'data-f', cls=two?'w-field w2':'w-field', orig=two?' data-orig="'+ea(v)+'"':'', oc='onchange="'+(two?'mark2(this);':'')+'toggleCond(this)"'; var o=[''].concat(opts).map(function(x){return '<option value="'+ea(x)+'"'+(x===v?' selected':'')+'>'+(esc(x)||'선택')+'</option>';}).join(''); return '<select class="'+cls+'" '+a+'="'+esc(f)+'"'+orig+' data-target="'+esc(target)+'" data-enable="'+esc(enableVal)+'" '+oc+(ed?'':' disabled')+'>'+o+'</select>'; }
+      var llmDef=String((it['GPT 정의문']||'')+' '+(it['GPT 설명문']||'')).trim();
+      var h='<div class="cand-label">신어 집필</div><div class="cand-term">'+esc(it['신어 후보'])+'</div>'
+        + '<div class="cand-meta">최초 출현 <b>'+esc(it['최초출현일']||it['추출 시기']||'-')+'</b> &nbsp;·&nbsp; '+esc(it['작업자']||'?')+' - '+esc(it['검수자']||'?')+(it['배정 주차']?' ('+esc(it['배정 주차'])+'주차)':'')
+        + (String(it['ID']||'').indexOf('::new-')>=0 ? ' &nbsp; <button class="btn ghost del-item" onclick="deleteWriteItem()">🗑 새 항목 삭제</button>' : '')
+        + '</div>';
+      h+='<div class="llm-box"><h3>🤖 GPT 1차 초안</h3>'+refRow_('의미 범주',it['GPT 의미 범주'])+refRow_('정의문',it['GPT 정의문'])+refRow_('설명문',it['GPT 설명문'])+refRow_('용례',it['GPT 용례'])+'</div>';
+      h+='<div class="diff-box"><h3>✍️ 뜻풀이 변경 이력 <span class="kbd">(변경분 하이라이트)</span></h3>'
+        + '<div class="drow"><span class="dl">LLM</span><div class="dv">'+esc(llmDef||'(없음)')+'</div></div>'
+        + '<div class="drow"><span class="dl">작업자</span><div class="dv">'+wordDiff_(llmDef,it['1차 뜻풀이'])+'</div></div>'
+        + '<div class="drow"><span class="dl">검수자</span><div class="dv">'+wordDiff_(it['1차 뜻풀이'],it['2차 뜻풀이'])+'</div></div></div>';
+      h+='<div class="write-cols">';
+      // ← 1차 작업(작업자)
+      h+='<div class="stage-sec s1"><div class="ss-head">📝 1차 작업 <span class="ss-who">작업자 '+esc(it['작업자']||'?')+'</span></div>'
+        + '<div class="write-form">'
+        + fld('색인표제어',inp('색인표제어',canField))+fld('등재표제어',inp('등재표제어',canField))
+        + fld('원어',inp('원어',canField))+fld('어종 표시',inp('어종 표시',canField))+fld('어원',inp('어원',canField))
+        + fld('단어/구',cond('단어/구',['단어','구'],'품사','단어',false,canField))+fld('품사',inp('품사',canField))
+        + fld('일상어/전문어',cond('일상어/전문어',['일상어','전문어'],'전문 분야','전문어',false,canField))+fld('전문 분야',dl('전문 분야','dl-jm',canField))+fld('의미 영역',dl('의미 영역','dl-um',canField))
+        + fld('뜻풀이',ta('뜻풀이',3,canField))
+        + fld('작성례',ta('수정 용례',3,canField))
+        + '<div class="wf-sec">📎 참고 용례</div>'
+        + fld('용례',ta('용례',3,canField))+fld('용례 출처',inp('용례 출처',canField))+fld('용례 URL',inp('용례 URL',canField))
+        + fld('X년 Y월 신어',inp('X년 Y월 신어',canField))
+        + '<div class="wf-sec">📝 작업 메모</div>'
+        + fld('형태부',ta('집필 메모(형태부)',2,canField))+fld('의미부',ta('집필 메모(의미부)',2,canField))
+        + '</div>'
+        + '<div class="ss-foot">'+(isW?'<button class="btn save" onclick="saveWriteForm(1,false)">1차 작업 저장</button> <span class="save-badge"></span>':'<span class="kbd">작업자만 저장</span>')+'</div>'
+        + '</div>';
+      // → 2차 검수(검수자) — 1차 복사본, 변경분 하이라이트
+      h+='<div class="stage-sec s2"><div class="ss-head">🔎 2차 검수 <span class="ss-who">검수자 '+esc(it['검수자']||'?')+'</span></div>'
+        + '<div class="write-form">'
+        + fld('색인표제어',inp2('색인표제어',isR))+fld('등재표제어',inp2('등재표제어',isR))
+        + fld('원어',inp2('원어',isR))+fld('어종 표시',inp2('어종 표시',isR))+fld('어원',inp2('어원',isR))
+        + fld('단어/구',cond('단어/구',['단어','구'],'품사','단어',true,isR))+fld('품사',inp2('품사',isR))
+        + fld('일상어/전문어',cond('일상어/전문어',['일상어','전문어'],'전문 분야','전문어',true,isR))+fld('전문 분야',dl2('전문 분야','dl-jm',isR))+fld('의미 영역',dl2('의미 영역','dl-um',isR))
+        + fld('뜻풀이',ta2('뜻풀이',3,isR))
+        + fld('작성례',ta2('수정 용례',3,isR))
+        + '<div class="wf-sec">📎 참고 용례</div>'
+        + fld('용례',ta2('용례',3,isR))+fld('용례 출처',inp2('용례 출처',isR))+fld('용례 URL',inp2('용례 URL',isR))
+        + fld('X년 Y월 신어',inp2('X년 Y월 신어',isR))
+        + '<div class="wf-sec">🔎 검수 메모</div>'
+        + fld('형태부',ta('검수 메모(형태부)',2,isR))+fld('의미부',ta('검수 메모(의미부)',2,isR))
+        + '</div>'
+        + '<div class="ss-foot">'+(isR?'<button class="btn save" onclick="saveWriteForm(2,false)">2차 검수 저장</button> <span class="save-badge"></span>':'<span class="kbd">검수자만 저장</span>')+'</div>'
+        + '</div>';
+      h+='</div>';
+      h+='<datalist id="dl-jm">'+FIELD_67.map(function(x){return '<option value="『'+esc(x)+'』">';}).join('')+'</datalist>';
+      h+='<datalist id="dl-um">'+FIELD_15.map(function(x){return '<option value="〔'+esc(x)+'〕">';}).join('')+'</datalist>';
+      $('detail').innerHTML=h;
+      document.querySelectorAll('#detail select[data-target]').forEach(toggleCond);
+    }
+    function collectWrite_(stage){ var f={}; document.querySelectorAll('#detail .stage-sec.s'+(stage===2?2:1)+' .w-field').forEach(function(el){ var k=el.getAttribute('data-f2')||el.getAttribute('data-f'); if(k) f[k]=el.value; }); return f; }
+    function saveWriteForm(stage, silent){
+      var it=ITEMS[CUR]; if(!it) return;
+      var fields=collectWrite_(stage);
+      for(var k in fields) it[k]=fields[k];
+      if(stage===1) it['1차 뜻풀이']=fields['뜻풀이']||''; else it['2차 뜻풀이']=fields['뜻풀이']||'';
+      google.script.run.withSuccessHandler(function(){ setSaveBadge('저장 완료',false); if(!silent) toast((stage===2?'2차 검수':'1차 작업')+' 저장 완료'); })
+        .withFailureHandler(function(e){ setSaveBadge('저장 실패',true); if(!silent) toast('실패: '+e.message); })
+        .saveWrite(TOKEN,{ row_id:it['ID'], stage:stage, fields:fields, op_id:newOpId() });
+    }
+    function addNewWriteItem(){
+      var cand=prompt('새 표제어(신어 후보)를 입력하세요:'); if(cand===null) return;
+      cand=String(cand).trim(); if(!cand){ toast('표제어를 입력하세요.'); return; }
+      function addLocal(id){ var it={'__full':true,'ID':id,'신어 후보':cand,'작업자':(ME.isManager?'':ME.name)||'','검수자':'','배정 주차':'','상태':'미작업'}; ITEMS.unshift(it); CUR=0; renderList(); renderWriteDetail(it); }
+      var pid=CURRENT_PROJECT&&CURRENT_PROJECT.id; if(!pid){ toast('먼저 프로젝트를 여세요.'); return; }
+      google.script.run.withSuccessHandler(function(r){ addLocal(r.id); toast('새 항목을 추가했습니다.'); })
+        .withFailureHandler(function(e){ toast('실패: '+e.message); })
+        .addWriteItem(TOKEN, pid, cand);
+    }
+    function deleteWriteItem(){
+      var it=ITEMS[CUR]; if(!it) return;
+      if(String(it['ID']||'').indexOf('::new-')<0){ toast('배분된 항목은 삭제할 수 없습니다.'); return; }
+      if(!confirm('새 항목 "'+it['신어 후보']+'"을(를) 삭제할까요?')) return;
+      function done(){ ITEMS.splice(CUR,1); CUR=-1; renderList(); $('detail').innerHTML='<div class="placeholder">왼쪽에서 신어 후보 항목을 선택하세요.</div>'; }
+      google.script.run.withSuccessHandler(function(){ done(); toast('삭제했습니다.'); })
+        .withFailureHandler(function(e){ toast('실패: '+e.message); })
+        .deleteWriteItem(TOKEN, it['ID']);
     }
     function pick(stage,v){ SEL[stage]=v; document.querySelectorAll('.verdicts[data-stage="'+stage+'"] .vcard').forEach(function(c){ c.classList.toggle('on', c.getAttribute('data-v')===v); }); markDirty(); }
 
