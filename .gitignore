@@ -2,3 +2,5 @@ _upload_csv/
 env/
 *.xlsx
 __pycache__/
+신어 판별 지침.md
+신어 집필 지침.md

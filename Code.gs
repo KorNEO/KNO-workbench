@@ -31,16 +31,37 @@ var USER_HDR = ['구글 계정', '이름', '역할', '초대 일시', '응답 �
 var PROJ_HEADERS = ['프로젝트 ID', '이름', '유형', '업로드 일자', '상태', '파일 ID'];   // file_id = 프로젝트 전용 스프레드시트 ID
 var DRIVE_ROOT = 'KNO 워크벤치';   // 최상위 드라이브 폴더(하위: 프로젝트/·원본 업로드/, 작업유형별)
 var PRES_TTL = 100;
-var WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxGQ25QDvzAdXOCdYWXihv3Lkdj6zVXyq5M0KiGjccGJTRbiY1XRMvRjCHKrmlFdWLZ/exec';
+var WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxGQ25QDvzAdXOCdYWXihv3Lkdj6zVXyq5M0KiGjccGJTRbiY1XRMvRjCHKrmlFdWLZ/exec';   // doPost API 엔드포인트(프론트가 fetch)
+var PAGES_URL = 'https://korneo.github.io/KNO-workbench/';   // 프론트(GitHub Pages) — 개인/공통 링크는 이 주소
 
 // ── 진입점 ─────────────────────────────────────────────
-function doGet(e) {
+function doGet(e) {   // /exec 접근 시 Pages 프론트로 리다이렉트
   var token = (e && e.parameter && e.parameter.u) ? String(e.parameter.u).trim() : '';
-  var t = HtmlService.createTemplateFromFile('Index');
-  t.token = token;
-  return t.evaluate().setTitle('KNO Workbench')
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  var url = PAGES_URL + (token ? '?u=' + encodeURIComponent(token) : '');
+  return HtmlService.createHtmlOutput('<script>location.replace(' + JSON.stringify(url) + ');</script><p><a href="' + url + '">KNO Workbench로 이동</a></p>')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+// ── 외부 프론트(GitHub Pages)용 JSON API ──
+// Pages 프론트가 fetch(단순요청)로 호출. 익명 배포 ContentService 응답은 CORS * 허용, text/plain 본문이라 프리플라이트 없음.
+var API = {
+  getBootstrap: getBootstrap, ping: ping, getPresence: getPresence,
+  getGuide: getGuide, setGuide: setGuide,
+  getProjects: getProjects, createProject: createProject, deleteProject: deleteProject, exportProject: exportProject, getTemplate: getTemplate,
+  getResearchers: getResearchers, saveResearchers: saveResearchers,
+  getAssignees: getAssignees, genAgree: genAgree, genReal: genReal,
+  getProgress: getProgress, getItems: getItems, getItem: getItem,
+  saveFirst: saveFirst, saveSecond: saveSecond, logClientFail: logClientFail,
+  requestOtp: requestOtp, registerAccount: registerAccount, login: login
+};
+function doPost(e) {
+  var out;
+  try {
+    var body = (e && e.postData && e.postData.contents) ? JSON.parse(e.postData.contents) : {};
+    var fn = API[body.fn];
+    if (typeof fn !== 'function') throw new Error('허용되지 않은 함수: ' + body.fn);
+    out = { ok: true, data: fn.apply(null, body.args || []) };
+  } catch (err) { out = { ok: false, error: String(err && err.message ? err.message : err) }; }
+  return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
 }
 
 // ── 공통 헬퍼 ──────────────────────────────────────────
@@ -67,7 +88,7 @@ function cacheDel_(keys) { try { CacheService.getScriptCache().removeAll([].conc
 // 멱등키: 응답 유실로 같은 저장이 재전송돼도 1회만 적용. 적용 성공 후에만 마킹.
 function opSeen_(opId) { if (!opId) return false; try { return !!CacheService.getScriptCache().get('op:' + opId); } catch (e) { return false; } }
 function opMark_(opId) { if (opId) try { CacheService.getScriptCache().put('op:' + opId, '1', 3600); } catch (e) {} }
-function getAppUrl_() { if (WEBAPP_URL) return WEBAPP_URL; try { return ScriptApp.getService().getUrl() || ''; } catch (e) { return ''; } }
+function getAppUrl_() { return PAGES_URL; }   // 개인/공통 링크는 Pages 프론트 주소
 // 개인 링크: ?u=토큰 + &authuser=이메일 → 멀티계정 브라우저에서도 그 계정으로 열려 라우팅 오류 회피.
 function personalLink_(url, token, email) { return (!url || !token) ? (url || '') : url + '?u=' + token + (email ? '&authuser=' + encodeURIComponent(email) : ''); }
 

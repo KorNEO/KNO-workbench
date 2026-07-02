@@ -350,7 +350,24 @@
   <div id="toast"></div>
 
   <script>
-    var TOKEN = '<?= token ?>';
+    var API_URL = 'https://script.google.com/macros/s/AKfycbxGQ25QDvzAdXOCdYWXihv3Lkdj6zVXyq5M0KiGjccGJTRbiY1XRMvRjCHKrmlFdWLZ/exec';
+    function apiCall_(fn, args){
+      return fetch(API_URL, { method:'POST', body: JSON.stringify({fn:fn, args:args||[]}) })
+        .then(function(r){ return r.json(); })
+        .then(function(j){ if(!j.ok) throw new Error(j.error||'서버 오류'); return j.data; });
+    }
+    // google.script.run 호환 셰임 — 기존 호출부 그대로, 실제로는 fetch→doPost(GitHub Pages 프론트용)
+    window.google = { script: { run: {} } };
+    Object.defineProperty(window.google.script, 'run', { get: function(){
+      var s=null, f=null;
+      var proxy = new Proxy({}, { get: function(t, prop){
+        if(prop==='withSuccessHandler') return function(fn){ s=fn; return proxy; };
+        if(prop==='withFailureHandler') return function(fn){ f=fn; return proxy; };
+        return function(){ apiCall_(prop, [].slice.call(arguments)).then(function(d){ if(s)s(d); }).catch(function(e){ if(f)f({message:(e&&e.message)||String(e)}); }); return proxy; };
+      }});
+      return proxy;
+    }});
+    var TOKEN = (new URLSearchParams(location.search)).get('u') || '';
     var ME = { email:'', name:'', role:'', isManager:false };
     var VERDICTS = ['신어','비신어','판단 보류'];
     var MODE = 'real';                 // 'real' | 'agree'
