@@ -1,0 +1,4 @@
+_upload_csv/
+env/
+*.xlsx
+__pycache__/
