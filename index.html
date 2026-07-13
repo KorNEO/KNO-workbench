@@ -73,7 +73,9 @@
     .list-col { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:12px; max-height:calc(100vh - 100px); overflow:auto; position:sticky; top:72px; }
     .filters { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
     .filters input, .filters select { padding:6px 8px; border:1px solid var(--line); border-radius:8px; font-size:13px; }
-    .list-count { margin:0 0 8px; font-weight:700; }
+    .list-count { margin:0 0 8px; font-size:13px; font-weight:700; color:var(--ink); }
+    .list-count b { color:var(--brand-d); font-weight:800; }
+    #f-status, #f-v1, #f-v2 { width:124px; }
     .filters input { flex:1; min-width:110px; }
     .item { padding:9px 11px; border:1px solid var(--line); border-radius:10px; margin-bottom:6px; cursor:pointer; }
     .item:hover { border-color:#bcc4f0; background:#f7f8ff; }
@@ -356,9 +358,15 @@
             </select>
             <select id="f-v1" onchange="applyResults()" style="display:none" title="1차 작업 결과">
               <option value="">1차 작업 결과</option>
+              <option value="신어">신어</option>
+              <option value="비신어">비신어</option>
+              <option value="판단 보류">판단 보류</option>
             </select>
             <select id="f-v2" onchange="applyResults()" style="display:none" title="2차 검수 결과">
               <option value="">2차 검수 결과</option>
+              <option value="신어">신어</option>
+              <option value="비신어">비신어</option>
+              <option value="판단 보류">판단 보류</option>
             </select>
           </div>
           <button id="btn-add-item" class="btn ghost" onclick="addNewWriteItem()" style="display:none;width:100%;margin-bottom:8px">+ 새 항목 추가</button>
@@ -796,28 +804,7 @@
       if(MODE==='real' && v2 && verdictOf(it,2)!==v2) return false;
       return true;
     }
-    function buildVerdictSelect(sel, stage, baseItems, allLabel){
-      var cur=sel.value;
-      var html='<option value="">'+esc(allLabel)+' ('+baseItems.length+')</option>';
-      VERDICTS.forEach(function(v){
-        var c=baseItems.filter(function(it){ return verdictOf(it,stage)===v; }).length;
-        html+='<option value="'+esc(v)+'">'+esc(v)+' ('+c+')</option>';
-      });
-      sel.innerHTML=html; sel.value=cur;
-    }
-    function refreshResultFilters(){
-      var s1=$('f-v1'), s2=$('f-v2');
-      s1.style.display=(MODE!=='write')?'':'none';
-      s2.style.display=(MODE==='real')?'':'none';
-      if(MODE==='write') return;
-      var v1=s1.value, v2=s2.value;
-      // 엑셀식 교차 집계: 각 차수 옵션 건수는 반대편 차수(및 상태·검색) 필터를 반영
-      var baseV1=ITEMS.filter(function(it){ return !(MODE==='real'&&v2) || verdictOf(it,2)===v2; });
-      buildVerdictSelect(s1, 1, baseV1, '1차 작업 결과');
-      if(MODE==='real'){ var baseV2=ITEMS.filter(function(it){ return !v1 || verdictOf(it,1)===v1; }); buildVerdictSelect(s2, 2, baseV2, '2차 검수 결과'); }
-    }
     function applyResults(){
-      refreshResultFilters();
       renderList();
       if(CUR<0){ var shown=ITEMS.filter(itemPasses).length; $('detail').innerHTML='<div class="placeholder">'+(shown?'왼쪽에서 신어 후보 항목을 선택하세요.':'표시할 항목이 없습니다.')+'</div>'; }
     }
@@ -839,7 +826,7 @@
         var meta = MODE==='agree' ? fmtName(it['작업자']) : (fmtName(it['작업자'])+' - '+fmtName(it['검수자'])+(it['배정 주차']?'('+esc(it['배정 주차'])+'주차)':''));
         rows.push('<div class="item'+(i===CUR?' sel':'')+'" data-i="'+i+'" onclick="selectItem('+i+')"><div class="cand"><span class="nm">'+esc(it['신어 후보'])+'</span><span class="pill '+pillClass(st)+'">'+esc(label)+'</span></div><div class="meta">'+meta+'</div></div>');
       }
-      $('list').innerHTML = '<div class="list-count kbd">표시 '+shown+'건</div>' + (rows.length ? rows.join('') : '<p class="kbd">조건에 맞는 항목이 없습니다.</p>');
+      $('list').innerHTML = '<div class="list-count">신어 <b>'+shown+'</b>개</div>' + (rows.length ? rows.join('') : '<p class="kbd">조건에 맞는 항목이 없습니다.</p>');
     }
     function selectItem(i){
       if(DIRTY){ doSave(window.__activeStage||'1차', false); }   // 이동 전 자동 저장
