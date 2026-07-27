@@ -1130,7 +1130,7 @@
       if(advance) nextItem();
     }
     function save(stage){ doSave(stage, true); }
-    function nextItem(){ for(var i=CUR+1;i<ITEMS.length;i++){ selectItem(i); return; } renderDetail(); }
+    function nextItem(){ for(var i=CUR+1;i<ITEMS.length;i++){ if(!itemPasses(ITEMS[i])) continue; selectItem(i); return; } renderDetail(); }
 
     document.addEventListener('keydown', function(e){
       if(SCOPE==='home'||SCOPE==='landing'||CUR<0) return;
