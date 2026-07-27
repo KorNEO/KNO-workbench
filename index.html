@@ -688,7 +688,12 @@
       if(!TOKEN){ try{ TOKEN = localStorage.getItem('kno_token') || ''; }catch(e){} }
       if(TOKEN) doBootstrap(); else showLogin();
     })();
-    function showLogin(){ document.querySelector('header').style.display='none'; document.querySelector('main').style.display='none'; $('loginOverlay').classList.remove('hidden'); }
+    function showLogin(){ document.querySelector('header').style.display='none'; document.querySelector('main').style.display='none'; $('loginOverlay').classList.remove('hidden'); resetLoginForm(); }
+    function resetLoginForm(){
+      ['login-id','login-pw','reg-name','reg-email','reg-code','reg-id','reg-pw','reset-email','reset-code','reset-pw'].forEach(function(id){ var el=$(id); if(el) el.value=''; });
+      ['login-msg','reg-msg','reset-msg'].forEach(function(id){ var el=$(id); if(el) el.textContent=''; });
+      showLoginTab('login');
+    }
     function afterAuth(token, remember){ TOKEN=token; try{ if(remember) localStorage.setItem('kno_token', token); else localStorage.removeItem('kno_token'); }catch(e){} $('loginOverlay').classList.add('hidden'); document.querySelector('header').style.display=''; document.querySelector('main').style.display=''; doBootstrap(); }
     function logout(){ try{ localStorage.removeItem('kno_token'); }catch(e){} TOKEN=''; showLogin(); }
     function sendOtp(){
