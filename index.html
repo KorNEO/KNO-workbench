@@ -492,6 +492,18 @@
     function srcLabel(s){ return s==='NN'?'〈네이버 뉴스 말뭉치〉':s==='YT'?'〈유튜브 말뭉치〉':s==='공통'?'〈네이버 뉴스 말뭉치〉·〈유튜브 말뭉치〉':esc(s); }
     function ym(v){ v=String(v||''); return v.length>=6 ? v.slice(0,4)+'.'+v.slice(4,6) : esc(v); }
     function ymd(v){ function p(n){return n<10?'0'+n:n;} var s=String(v||''); var m=s.match(/(\d{4})-(\d{2})-(\d{2})/); if(m) return m[1]+'.'+m[2]+'.'+m[3]+'.'; var d=new Date(s); return isNaN(d.getTime())?esc(s):d.getFullYear()+'.'+p(d.getMonth()+1)+'.'+p(d.getDate())+'.'; }
+    // 저장 시각 → 한국 표준시 'YYYY.MM.DD HH:MM:SS'
+    function fmtTS(v){
+      if(v===null||v===undefined||v==='') return '';
+      var s=String(v);
+      var m=s.match(/(\d{4})[-.](\d{2})[-.](\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+      if(m) return m[1]+'.'+m[2]+'.'+m[3]+' '+m[4]+':'+m[5]+':'+(m[6]||'00');
+      var d=new Date(s);
+      if(isNaN(d.getTime())) return esc(s);
+      var o={}; new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).formatToParts(d).forEach(function(x){ o[x.type]=x.value; });
+      var hh=(o.hour==='24')?'00':o.hour;
+      return o.year+'.'+o.month+'.'+o.day+' '+hh+':'+o.minute+':'+o.second;
+    }
     function statusLabel(s){ return s==='1차완료'?'1차 작업 완료':s==='2차완료'?'2차 검수 완료':(s||'미작업'); }
     function pillClass(s){ return s==='1차완료'?'s1':s==='2차완료'?'s2':'미작업'; }
     function reEscape(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
@@ -899,7 +911,7 @@
       var h='<div class="actions"><button class="btn save" onclick="save(\''+stage+'\')">저장</button>';
       h+='<span class="kbd"><b>Ctrl</b>+<b>S</b> 저장</span>';
       h+='<span class="save-badge kbd"></span>';
-      h+='<span class="saved-meta">'+(when?esc(when):'')+'</span></div>';
+      h+='<span class="saved-meta">'+(when?fmtTS(when):'')+'</span></div>';
       return h;
     }
     function stagePanel(stage,title,cls,allowed,isReviewer,it){
