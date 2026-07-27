@@ -64,7 +64,7 @@ var API = {
   getAssignees: getAssignees, genAgree: genAgree, genReal: genReal,
   getProgress: getProgress, getItems: getItems, getItem: getItem,
   saveFirst: saveFirst, saveSecond: saveSecond, saveWrite: saveWrite, addWriteItem: addWriteItem, deleteWriteItem: deleteWriteItem, logClientFail: logClientFail,
-  requestOtp: requestOtp, registerAccount: registerAccount, login: login
+  requestOtp: requestOtp, registerAccount: registerAccount, login: login, resetPassword: resetPassword, adminResetPassword: adminResetPassword
 };
 function doPost(e) {
   var out;
@@ -107,6 +107,20 @@ function personalLink_(url, token, email) { return (!url || !token) ? (url || ''
 
 // ── 인증 ───────────────────────────────────────────────
 function hashPw_(pw) { return Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(pw) + '|' + PEPPER)); }
+// OTP 검증: 일치하면 true(코드는 소비하지 않음 → 이후 검증 실패에도 재입력 가능). 불일치 시 실패 카운트, 5회 초과면 코드 폐기.
+function otpVerify_(email, code) {
+  var em = String(email || '').trim().toLowerCase(), c = CacheService.getScriptCache();
+  var cached = c.get('otp:' + em);
+  if (cached && cached === String(code || '').trim()) return true;
+  var fkey = 'otpfail:' + em, fails = parseInt(c.get(fkey) || '0', 10) + 1;
+  if (fails >= 5) { c.remove('otp:' + em); c.remove(fkey); throw new Error('인증번호를 5회 이상 틀려 무효화됐습니다. [인증번호 받기]로 다시 발급하세요.'); }
+  c.put(fkey, String(fails), 600);
+  throw new Error('인증번호가 올바르지 않거나 만료됐습니다.');
+}
+// OTP 소비: 작업 성공 후 코드·실패카운트 제거.
+function otpConsume_(email) { var em = String(email || '').trim().toLowerCase(), c = CacheService.getScriptCache(); c.remove('otp:' + em); c.remove('otpfail:' + em); }
+// 임시 비밀번호 생성(혼동되기 쉬운 0/O/1/l/I 제외).
+function genTempPw_() { var cs = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789', s = ''; for (var i = 0; i < 8; i++) s += cs.charAt(Math.floor(Math.random() * cs.length)); return s; }
 function usersSheet_() { return sheet_(SHEET_USERS); }
 function ensureUserHeaders_(sh) { sh.getRange(1, 9, 1, 2).setValues([['아이디', '비밀번호 해시']]); }
 function whoByToken_(token) {
@@ -141,8 +155,12 @@ function requestOtp(email) {
   var rows = n > 0 ? sh.getRange(2, 1, n, 1).getValues() : [], found = false;
   for (var i = 0; i < rows.length; i++) if (String(rows[i][0]).trim().toLowerCase() === email.toLowerCase()) { found = true; break; }
   if (!found) throw new Error('등록된 연구원 이메일이 아닙니다. 관리자에게 문의하세요.');
+  var ck = CacheService.getScriptCache(), ckey = 'otpsent:' + email.toLowerCase();
+  if (ck.get(ckey)) throw new Error('인증번호를 방금 보냈습니다. 잠시 후 다시 시도하세요.');
+  ck.put(ckey, '1', 60);
   var code = String(Math.floor(Math.random() * 900000) + 100000);
-  CacheService.getScriptCache().put('otp:' + email.toLowerCase(), code, 600);
+  ck.put('otp:' + email.toLowerCase(), code, 600);
+  ck.remove('otpfail:' + email.toLowerCase());
   GmailApp.sendEmail(email, '[KNO Workbench] 인증번호',
     '신어 판별 및 집필 워크벤치 계정 등록을 위한 인증번호입니다.\n\n' + code + '\n\n10분 이내에 입력해 주세요. 😊',
     { name: 'KNO Workbench', htmlBody: '<p>신어 판별 및 집필 워크벤치 계정 등록을 위한 인증번호입니다.</p><p style="font-size:24px;font-weight:bold">' + code + '</p><p>10분 이내에 입력해 주세요. 😊</p>' });
@@ -152,8 +170,7 @@ function registerAccount(email, code, id, pw, name) {
   email = String(email || '').trim(); id = String(id || '').trim();
   if (id.length < 2) throw new Error('아이디는 2자 이상이어야 합니다.');
   if (String(pw || '').length < 4) throw new Error('비밀번호는 4자 이상이어야 합니다.');
-  var cached = CacheService.getScriptCache().get('otp:' + email.toLowerCase());
-  if (!cached || cached !== String(code || '').trim()) throw new Error('인증번호가 올바르지 않거나 만료됐습니다.');
+  otpVerify_(email, code);
   var lock = LockService.getDocumentLock(); lock.waitLock(15000);
   try {
     var sh = usersSheet_(); ensureUserHeaders_(sh);
@@ -165,12 +182,12 @@ function registerAccount(email, code, id, pw, name) {
     }
     if (myRow < 0) throw new Error('등록된 연구원 이메일이 아닙니다.');
     if (name && String(data[myRow][1]).trim() !== String(name).trim()) throw new Error('이름이 등록 정보와 일치하지 않습니다.');
-    if (String(data[myRow][8]).trim()) throw new Error('이미 등록된 계정입니다. 로그인하세요. (비밀번호 분실 시 관리자에게 초기화 요청.)');
+    if (String(data[myRow][8]).trim()) throw new Error('이미 등록된 계정입니다. 로그인하거나 [비밀번호 재설정]을 이용하세요.');
     var tok = String(data[myRow][6]).trim();
     if (!tok) { tok = Utilities.getUuid().replace(/-/g, '').slice(0, 10); sh.getRange(myRow + 2, 7).setValue(tok); }
     sh.getRange(myRow + 2, 9).setValue(id);
     sh.getRange(myRow + 2, 10).setValue(hashPw_(pw));
-    CacheService.getScriptCache().remove('otp:' + email.toLowerCase());
+    otpConsume_(email);
     cacheDel_('who:' + tok);
     SpreadsheetApp.flush();
     return { ok: true, token: tok };
@@ -189,6 +206,52 @@ function login(id, pw) {
     }
   }
   throw new Error('아이디 또는 비밀번호가 올바르지 않습니다.');
+}
+// 비밀번호 재설정: 이메일 OTP로 본인 확인 후 비번 해시 컬럼(10)만 갱신 — 아이디·토큰·작업 데이터는 그대로 보존.
+function resetPassword(email, code, pw) {
+  email = String(email || '').trim();
+  if (!email) throw new Error('이메일을 입력하세요.');
+  if (String(pw || '').length < 4) throw new Error('비밀번호는 4자 이상이어야 합니다.');
+  otpVerify_(email, code);
+  var lock = LockService.getDocumentLock(); lock.waitLock(15000);
+  try {
+    var sh = usersSheet_(); ensureUserHeaders_(sh);
+    var n = sh.getLastRow() - 1;
+    if (n <= 0) throw new Error('등록된 계정이 없습니다.');
+    var data = sh.getRange(2, 1, n, 10).getValues(), myRow = -1;
+    for (var i = 0; i < data.length; i++)
+      if (String(data[i][0]).trim().toLowerCase() === email.toLowerCase()) { myRow = i; break; }
+    if (myRow < 0) throw new Error('등록된 연구원 이메일이 아닙니다.');
+    if (!String(data[myRow][8]).trim()) throw new Error('아직 등록되지 않은 계정입니다. [최초 등록]을 진행하세요.');
+    sh.getRange(myRow + 2, 10).setValue(hashPw_(pw));
+    var tok = String(data[myRow][6]).trim();
+    if (!tok) { tok = Utilities.getUuid().replace(/-/g, '').slice(0, 10); sh.getRange(myRow + 2, 7).setValue(tok); }
+    otpConsume_(email);
+    SpreadsheetApp.flush();
+    return { ok: true, token: tok };
+  } finally { lock.releaseLock(); }
+}
+// 관리자 수동 초기화: 임시 비밀번호 발급 후 비번 해시(10)만 갱신 — 아이디·토큰·작업 데이터 보존. 임시비번은 관리자에게만 반환.
+function adminResetPassword(token, email) {
+  assertManager_(me_(token));
+  email = String(email || '').trim();
+  if (!email) throw new Error('이메일이 필요합니다.');
+  var lock = LockService.getDocumentLock(); lock.waitLock(15000);
+  try {
+    var sh = usersSheet_(); ensureUserHeaders_(sh);
+    var n = sh.getLastRow() - 1;
+    if (n <= 0) throw new Error('등록된 계정이 없습니다.');
+    var data = sh.getRange(2, 1, n, 10).getValues(), myRow = -1;
+    for (var i = 0; i < data.length; i++)
+      if (String(data[i][0]).trim().toLowerCase() === email.toLowerCase()) { myRow = i; break; }
+    if (myRow < 0) throw new Error('해당 이메일의 연구원이 없습니다.');
+    var id = String(data[myRow][8]).trim();
+    if (!id) throw new Error('아직 계정을 등록하지 않은 연구원입니다. (초기화할 비밀번호가 없습니다.)');
+    var tempPw = genTempPw_();
+    sh.getRange(myRow + 2, 10).setValue(hashPw_(tempPw));
+    SpreadsheetApp.flush();
+    return { ok: true, id: id, tempPw: tempPw };
+  } finally { lock.releaseLock(); }
 }
 
 // ── 부트스트랩 / 접속 현황 ─────────────────────────────

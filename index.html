@@ -189,6 +189,10 @@
     .login-sub { color:var(--muted); text-align:center; font-size:13px; margin:4px 0 18px; }
     .login-tabs { display:flex; gap:6px; margin-bottom:16px; }
     .login-tabs button { flex:1; padding:8px; border:1px solid var(--line); background:#f7f8fa; border-radius:8px; cursor:pointer; font-weight:700; color:var(--muted); }
+    .login-otpgap { margin-top:14px; }
+    .login-link { text-align:center; margin-top:14px; }
+    .login-link a { color:var(--brand-d); font-size:13px; cursor:pointer; text-decoration:underline; }
+    .login-reset-head { font-weight:700; color:var(--ink); margin-bottom:10px; }
     .login-tabs button.on { background:var(--brand); color:#fff; border-color:var(--brand); }
     .login-box input:not([type=checkbox]) { width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:8px; margin-bottom:8px; font-size:14px; }
     .login-btn { width:100%; padding:11px; border:none; border-radius:8px; background:var(--brand); color:#fff; font-weight:700; cursor:pointer; font-size:14px; margin-top:4px; }
@@ -426,6 +430,7 @@
         <label class="rmb"><input type="checkbox" id="login-remember" checked> 자동 로그인</label>
         <button class="login-btn" onclick="doLogin()">로그인</button>
         <div id="login-msg" class="login-msg"></div>
+        <div class="login-link"><a onclick="openReset()">비밀번호를 잊으셨나요?</a></div>
       </div>
       <div id="pane-reg" class="hidden">
         <input id="reg-name" placeholder="이름">
@@ -433,9 +438,19 @@
         <input id="reg-pw" type="password" placeholder="사용할 비밀번호">
         <input id="reg-email" placeholder="구글 이메일 주소">
         <button class="login-btn ghost" onclick="sendOtp()">인증번호 받기</button>
-        <input id="reg-code" placeholder="인증번호">
+        <input id="reg-code" class="login-otpgap" placeholder="인증번호">
         <button class="login-btn" onclick="doRegister()">등록</button>
         <div id="reg-msg" class="login-msg"></div>
+      </div>
+      <div id="pane-reset" class="hidden">
+        <div class="login-reset-head">비밀번호 재설정</div>
+        <input id="reset-email" placeholder="구글 이메일 주소">
+        <button class="login-btn ghost" onclick="sendResetOtp()">인증번호 받기</button>
+        <input id="reset-code" class="login-otpgap" placeholder="인증번호">
+        <input id="reset-pw" type="password" placeholder="새 비밀번호">
+        <button class="login-btn" onclick="doReset()">비밀번호 재설정</button>
+        <div id="reset-msg" class="login-msg"></div>
+        <div class="login-link"><a onclick="showLoginTab('login')">← 로그인으로 돌아가기</a></div>
       </div>
     </div>
   </div>
@@ -697,9 +712,29 @@
       google.script.run.withSuccessHandler(function(res){ afterAuth(res.token, remember); })
         .withFailureHandler(function(e){ $('login-msg').textContent='로그인 실패: '+e.message; }).login(id, pw);
     }
+    function sendResetOtp(){
+      var em=($('reset-email')||{}).value.trim();
+      if(!em){ toast('이메일을 입력하세요.'); return; }
+      $('reset-msg').textContent='발송 중…';
+      google.script.run.withSuccessHandler(function(){ $('reset-msg').textContent='인증번호를 메일로 보냈습니다. 확인 후 입력하세요.'; })
+        .withFailureHandler(function(e){ $('reset-msg').textContent='실패: '+e.message; }).requestOtp(em);
+    }
+    function doReset(){
+      var em=($('reset-email')||{}).value.trim(), code=($('reset-code')||{}).value.trim(), pw=($('reset-pw')||{}).value;
+      if(!em||!code||!pw){ toast('모두 입력하세요.'); return; }
+      $('reset-msg').textContent='재설정 중…';
+      google.script.run.withSuccessHandler(function(res){ afterAuth(res.token, true); })
+        .withFailureHandler(function(e){ $('reset-msg').textContent='실패: '+e.message; }).resetPassword(em, code, pw);
+    }
     function showLoginTab(which){
       $('tab-login').classList.toggle('on', which==='login'); $('tab-reg').classList.toggle('on', which==='reg');
       $('pane-login').classList.toggle('hidden', which!=='login'); $('pane-reg').classList.toggle('hidden', which!=='reg');
+      $('pane-reset').classList.add('hidden');
+    }
+    function openReset(){
+      $('tab-login').classList.remove('on'); $('tab-reg').classList.remove('on');
+      $('pane-login').classList.add('hidden'); $('pane-reg').classList.add('hidden');
+      $('pane-reset').classList.remove('hidden');
     }
 
     /* 진행률 */
@@ -1173,24 +1208,33 @@
       var role=r.role||'', opts=ROLE_OPTS.slice(); if(role && opts.indexOf(role)<0) opts.unshift(role);
       var rsel='<select class="r-role">'+opts.map(function(o){ return '<option'+(o===role?' selected':'')+'>'+esc(o)+'</option>'; }).join('')+'</select>';
       var link=r.link ? '<button class="rbtn link" onclick="copyPersonalLink(\''+esc(r.link)+'\')">🔗 링크</button>' : '<span class="kbd">저장 후</span>';
+      var acct=r.id ? '<button class="rbtn link" onclick="adminResetPw(\''+esc(r.email||'')+'\',\''+esc(r.name||'')+'\')">🔑 비번 초기화</button>' : '<span class="kbd">미등록</span>';
       return '<tr>'
         +'<td><input class="r-name" value="'+esc(r.name||'')+'" style="width:80px"></td>'
         +'<td><input class="r-aff" value="'+esc(r['소속']||'')+'" style="width:110px"></td>'
         +'<td>'+rsel+'</td>'
         +'<td><input class="r-email" value="'+esc(r.email||'')+'" style="width:200px"></td>'
         +'<td>'+link+'</td>'
+        +'<td>'+acct+'</td>'
         +'<td><button class="rbtn del" onclick="this.closest(\'tr\').remove()">삭제</button></td></tr>';
     }
     function renderRoster(list){
       var rows=(list||[]).map(rosterRow).join('');
       $('researcher-list').innerHTML =
         '<div style="margin-bottom:12px"><button class="btn reject" style="padding:7px 14px" onclick="copyCommonLink()">🔗 공통 링크 복사</button></div>'
-        + '<div style="overflow-x:auto"><table class="grp" id="roster-tbl"><thead><tr><th>이름</th><th>소속</th><th>역할</th><th>이메일</th><th>개인 링크</th><th></th></tr></thead>'
+        + '<div style="overflow-x:auto"><table class="grp" id="roster-tbl"><thead><tr><th>이름</th><th>소속</th><th>역할</th><th>이메일</th><th>개인 링크</th><th>계정</th><th></th></tr></thead>'
         + '<tbody id="roster-body">'+rows+'</tbody></table></div>'
         + '<div style="margin-top:12px"><button class="btn reject" onclick="addResearcher()">+ 연구원 추가</button> '
         + '<button class="btn save" onclick="saveRoster()">저장</button><span class="asg-msg" id="roster-msg"></span></div>';
     }
     function addResearcher(){ var tb=$('roster-body'); if(!tb) return; var t=document.createElement('tbody'); t.innerHTML=rosterRow({}); tb.appendChild(t.firstChild); }
+    function adminResetPw(email, name){
+      if(!email){ toast('저장되지 않은 연구원입니다.'); return; }
+      if(!confirm((name||email)+' 연구원의 비밀번호를 초기화할까요?\n임시 비밀번호가 발급됩니다.')) return;
+      google.script.run.withSuccessHandler(function(res){
+        window.prompt((name||email)+' 임시 비밀번호가 발급됐습니다.\n아이디: '+res.id+'\n연구원에게 아래 임시 비밀번호를 전달하고, 로그인 후 [비번 재설정]으로 변경하도록 안내하세요.\n(복사: Ctrl+C)', res.tempPw);
+      }).withFailureHandler(function(e){ toast('초기화 실패: '+e.message); }).adminResetPassword(TOKEN, email);
+    }
     function saveRoster(){
       var list=[].slice.call(document.querySelectorAll('#roster-body tr')).map(function(tr){
         return { name:tr.querySelector('.r-name').value.trim(), '소속':tr.querySelector('.r-aff').value.trim(), role:tr.querySelector('.r-role').value, email:tr.querySelector('.r-email').value.trim() };
