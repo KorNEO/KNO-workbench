@@ -923,7 +923,7 @@
     }
     var SEL={'1차':'','2차':''};
     var CHK = { '1차': { proper: '', hate: '' }, '2차': { proper: '', hate: '' } };
-    var CHK_FIELDS = [['고유명 여부', 'proper', 'Ctrl+5/6'], ['혐오 표현 여부', 'hate', 'Ctrl+7/8']];
+    var CHK_FIELDS = [['고유명 여부', 'proper', 'Ctrl+E = N · Ctrl+Shift+E = Y'], ['혐오 표현 여부', 'hate', 'Ctrl+H = N · Ctrl+Shift+H = Y']];
     function stageComplete(stage){ return !!(SEL[stage] && CHK[stage].proper && CHK[stage].hate); }
     function checkCard(stage, allowed){
       return '<div class="chk-card" data-stage="'+stage+'">'+CHK_FIELDS.map(function(cf){
@@ -1200,8 +1200,8 @@
       var stage=window.__activeStage||'1차';
       if(e.key==='1'||e.key==='2'||e.key==='3'){ e.preventDefault(); pick(stage, VERDICTS[parseInt(e.key,10)-1]); }
       else if(e.key==='4'){ e.preventDefault(); var t=$('memo-'+stage); if(t) t.focus(); }
-      else if(e.key==='5'||e.key==='6'){ e.preventDefault(); pickChk(stage, 'proper', e.key==='5'?'Y':'N'); }
-      else if(e.key==='7'||e.key==='8'){ e.preventDefault(); pickChk(stage, 'hate', e.key==='7'?'Y':'N'); }
+      else if(e.key==='e'||e.key==='E'){ e.preventDefault(); pickChk(stage, 'proper', e.shiftKey?'Y':'N'); }
+      else if(e.key==='h'||e.key==='H'){ e.preventDefault(); pickChk(stage, 'hate', e.shiftKey?'Y':'N'); }
       else if(e.key==='s'||e.key==='S'){ e.preventDefault(); save(stage); }
     });
 
