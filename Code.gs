@@ -15,12 +15,15 @@ var TS_FMT = 'yyyy-MM-dd HH:mm:ss';
 
 var HEADERS = [
   'ID', '신어 후보', '작업자', '검수자', '배정 주차',
-  '1차 판별', '1차 일시', '1차 메모', '2차 판별', '2차 일시', '2차 메모',
+  '1차 판별', '1차 일시', '1차 메모', '1차 고유명 여부', '1차 혐오 표현 여부',
+  '2차 판별', '2차 일시', '2차 메모', '2차 고유명 여부', '2차 혐오 표현 여부',
   '상태', '작업 구분', '출처', '추출 시기',
   'LLM 판단 결과', 'LLM 판단 기준', 'LLM 판단 근거',
   '용례', '용례 일자', '용례 URL', '검색 URL'
 ];
 var VERDICTS = ['신어', '비신어', '판단 보류'];
+var CHECK_COLS = ['1차 고유명 여부', '1차 혐오 표현 여부', '2차 고유명 여부', '2차 혐오 표현 여부'];
+function chkOk_(v) { return v === 'Y' || v === 'N'; }
 var STATUS = { NONE: '미작업', FIRST: '1차완료', SECOND: '2차완료' };
 var LOG_HEADERS = ['일시', 'ID', '신어 후보', '단계', '행위자', '판별', '메모', '이전 상태', '새 상태'];
 var FAILLOG_HEADERS = ['일시', '행위자', '기능', 'ID', '판별', '메모', '에러', '토큰'];
@@ -84,6 +87,17 @@ function headerIndex_(sh) {
   var hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0], map = {};
   for (var i = 0; i < hdr.length; i++) map[String(hdr[i]).trim()] = i;
   return map;
+}
+// 체크 컬럼(고유명·혐오)이 없는 기존 프로젝트 시트에 자동 추가 후 최신 헤더 인덱스 반환.
+function ensureCheckCols_(sh) {
+  var idx = headerIndex_(sh), missing = [];
+  for (var i = 0; i < CHECK_COLS.length; i++) if (!(CHECK_COLS[i] in idx)) missing.push(CHECK_COLS[i]);
+  if (missing.length) {
+    sh.getRange(1, sh.getLastColumn() + 1, 1, missing.length).setValues([missing]);
+    styleHeader_(sh, sh.getLastColumn());
+    idx = headerIndex_(sh);
+  }
+  return idx;
 }
 // 첫행: 고정 + 하늘색 배경 + 데이터 필터
 function styleHeader_(sh, ncols) {
@@ -347,7 +361,7 @@ function createProject(token, kind, name, csvText, regDate, dueDate) {
   var t = Utilities.parseCsv(String(csvText || '').replace(/^﻿/, ''));
   var hdr = (t[0] || []).map(function (h) { return String(h).replace(/^﻿/, '').trim(); });
   var col = {}; hdr.forEach(function (h, i) { if (H.indexOf(h) >= 0) col[h] = i; });
-  var CLEAR = ['작업자', '검수자', '배정 주차', '1차 판별', '1차 메모', '1차 일시', '2차 판별', '2차 메모', '2차 일시'];   // 배정·판별 추적만 초기화(집필 내용·1차/2차 뜻풀이·메모는 보존)
+  var CLEAR = ['작업자', '검수자', '배정 주차', '1차 판별', '1차 메모', '1차 일시', '1차 고유명 여부', '1차 혐오 표현 여부', '2차 판별', '2차 메모', '2차 일시', '2차 고유명 여부', '2차 혐오 표현 여부'];   // 배정·판별 추적만 초기화(집필 내용·1차/2차 뜻풀이·메모는 보존)
   var out = [];
   for (var r = 1; r < t.length; r++) {
     var row = t[r]; if (!row || row.join('') === '') continue;
@@ -396,7 +410,7 @@ function exportProject(token, kind, id) {
 }
 function getTemplate(token, kind) {
   me_(token);
-  return '작업 구분,작업자,검수자,배정 주차,상태,1차 판별,1차 메모,1차 일시,2차 판별,2차 메모,2차 일시,ID,신어 후보,출처,추출 시기,LLM 판단 결과,LLM 판단 기준,LLM 판단 근거,용례,용례 일자,용례 URL,검색 URL';
+  return '작업 구분,작업자,검수자,배정 주차,상태,1차 판별,1차 메모,1차 일시,1차 고유명 여부,1차 혐오 표현 여부,2차 판별,2차 메모,2차 일시,2차 고유명 여부,2차 혐오 표현 여부,ID,신어 후보,출처,추출 시기,LLM 판단 결과,LLM 판단 기준,LLM 판단 근거,용례,용례 일자,용례 URL,검색 URL';
 }
 
 // ── 지침 ───────────────────────────────────────────────
@@ -464,7 +478,7 @@ function agreeIndex_(sh) {
   try { props.setProperty(key, JSON.stringify(map)); } catch (e) {}
   return map;
 }
-var LIST_FIELDS = ['ID', '신어 후보', '출처', '추출 시기', '작업 구분', '작업자', '검수자', '배정 주차', '상태', '1차 판별', '2차 판별'];
+var LIST_FIELDS = ['ID', '신어 후보', '출처', '추출 시기', '작업 구분', '작업자', '검수자', '배정 주차', '상태', '1차 판별', '2차 판별', '1차 고유명 여부', '1차 혐오 표현 여부', '2차 고유명 여부', '2차 혐오 표현 여부'];
 function getItems(token, opts) {
   var me = me_(token); opts = opts || {};
   if (opts.kind === '일치도') opts.onlyMine = true;
@@ -526,7 +540,7 @@ function genAgree(token, projectId, names) {
   if (!names || !names.length) throw new Error('참여자를 선택하세요.');
   var p = projById_(projectId); if (!p) throw new Error('프로젝트 없음');
   var sh = projItemSheet_(projectId); if (!sh) throw new Error('시트 없음');
-  var idx = headerIndex_(sh), lastCol = sh.getLastColumn(), n = sh.getLastRow() - 1, C = {};
+  var idx = ensureCheckCols_(sh), lastCol = sh.getLastColumn(), n = sh.getLastRow() - 1, C = {};
   HEADERS.forEach(function (h) { C[h] = idx[h]; });
   var base = {};
   if (n > 0) { var data = sh.getRange(2, 1, n, lastCol).getValues();
@@ -537,6 +551,7 @@ function genAgree(token, projectId, names) {
       o[C['ID']] = b + '#' + nm; o[C['작업 구분']] = '일치도'; o[C['작업자']] = nm; o[C['검수자']] = '';
       o[C['배정 주차']] = ''; o[C['상태']] = STATUS.NONE;
       o[C['1차 판별']] = ''; o[C['1차 메모']] = ''; o[C['1차 일시']] = ''; o[C['2차 판별']] = ''; o[C['2차 메모']] = ''; o[C['2차 일시']] = '';
+      o[C['1차 고유명 여부']] = ''; o[C['1차 혐오 표현 여부']] = ''; o[C['2차 고유명 여부']] = ''; o[C['2차 혐오 표현 여부']] = '';
       out.push(o); }); });
   out.sort(function (a, b) { var aw = String(a[C['작업자']]), bw = String(b[C['작업자']]); return aw !== bw ? aw.localeCompare(bw, 'ko') : String(a[C['ID']]).localeCompare(String(b[C['ID']])); });
   if (sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, lastCol).clearContent();
@@ -552,7 +567,7 @@ function genReal(token, projectId, cfg) {
   if (!pairs.length) throw new Error('팀을 지정하세요.');
   var p = projById_(projectId); if (!p) throw new Error('프로젝트 없음');
   var sh = projItemSheet_(projectId); if (!sh) throw new Error('시트 없음');
-  var idx = headerIndex_(sh), lastCol = sh.getLastColumn(), n = sh.getLastRow() - 1, C = {};
+  var idx = ensureCheckCols_(sh), lastCol = sh.getLastColumn(), n = sh.getLastRow() - 1, C = {};
   HEADERS.forEach(function (h) { C[h] = idx[h]; });
   var base = {};
   if (n > 0) { var data = sh.getRange(2, 1, n, lastCol).getValues();
@@ -588,21 +603,26 @@ function setCell_(sh, rownum, idx, header, value) { sh.getRange(rownum, idx[head
 function saveFirst(token, payload) {
   var me = me_(token);
   if (VERDICTS.indexOf(payload.verdict) === -1) throw new Error('판별 값 오류');
+  if (!chkOk_(payload.proper) || !chkOk_(payload.hate)) throw new Error('고유명·혐오 표현 여부를 모두 선택해야 저장됩니다.');
   var lock = LockService.getDocumentLock(); lock.waitLock(20000);
   try {
     if (opSeen_(payload.op_id)) return { ok: true, dup: true };
     var sh = projSheetOfRow_(payload.row_id); if (!sh) throw new Error('프로젝트 없음');
-    var idx = headerIndex_(sh), rownum = findRow_(sh, idx, payload.row_id);
+    var idx = ensureCheckCols_(sh), rownum = findRow_(sh, idx, payload.row_id);
     if (rownum < 0) throw new Error('행 없음: ' + payload.row_id);
     assertCanEditStage_(me, sh.getRange(rownum, idx['작업자'] + 1).getValue(), sh.getRange(rownum, idx['검수자'] + 1).getValue(), 1);
     var cand = String(sh.getRange(rownum, idx['신어 후보'] + 1).getValue());
     var prev = String(sh.getRange(rownum, idx['상태'] + 1).getValue()).trim();
+    var prevVerdict = String(sh.getRange(rownum, idx['1차 판별'] + 1).getValue()).trim();
+    var prevTs = String(sh.getRange(rownum, idx['1차 일시'] + 1).getValue()).trim();
     setCell_(sh, rownum, idx, '1차 판별', payload.verdict);
     setCell_(sh, rownum, idx, '1차 메모', payload.memo || '');
-    setCell_(sh, rownum, idx, '1차 일시', now_());
+    setCell_(sh, rownum, idx, '1차 고유명 여부', payload.proper);
+    setCell_(sh, rownum, idx, '1차 혐오 표현 여부', payload.hate);
+    if (!(prevVerdict === payload.verdict && prevTs)) setCell_(sh, rownum, idx, '1차 일시', now_());   // 같은 판별 재저장(체크 추가)이면 원래 일시 보존
     var ns = String(sh.getRange(rownum, idx['2차 판별'] + 1).getValue()).trim() ? STATUS.SECOND : STATUS.FIRST;
     setCell_(sh, rownum, idx, '상태', ns);
-    appendLog_(me, payload.row_id, cand, '1차', payload.verdict, payload.memo || '', prev, ns);
+    appendLog_(me, payload.row_id, cand, '1차', payload.verdict + ' (고유명' + payload.proper + '/혐오' + payload.hate + ')', payload.memo || '', prev, ns);
     SpreadsheetApp.flush(); opMark_(payload.op_id);
     return { ok: true };
   } finally { lock.releaseLock(); }
@@ -610,20 +630,25 @@ function saveFirst(token, payload) {
 function saveSecond(token, payload) {
   var me = me_(token);
   if (VERDICTS.indexOf(payload.verdict) === -1) throw new Error('판별 값 오류');
+  if (!chkOk_(payload.proper) || !chkOk_(payload.hate)) throw new Error('고유명·혐오 표현 여부를 모두 선택해야 저장됩니다.');
   var lock = LockService.getDocumentLock(); lock.waitLock(20000);
   try {
     if (opSeen_(payload.op_id)) return { ok: true, dup: true };
     var sh = projSheetOfRow_(payload.row_id); if (!sh) throw new Error('프로젝트 없음');
-    var idx = headerIndex_(sh), rownum = findRow_(sh, idx, payload.row_id);
+    var idx = ensureCheckCols_(sh), rownum = findRow_(sh, idx, payload.row_id);
     if (rownum < 0) throw new Error('행 없음: ' + payload.row_id);
     assertCanEditStage_(me, sh.getRange(rownum, idx['작업자'] + 1).getValue(), sh.getRange(rownum, idx['검수자'] + 1).getValue(), 2);
     var cand = String(sh.getRange(rownum, idx['신어 후보'] + 1).getValue());
     var prev = String(sh.getRange(rownum, idx['상태'] + 1).getValue()).trim();
+    var prevVerdict = String(sh.getRange(rownum, idx['2차 판별'] + 1).getValue()).trim();
+    var prevTs = String(sh.getRange(rownum, idx['2차 일시'] + 1).getValue()).trim();
     setCell_(sh, rownum, idx, '2차 판별', payload.verdict);
     setCell_(sh, rownum, idx, '2차 메모', payload.memo || '');
-    setCell_(sh, rownum, idx, '2차 일시', now_());
+    setCell_(sh, rownum, idx, '2차 고유명 여부', payload.proper);
+    setCell_(sh, rownum, idx, '2차 혐오 표현 여부', payload.hate);
+    if (!(prevVerdict === payload.verdict && prevTs)) setCell_(sh, rownum, idx, '2차 일시', now_());   // 같은 판별 재저장(체크 추가)이면 원래 일시 보존
     setCell_(sh, rownum, idx, '상태', STATUS.SECOND);
-    appendLog_(me, payload.row_id, cand, '2차', payload.verdict, payload.memo || '', prev, STATUS.SECOND);
+    appendLog_(me, payload.row_id, cand, '2차', payload.verdict + ' (고유명' + payload.proper + '/혐오' + payload.hate + ')', payload.memo || '', prev, STATUS.SECOND);
     SpreadsheetApp.flush(); opMark_(payload.op_id);
     return { ok: true };
   } finally { lock.releaseLock(); }
