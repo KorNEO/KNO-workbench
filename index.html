@@ -73,7 +73,7 @@
     .list-col { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:12px; max-height:calc(100vh - 100px); overflow:auto; position:sticky; top:72px; }
     .filters { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:10px; }
     .filters input, .filters select { height:34px; padding:6px 8px; border:1px solid var(--line); border-radius:8px; font-size:13px; line-height:1.2; box-sizing:border-box; vertical-align:middle; width:100%; min-width:0; }
-    #f-q, #f-assignee, #f-chk { grid-column:1 / -1; }
+    #f-q, #f-assignee { grid-column:1 / -1; }
     .list-count { margin:0 0 8px; font-size:13px; font-weight:700; color:var(--ink); }
     .list-count b { color:var(--brand-d); font-weight:800; }
     .chk-card { border:1px solid var(--line); border-radius:10px; padding:8px 10px; margin:8px 0 4px; display:flex; flex-direction:column; gap:6px; }
@@ -377,7 +377,8 @@
               <option value="비신어">비신어</option>
               <option value="판단 보류">판단 보류</option>
             </select>
-            <select id="f-chk" onchange="applyResults()" style="display:none" title="주석 결과"></select>
+            <select id="f-proper" onchange="applyResults()" style="display:none" title="고유명 여부"></select>
+            <select id="f-hate" onchange="applyResults()" style="display:none" title="혐오 표현 여부"></select>
           </div>
           <button id="btn-add-item" class="btn ghost" onclick="addNewWriteItem()" style="display:none;width:100%;margin-bottom:8px">+ 새 항목 추가</button>
           <div id="list"></div>
@@ -548,7 +549,7 @@
       $('view-researchers').classList.toggle('hidden', v!=='researchers');
       if(v==='projects') renderProjects();
       else if(v==='home'){ loadProgress(); loadAssign(); }
-      else if(v==='mine' || v==='all'){ $('f-status').value=''; $('f-q').value=''; $('f-v1').value=''; $('f-v2').value=''; $('f-chk').innerHTML=chkOptions(); $('f-chk').value=''; $('f-chk').style.display=(MODE!=='write')?'':'none'; $('f-v1').style.display=(MODE!=='write')?'':'none'; $('f-v2').style.display=(MODE==='real')?'':'none'; var _wl=window.__weekList||[]; $('f-week').innerHTML='<option value="">전체 주차</option>'+_wl.map(function(w){return '<option value="'+esc(w)+'">'+esc(w)+'주차</option>';}).join(''); $('f-week').style.display=(MODE==='real')?'':'none'; populateAssignees(v); loadItems(); }
+      else if(v==='mine' || v==='all'){ $('f-status').value=''; $('f-q').value=''; $('f-v1').value=''; $('f-v2').value=''; $('f-proper').innerHTML=chkOptions('고유명 여부'); $('f-hate').innerHTML=chkOptions('혐오 표현 여부'); $('f-proper').value=''; $('f-hate').value=''; $('f-proper').style.display=(MODE!=='write')?'':'none'; $('f-hate').style.display=(MODE!=='write')?'':'none'; $('f-v1').style.display=(MODE!=='write')?'':'none'; $('f-v2').style.display=(MODE==='real')?'':'none'; var _wl=window.__weekList||[]; $('f-week').innerHTML='<option value="">전체 주차</option>'+_wl.map(function(w){return '<option value="'+esc(w)+'">'+esc(w)+'주차</option>';}).join(''); $('f-week').style.display=(MODE==='real')?'':'none'; populateAssignees(v); loadItems(); }
       else if(v==='researchers') loadResearchers();
     }
     var CURRENT_PROJECT = null, PROJ_LIST = [];
@@ -856,25 +857,23 @@
         .withFailureHandler(function(e){ $('list').innerHTML='<p class="kbd">조회 실패: '+esc(e.message)+'</p>'; }).getItems(TOKEN, opts);
     }
     function verdictOf(it, stage){ return String(it[stage===2?'2차 판별':'1차 판별']||'').trim(); }
-    function chkOptions(){
-      function grp(st, label){
-        return '<optgroup label="'+label+'">'
-          +'<option value="'+st+'p:Y">고유명 Y</option><option value="'+st+'p:N">고유명 N</option>'
-          +'<option value="'+st+'h:Y">혐오 표현 Y</option><option value="'+st+'h:N">혐오 표현 N</option>'
-          +'<option value="'+st+':miss">체크 미완료</option></optgroup>';
+    function chkOptions(name){
+      function grp(st){
+        return '<option value="'+st+':Y">'+st+'차 Y</option><option value="'+st+':N">'+st+'차 N</option><option value="'+st+':miss">'+st+'차 미체크</option>';
       }
-      return '<option value="">주석 결과</option>'+grp('1','1차 작업')+(MODE==='real'?grp('2','2차 검수'):'');
+      return '<option value="">'+name+'</option>'+grp('1')+(MODE==='real'?grp('2'):'');
     }
+    var CHK_FILTERS = [['f-proper','고유명 여부'],['f-hate','혐오 표현 여부']];
     function itemPasses(it){
       var v1=$('f-v1').value, v2=$('f-v2').value;
       if(v1 && verdictOf(it,1)!==v1) return false;
       if(MODE==='real' && v2 && verdictOf(it,2)!==v2) return false;
-      var ck=$('f-chk').value;
-      if(ck){
+      for(var k=0;k<CHK_FILTERS.length;k++){
+        var ck=$(CHK_FILTERS[k][0]).value; if(!ck) continue;
         var st = ck.charAt(0)==='2' ? 2 : 1, pre = st===2 ? '2차 ' : '1차 ';
-        var p=String(it[pre+'고유명 여부']||'').trim(), h=String(it[pre+'혐오 표현 여부']||'').trim();
-        if(ck.indexOf(':miss')>0){ if(!(verdictOf(it,st) && (!p || !h))) return false; }   // 판별은 했는데 체크가 빈 항목
-        else { var val = ck.charAt(1)==='p' ? p : h; if(val!==ck.slice(3)) return false; }
+        var val = String(it[pre+CHK_FILTERS[k][1]]||'').trim();
+        if(ck.indexOf(':miss')>0){ if(!(verdictOf(it,st) && !val)) return false; }   // 판별은 했는데 해당 체크가 빈 항목
+        else if(val!==ck.slice(2)) return false;
       }
       return true;
     }
