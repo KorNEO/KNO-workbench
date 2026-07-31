@@ -80,8 +80,9 @@
     .chk-row { display:flex; align-items:center; gap:6px; }
     .chk-lbl { font-size:13px; flex:1; }
     .chk-btn { width:44px; height:28px; border:1px solid var(--line); border-radius:8px; background:transparent; cursor:pointer; font-weight:bold; }
-    .chk-btn.on { background:var(--sineo, #2f6fed); color:#fff; border-color:transparent; }
+    .chk-btn.on { background:var(--brand); color:#fff; border-color:transparent; }
     .chk-btn:disabled { cursor:default; opacity:.55; }
+    .chk-kbd { font-size:11px; color:var(--muted); font-weight:400; margin-left:4px; }
     .item { padding:9px 11px; border:1px solid var(--line); border-radius:10px; margin-bottom:6px; cursor:pointer; }
     .item:hover { border-color:#bcc4f0; background:#f7f8ff; }
     .item.sel { border-color:var(--brand); background:#eef1ff; box-shadow:0 0 0 2px rgba(63,81,181,.12); }
@@ -859,7 +860,7 @@
     function verdictOf(it, stage){ return String(it[stage===2?'2차 판별':'1차 판별']||'').trim(); }
     function chkOptions(name){
       function grp(st){
-        return '<option value="'+st+':Y">'+st+'차 Y</option><option value="'+st+':N">'+st+'차 N</option><option value="'+st+':miss">'+st+'차 미체크</option>';
+        return '<option value="'+st+':Y">'+st+'차 Y</option><option value="'+st+':N">'+st+'차 N</option>';
       }
       return '<option value="">'+name+'</option>'+grp('1')+(MODE==='real'?grp('2'):'');
     }
@@ -872,8 +873,7 @@
         var ck=$(CHK_FILTERS[k][0]).value; if(!ck) continue;
         var st = ck.charAt(0)==='2' ? 2 : 1, pre = st===2 ? '2차 ' : '1차 ';
         var val = String(it[pre+CHK_FILTERS[k][1]]||'').trim();
-        if(ck.indexOf(':miss')>0){ if(!(verdictOf(it,st) && !val)) return false; }   // 판별은 했는데 해당 체크가 빈 항목
-        else if(val!==ck.slice(2)) return false;
+        if(val!==ck.slice(2)) return false;
       }
       return true;
     }
@@ -923,11 +923,11 @@
     }
     var SEL={'1차':'','2차':''};
     var CHK = { '1차': { proper: '', hate: '' }, '2차': { proper: '', hate: '' } };
-    var CHK_FIELDS = [['고유명 여부', 'proper'], ['혐오 표현 여부', 'hate']];
+    var CHK_FIELDS = [['고유명 여부', 'proper', 'Ctrl+5/6'], ['혐오 표현 여부', 'hate', 'Ctrl+7/8']];
     function stageComplete(stage){ return !!(SEL[stage] && CHK[stage].proper && CHK[stage].hate); }
     function checkCard(stage, allowed){
       return '<div class="chk-card" data-stage="'+stage+'">'+CHK_FIELDS.map(function(cf){
-        return '<div class="chk-row"><span class="chk-lbl">'+cf[0]+'</span>'+['Y','N'].map(function(v){
+        return '<div class="chk-row"><span class="chk-lbl">'+cf[0]+(allowed?' <span class="chk-kbd">'+cf[2]+'</span>':'')+'</span>'+['Y','N'].map(function(v){
           var on = CHK[stage][cf[1]]===v;
           return '<button type="button" class="chk-btn'+(on?' on':'')+'" data-f="'+cf[1]+'" data-v="'+v+'"'
             +(allowed?' onclick="pickChk(\''+stage+'\',\''+cf[1]+'\',\''+v+'\')"':' disabled')+'>'+v+'</button>';
@@ -1200,6 +1200,8 @@
       var stage=window.__activeStage||'1차';
       if(e.key==='1'||e.key==='2'||e.key==='3'){ e.preventDefault(); pick(stage, VERDICTS[parseInt(e.key,10)-1]); }
       else if(e.key==='4'){ e.preventDefault(); var t=$('memo-'+stage); if(t) t.focus(); }
+      else if(e.key==='5'||e.key==='6'){ e.preventDefault(); pickChk(stage, 'proper', e.key==='5'?'Y':'N'); }
+      else if(e.key==='7'||e.key==='8'){ e.preventDefault(); pickChk(stage, 'hate', e.key==='7'?'Y':'N'); }
       else if(e.key==='s'||e.key==='S'){ e.preventDefault(); save(stage); }
     });
 
