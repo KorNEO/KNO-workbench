@@ -89,7 +89,6 @@
     .pill { font-size:11px; padding:1px 8px; border-radius:10px; font-weight:600; white-space:nowrap; flex:none; }
     .pill.미작업 { background:#eef0f3; color:#6b7280; }
     .pill.s1 { background:#e7ebff; color:#3f51b5; } .pill.s2 { background:var(--sineo-bg); color:var(--sineo); } .pill.sr { background:var(--hold-bg); color:var(--hold); }
-    .pill.warnchk { background:#fdecea; color:#c0392b; }
     .detail-col { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:22px 26px; min-height:300px; }
     .placeholder { color:var(--muted); text-align:center; padding:60px 0; }
     .cand-label { color:var(--muted); font-size:12px; font-weight:700; letter-spacing:.5px; }
@@ -898,11 +897,8 @@
         else if(v1 && v2){ label = v1+' · '+v2+' · '+(v1===v2?'일치':'불일치'); }
         else if(v1){ label = v1; }
         else { label = '미작업'; }
-        var needChk = MODE!=='write' && (
-          (v1 && (!String(it['1차 고유명 여부']||'').trim() || !String(it['1차 혐오 표현 여부']||'').trim())) ||
-          (MODE==='real' && v2 && (!String(it['2차 고유명 여부']||'').trim() || !String(it['2차 혐오 표현 여부']||'').trim())) );
         var meta = MODE==='agree' ? fmtName(it['작업자']) : (fmtName(it['작업자'])+' - '+fmtName(it['검수자'])+(it['배정 주차']?'('+esc(it['배정 주차'])+'주차)':''));
-        rows.push('<div class="item'+(i===CUR?' sel':'')+'" data-i="'+i+'" onclick="selectItem('+i+')"><div class="cand"><span class="nm">'+esc(it['신어 후보'])+'</span><span class="pill '+pillClass(st)+'">'+esc(label)+'</span>'+(needChk?'<span class="pill warnchk">⚠ 체크 필요</span>':'')+'</div><div class="meta">'+meta+'</div></div>');
+        rows.push('<div class="item'+(i===CUR?' sel':'')+'" data-i="'+i+'" onclick="selectItem('+i+')"><div class="cand"><span class="nm">'+esc(it['신어 후보'])+'</span><span class="pill '+pillClass(st)+'">'+esc(label)+'</span></div><div class="meta">'+meta+'</div></div>');
       }
       $('list').innerHTML = '<div class="list-count">신어 <b>'+shown+'</b>개</div>' + (rows.length ? rows.join('') : '<p class="kbd">조건에 맞는 항목이 없습니다.</p>');
     }
@@ -1110,7 +1106,7 @@
       document.querySelectorAll('.save-badge').forEach(function(el){ el.textContent=txt; el.style.color = dirty?'#d8453b':'#1b9e5a'; });
     }
     function markDirty(){ DIRTY=true; setSaveBadge('자동 저장 중…', false); clearTimeout(AUTO_TIMER); AUTO_TIMER=setTimeout(autosave, 1000); }
-    function autosave(){ if(!DIRTY) return; var stage=window.__activeStage||'1차'; if(stageComplete(stage)) doSave(stage, false); else setSaveBadge('고유명·혐오 여부 선택 필요', true); }
+    function autosave(){ if(!DIRTY) return; var stage=window.__activeStage||'1차'; if(stageComplete(stage)) doSave(stage, false); else setSaveBadge('추가 주석 필요', true); }
 
     /* 무손실 저장 큐: 화면은 즉시 넘어가되 저장은 영속 큐로 직렬 처리. 실패 시 자동 재시도(백오프),
        localStorage에 보존(탭 닫거나 새로고침해도 안 날아감), 미저장 있으면 이탈 경고. 토큰별로 분리 보관. */
@@ -1182,7 +1178,7 @@
       if(!c.hate) miss.push('혐오 표현 여부');
       if(miss.length){
         if(advance) toast(miss.join(' · ')+'를 선택해야 저장됩니다 (판별 Ctrl+1/2/3)');
-        else setSaveBadge('고유명·혐오 여부 선택 필요', true);
+        else setSaveBadge('추가 주석 필요', true);
         return;
       }
       var memo=(($('memo-'+stage)||{}).value)||'';
