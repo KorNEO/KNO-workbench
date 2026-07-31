@@ -82,7 +82,6 @@
     .chk-btn { width:44px; height:28px; border:1px solid var(--line); border-radius:8px; background:transparent; cursor:pointer; font-weight:bold; }
     .chk-btn.on { background:var(--brand); color:#fff; border-color:transparent; }
     .chk-btn:disabled { cursor:default; opacity:.55; }
-    .chk-kbd { font-size:11px; color:var(--muted); font-weight:400; margin-left:4px; }
     .item { padding:9px 11px; border:1px solid var(--line); border-radius:10px; margin-bottom:6px; cursor:pointer; }
     .item:hover { border-color:#bcc4f0; background:#f7f8ff; }
     .item.sel { border-color:var(--brand); background:#eef1ff; box-shadow:0 0 0 2px rgba(63,81,181,.12); }
@@ -923,13 +922,13 @@
     }
     var SEL={'1차':'','2차':''};
     var CHK = { '1차': { proper: '', hate: '' }, '2차': { proper: '', hate: '' } };
-    var CHK_FIELDS = [['고유명 여부', 'proper', 'Ctrl+E = N · Ctrl+Shift+E = Y'], ['혐오 표현 여부', 'hate', 'Ctrl+H = N · Ctrl+Shift+H = Y']];
+    var CHK_FIELDS = [['고유명 여부', 'proper', 'E'], ['혐오 표현 여부', 'hate', 'H']];
     function stageComplete(stage){ return !!(SEL[stage] && CHK[stage].proper && CHK[stage].hate); }
     function checkCard(stage, allowed){
       return '<div class="chk-card" data-stage="'+stage+'">'+CHK_FIELDS.map(function(cf){
-        return '<div class="chk-row"><span class="chk-lbl">'+cf[0]+(allowed?' <span class="chk-kbd">'+cf[2]+'</span>':'')+'</span>'+['Y','N'].map(function(v){
+        return '<div class="chk-row"><span class="chk-lbl">'+cf[0]+'</span>'+['Y','N'].map(function(v){
           var on = CHK[stage][cf[1]]===v;
-          return '<button type="button" class="chk-btn'+(on?' on':'')+'" data-f="'+cf[1]+'" data-v="'+v+'"'
+          return '<button type="button" class="chk-btn'+(on?' on':'')+'" data-f="'+cf[1]+'" data-v="'+v+'" title="'+(v==='Y'?'Ctrl+Shift+':'Ctrl+')+cf[2]+'"'
             +(allowed?' onclick="pickChk(\''+stage+'\',\''+cf[1]+'\',\''+v+'\')"':' disabled')+'>'+v+'</button>';
         }).join('')+'</div>';
       }).join('')+'</div>';
