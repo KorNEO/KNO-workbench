@@ -71,12 +71,11 @@
     .stat-line .val.go { color:var(--brand); cursor:pointer; text-decoration:underline; }
     .work-wrap { display:grid; grid-template-columns:330px 1fr; gap:16px; align-items:start; }
     .list-col { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:12px; max-height:calc(100vh - 100px); overflow:auto; position:sticky; top:72px; }
-    .filters { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
-    .filters input, .filters select { height:34px; padding:6px 8px; border:1px solid var(--line); border-radius:8px; font-size:13px; line-height:1.2; box-sizing:border-box; vertical-align:middle; }
+    .filters { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:10px; }
+    .filters input, .filters select { height:34px; padding:6px 8px; border:1px solid var(--line); border-radius:8px; font-size:13px; line-height:1.2; box-sizing:border-box; vertical-align:middle; width:100%; min-width:0; }
+    #f-q, #f-assignee, #f-chk { grid-column:1 / -1; }
     .list-count { margin:0 0 8px; font-size:13px; font-weight:700; color:var(--ink); }
     .list-count b { color:var(--brand-d); font-weight:800; }
-    #f-status, #f-v1, #f-v2 { width:124px; }
-    .filters input { flex:1; min-width:110px; }
     .chk-card { border:1px solid var(--line); border-radius:10px; padding:8px 10px; margin:8px 0 4px; display:flex; flex-direction:column; gap:6px; }
     .chk-row { display:flex; align-items:center; gap:6px; }
     .chk-lbl { font-size:13px; flex:1; }
@@ -90,6 +89,7 @@
     .pill { font-size:11px; padding:1px 8px; border-radius:10px; font-weight:600; white-space:nowrap; flex:none; }
     .pill.미작업 { background:#eef0f3; color:#6b7280; }
     .pill.s1 { background:#e7ebff; color:#3f51b5; } .pill.s2 { background:var(--sineo-bg); color:var(--sineo); } .pill.sr { background:var(--hold-bg); color:var(--hold); }
+    .pill.warnchk { background:#fdecea; color:#c0392b; }
     .detail-col { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:22px 26px; min-height:300px; }
     .placeholder { color:var(--muted); text-align:center; padding:60px 0; }
     .cand-label { color:var(--muted); font-size:12px; font-weight:700; letter-spacing:.5px; }
@@ -378,6 +378,7 @@
               <option value="비신어">비신어</option>
               <option value="판단 보류">판단 보류</option>
             </select>
+            <select id="f-chk" onchange="applyResults()" style="display:none" title="주석 결과"></select>
           </div>
           <button id="btn-add-item" class="btn ghost" onclick="addNewWriteItem()" style="display:none;width:100%;margin-bottom:8px">+ 새 항목 추가</button>
           <div id="list"></div>
@@ -548,7 +549,7 @@
       $('view-researchers').classList.toggle('hidden', v!=='researchers');
       if(v==='projects') renderProjects();
       else if(v==='home'){ loadProgress(); loadAssign(); }
-      else if(v==='mine' || v==='all'){ $('f-status').value=''; $('f-q').value=''; $('f-v1').value=''; $('f-v2').value=''; $('f-v1').style.display=(MODE!=='write')?'':'none'; $('f-v2').style.display=(MODE==='real')?'':'none'; var _wl=window.__weekList||[]; $('f-week').innerHTML='<option value="">전체 주차</option>'+_wl.map(function(w){return '<option value="'+esc(w)+'">'+esc(w)+'주차</option>';}).join(''); $('f-week').style.display=(MODE==='real')?'':'none'; populateAssignees(v); loadItems(); }
+      else if(v==='mine' || v==='all'){ $('f-status').value=''; $('f-q').value=''; $('f-v1').value=''; $('f-v2').value=''; $('f-chk').innerHTML=chkOptions(); $('f-chk').value=''; $('f-chk').style.display=(MODE!=='write')?'':'none'; $('f-v1').style.display=(MODE!=='write')?'':'none'; $('f-v2').style.display=(MODE==='real')?'':'none'; var _wl=window.__weekList||[]; $('f-week').innerHTML='<option value="">전체 주차</option>'+_wl.map(function(w){return '<option value="'+esc(w)+'">'+esc(w)+'주차</option>';}).join(''); $('f-week').style.display=(MODE==='real')?'':'none'; populateAssignees(v); loadItems(); }
       else if(v==='researchers') loadResearchers();
     }
     var CURRENT_PROJECT = null, PROJ_LIST = [];
@@ -856,10 +857,26 @@
         .withFailureHandler(function(e){ $('list').innerHTML='<p class="kbd">조회 실패: '+esc(e.message)+'</p>'; }).getItems(TOKEN, opts);
     }
     function verdictOf(it, stage){ return String(it[stage===2?'2차 판별':'1차 판별']||'').trim(); }
+    function chkOptions(){
+      function grp(st, label){
+        return '<optgroup label="'+label+'">'
+          +'<option value="'+st+'p:Y">고유명 Y</option><option value="'+st+'p:N">고유명 N</option>'
+          +'<option value="'+st+'h:Y">혐오 표현 Y</option><option value="'+st+'h:N">혐오 표현 N</option>'
+          +'<option value="'+st+':miss">체크 미완료</option></optgroup>';
+      }
+      return '<option value="">주석 결과</option>'+grp('1','1차 작업')+(MODE==='real'?grp('2','2차 검수'):'');
+    }
     function itemPasses(it){
       var v1=$('f-v1').value, v2=$('f-v2').value;
       if(v1 && verdictOf(it,1)!==v1) return false;
       if(MODE==='real' && v2 && verdictOf(it,2)!==v2) return false;
+      var ck=$('f-chk').value;
+      if(ck){
+        var st = ck.charAt(0)==='2' ? 2 : 1, pre = st===2 ? '2차 ' : '1차 ';
+        var p=String(it[pre+'고유명 여부']||'').trim(), h=String(it[pre+'혐오 표현 여부']||'').trim();
+        if(ck.indexOf(':miss')>0){ if(!(verdictOf(it,st) && (!p || !h))) return false; }   // 판별은 했는데 체크가 빈 항목
+        else { var val = ck.charAt(1)==='p' ? p : h; if(val!==ck.slice(3)) return false; }
+      }
       return true;
     }
     function applyResults(){
@@ -881,8 +898,11 @@
         else if(v1 && v2){ label = v1+' · '+v2+' · '+(v1===v2?'일치':'불일치'); }
         else if(v1){ label = v1; }
         else { label = '미작업'; }
+        var needChk = MODE!=='write' && (
+          (v1 && (!String(it['1차 고유명 여부']||'').trim() || !String(it['1차 혐오 표현 여부']||'').trim())) ||
+          (MODE==='real' && v2 && (!String(it['2차 고유명 여부']||'').trim() || !String(it['2차 혐오 표현 여부']||'').trim())) );
         var meta = MODE==='agree' ? fmtName(it['작업자']) : (fmtName(it['작업자'])+' - '+fmtName(it['검수자'])+(it['배정 주차']?'('+esc(it['배정 주차'])+'주차)':''));
-        rows.push('<div class="item'+(i===CUR?' sel':'')+'" data-i="'+i+'" onclick="selectItem('+i+')"><div class="cand"><span class="nm">'+esc(it['신어 후보'])+'</span><span class="pill '+pillClass(st)+'">'+esc(label)+'</span></div><div class="meta">'+meta+'</div></div>');
+        rows.push('<div class="item'+(i===CUR?' sel':'')+'" data-i="'+i+'" onclick="selectItem('+i+')"><div class="cand"><span class="nm">'+esc(it['신어 후보'])+'</span><span class="pill '+pillClass(st)+'">'+esc(label)+'</span>'+(needChk?'<span class="pill warnchk">⚠ 체크 필요</span>':'')+'</div><div class="meta">'+meta+'</div></div>');
       }
       $('list').innerHTML = '<div class="list-count">신어 <b>'+shown+'</b>개</div>' + (rows.length ? rows.join('') : '<p class="kbd">조건에 맞는 항목이 없습니다.</p>');
     }
