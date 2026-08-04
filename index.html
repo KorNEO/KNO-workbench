@@ -410,7 +410,7 @@
       <div class="pf"><label>신어 후보 목록 파일</label>
         <div style="margin-bottom:8px"><button class="rbtn link" onclick="downloadTemplate()">⬇ 파일 양식 다운로드</button></div>
         <input id="proj-file" type="file" accept=".csv" style="display:none" onchange="onProjFile()">
-        <div class="filepick" id="proj-drop" onclick="$('proj-file').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="onProjDrop(event)"><span class="fp-btn">파일 선택</span><span class="fp-name" id="proj-fname">선택된 파일 없음</span><span class="fp-hint">또는 여기로 CSV 드래그</span></div>
+        <div class="filepick" id="proj-drop" onclick="$('proj-file').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="onProjDrop(event)"><span class="fp-btn">파일 선택</span><span class="fp-name" id="proj-fname">선택된 파일 없음</span><span class="fp-hint">Drag &amp; Drop</span></div>
       </div>
       <button class="login-btn" style="width:auto;padding:10px 22px;margin-top:8px" onclick="submitProject()">만들기</button>
       <span class="asg-msg" id="proj-msg"></span>
@@ -468,10 +468,26 @@
 
   <script>
     var API_URL = 'https://script.google.com/macros/s/AKfycbxGQ25QDvzAdXOCdYWXihv3Lkdj6zVXyq5M0KiGjccGJTRbiY1XRMvRjCHKrmlFdWLZ/exec';
-    function apiCall_(fn, args){
+    // 구글이 순간 요청 폭주 시 JSON 대신 에러 HTML을 주는 경우가 있어 자동 재시도(백오프).
+    // 재시도 제외: 서버에서 이미 성공했을 때 중복 실행되면 안 되는 호출.
+    var API_NO_RETRY = { createProject:1, addWriteItem:1, requestOtp:1 };
+    function apiCall_(fn, args, _try){
+      _try = _try || 0;
       return fetch(API_URL, { method:'POST', body: JSON.stringify({fn:fn, args:args||[]}) })
-        .then(function(r){ return r.json(); })
-        .then(function(j){ if(!j.ok) throw new Error(j.error||'서버 오류'); return j.data; });
+        .then(function(r){ return r.text(); })
+        .then(function(t){
+          var j; try{ j = JSON.parse(t); }catch(e){ var err = new Error('서버 응답 오류'); err.__retryable = true; throw err; }
+          if(!j.ok) throw new Error(j.error||'서버 오류');
+          return j.data;
+        })
+        .catch(function(e){
+          var retryable = (e && e.__retryable) || (e instanceof TypeError);   // TypeError = 네트워크 실패(Failed to fetch)
+          if(retryable && !API_NO_RETRY[fn] && _try < 3){
+            return new Promise(function(res){ setTimeout(res, 800 * Math.pow(2, _try)); })
+              .then(function(){ return apiCall_(fn, args, _try + 1); });
+          }
+          throw (e instanceof Error) ? e : new Error(String(e));
+        });
     }
     // google.script.run 호환 셰임 — 기존 호출부 그대로, 실제로는 fetch→doPost(GitHub Pages 프론트용)
     window.google = { script: { run: {} } };
