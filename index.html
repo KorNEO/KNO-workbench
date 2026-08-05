@@ -92,6 +92,11 @@
     .pill { font-size:11px; padding:1px 8px; border-radius:10px; font-weight:600; white-space:nowrap; flex:none; }
     .pill.미작업 { background:#eef0f3; color:#6b7280; }
     .pill.s1 { background:#e7ebff; color:#3f51b5; } .pill.s2 { background:var(--sineo-bg); color:var(--sineo); } .pill.sr { background:var(--hold-bg); color:var(--hold); }
+    /* 판별 결과 색상: 신어(초록)·비신어(빨강)·판단 보류(주황)·불일치(보라) */
+    .pill.v-sin { background:var(--sineo-bg); color:var(--sineo); }
+    .pill.v-bi { background:var(--bisineo-bg); color:var(--bisineo); }
+    .pill.v-hold { background:var(--hold-bg); color:var(--hold); }
+    .pill.v-diff { background:#efe7fd; color:#7c3aed; }
     .detail-col { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:22px 26px; min-height:300px; }
     .placeholder { color:var(--muted); text-align:center; padding:60px 0; }
     .cand-label { color:var(--muted); font-size:12px; font-weight:700; letter-spacing:.5px; }
@@ -145,6 +150,7 @@
     .actions { display:flex; gap:10px; align-items:center; margin-top:10px; flex-wrap:wrap; }
     .btn { padding:10px 20px; border-radius:10px; border:none; cursor:pointer; font-size:14px; font-weight:700; }
     .btn.save { background:var(--brand); color:#fff; } .btn.save:hover { background:var(--brand-d); }
+    .btn.confirm-first { background:var(--sineo); color:#fff; margin-left:6px; } .btn.confirm-first:hover { filter:brightness(.92); }
     .btn.reject { background:var(--surface); color:var(--reject); border:1.5px solid #cfd4dd; } .btn.reject:hover { background:var(--reject-bg); }
     .kbd { font-size:11px; color:var(--muted); } .kbd b { background:var(--surface3); border-radius:4px; padding:1px 5px; font-family:monospace; }
     .saved-meta { font-size:12px; color:var(--muted); margin-left:auto; }
@@ -790,17 +796,27 @@
       $('home-title').textContent = (MODE==='agree'?'연구자 일치도':MODE==='write'?'신어 집필':'신어 판별')+' — 전체 진행률';
       $('overall').innerHTML='<span class="kbd">불러오는 중…</span>'; $('second-body').innerHTML='';
       google.script.run.withSuccessHandler(function(p){
-        var o=p.overall, done=o['2차완료']||0, doneLabel=(MODE==='agree'?'판별 완료':'2차 검수 완료');
+        var o=p.overall;
         var wl=p.weeks||[]; window.__weekList=wl;
-        var dcount = (MODE==='agree') ? ((o['1차완료']||0)) : done;  // 일치도엔 검수가 없어 1차완료가 곧 완료
-        $('overall').innerHTML =
-          '<div class="big-num">'+dcount.toLocaleString()+' <small>/ '+o.total.toLocaleString()+' ('+(o.total?Math.round(dcount/o.total*100):0)+'%)</small></div>'
-          + progBar(MODE==='agree' ? {total:o.total,'2차완료':o['1차완료']} : o)
-          + '<div class="legend">'
-          + (MODE==='agree'
-              ? '<span><i style="background:var(--sineo)"></i>판별 완료 '+(o['1차완료']||0).toLocaleString()+'</span><span><i style="background:var(--surface3)"></i>미작업 '+(o['미작업']||0).toLocaleString()+'</span>'
-              : '<span><i style="background:#7c8cf0"></i>1차 작업 완료 '+(o['1차완료']||0).toLocaleString()+'</span><span><i style="background:var(--sineo)"></i>2차 검수 완료 '+done.toLocaleString()+'</span><span><i style="background:var(--surface3)"></i>미작업 '+(o['미작업']||0).toLocaleString()+'</span>')
-          + '</div>';
+        if(MODE==='agree'){
+          var dcount=o['1차완료']||0;  // 일치도엔 검수가 없어 1차완료가 곧 완료
+          $('overall').innerHTML =
+            '<div class="big-num">'+dcount.toLocaleString()+' <small>/ '+o.total.toLocaleString()+' ('+(o.total?Math.round(dcount/o.total*100):0)+'%)</small></div>'
+            + progBar({total:o.total,'2차완료':dcount})
+            + '<div class="legend"><span><i style="background:var(--sineo)"></i>판별 완료 '+dcount.toLocaleString()+'</span><span><i style="background:var(--surface3)"></i>미작업 '+(o['미작업']||0).toLocaleString()+'</span></div>';
+        } else {
+          // 1차 작업·2차 검수 각각 0 → 전체 독립 진행률
+          // 폴백: 구버전 백엔드(done1/done2 미제공)면 상태 기반 근사치(1차완료+2차완료, 2차완료)
+          var d1=(o.done1!=null)?o.done1:((o['1차완료']||0)+(o['2차완료']||0));
+          var d2=(o.done2!=null)?o.done2:(o['2차완료']||0);
+          var t=o.total||0;
+          function pct(x){ return t?Math.round(x/t*100):0; }
+          $('overall').innerHTML =
+            '<div class="big-num">'+d1.toLocaleString()+' <small>/ '+t.toLocaleString()+' 1차 작업 완료 ('+pct(d1)+'%)</small></div>'
+            + progBar({total:t,'1차완료':d1})
+            + '<div class="big-num" style="margin-top:12px">'+d2.toLocaleString()+' <small>/ '+t.toLocaleString()+' 2차 검수 완료 ('+pct(d2)+'%)</small></div>'
+            + progBar({total:t,'2차완료':d2});
+        }
         if(ME.isManager){
           $('second-title').textContent = (MODE==='agree'?'연구원별 진행률':'작업자·검수자별 진행률');
           var head = MODE==='agree'
@@ -809,10 +825,12 @@
           var rows = p.groups.map(function(g){
             if(MODE==='agree')
               return '<tr><td><b>'+esc(g.label)+'</b></td><td class="minibar">'+progBar({total:g.total,'2차완료':g['1차완료']})+'</td><td>'+(g['1차완료']||0)+'</td><td>'+g.total+'</td></tr>';
-            var wk=g.weeks||{}, pct=g.total?Math.round((g['2차완료']||0)/g.total*100):0;
+            var gd1=(g.done1!=null)?g.done1:((g['1차완료']||0)+(g['2차완료']||0));
+            var gd2=(g.done2!=null)?g.done2:(g['2차완료']||0);
+            var wk=g.weeks||{}, pct=g.total?Math.round(gd2/g.total*100):0;
             return '<tr><td><b>'+esc(g.worker)+'</b></td><td>'+esc(g.reviewer)+'</td>'
               +wl.map(function(w){return '<td>'+(wk[w]||0)+'</td>';}).join('')
-              +'<td><b>'+g.total+'</b></td><td>'+(g['1차완료']||0)+'</td><td>'+(g['2차완료']||0)+'</td><td><b>'+pct+'%</b></td></tr>';
+              +'<td><b>'+g.total+'</b></td><td>'+gd1+'</td><td>'+gd2+'</td><td><b>'+pct+'%</b></td></tr>';
           }).join('');
           $('second-body').innerHTML = '<table class="grp"><thead><tr>'+head+'</tr></thead><tbody>'+(rows||'<tr><td class="kbd">데이터 없음</td></tr>')+'</tbody></table>';
         } else {
@@ -831,23 +849,23 @@
         html += myHead(done, assigned, '판별 완료')
           + statLine('배분된 항목', assigned) + statLine('판별 완료', done) + statLine('남은 항목', assigned-done);
       } else if(isReviewer){
-        var d2=cnt(function(it){return it['상태']==='2차완료';}), waiting=cnt(function(it){return it['상태']==='1차완료';});
+        var d2=cnt(function(it){return String(it['2차 판별']||'').trim();}), waiting=cnt(function(it){return String(it['1차 판별']||'').trim() && !String(it['2차 판별']||'').trim();});
         html += myHead(d2, assigned, '2차 검수 완료') + statLine('배분된 항목', assigned)
           + statLine('2차 검수 완료', d2) + statLine('검수 대기 (작업자 1차 완료)', waiting, waiting?"goStatus('1차완료')":null)
-          + weekBreakdown(items);
+          + weekBreakdown(items, '2차 판별');
       } else {
-        var d1=cnt(function(it){var s=it['상태'];return s==='1차완료'||s==='2차완료';});
-        var remain=cnt(function(it){return it['상태']==='미작업';});
+        var d1=cnt(function(it){return String(it['1차 판별']||'').trim();});
         html += myHead(d1, assigned, '1차 작업 완료')
-          + statLine('배분된 항목', assigned) + statLine('1차 작업 완료', d1) + statLine('남은 작업', remain) + weekBreakdown(items);
+          + statLine('배분된 항목', assigned) + statLine('1차 작업 완료', d1) + statLine('남은 작업', assigned-d1) + weekBreakdown(items, '1차 판별');
       }
       $('second-body').innerHTML = assigned ? html : '<span class="kbd">배정된 항목이 없습니다.</span>';
     }
     function myHead(done,total,word){ var p=total?Math.round(done/total*100):0; return '<div class="big-num">'+done+' <small>/ '+total+' '+word+' ('+p+'%)</small></div><div class="bar"><span class="seg-done" style="width:'+p+'%"></span></div>'; }
     function statLine(lbl,val,action){ return '<div class="stat-line"><span class="lbl">'+lbl+'</span><span class="val'+(action?' go':'')+'"'+(action?' onclick="'+action+'"':'')+'>'+val+'</span></div>'; }
-    function weekBreakdown(items){
+    function weekBreakdown(items, doneField){
       if(MODE!=='real') return '';
-      var by={}, done={}; items.forEach(function(it){ var w=it['배정 주차']||'-'; by[w]=(by[w]||0)+1; if(it['상태']==='2차완료')done[w]=(done[w]||0)+1; });
+      doneField = doneField || '2차 판별';
+      var by={}, done={}; items.forEach(function(it){ var w=it['배정 주차']||'-'; by[w]=(by[w]||0)+1; if(String(it[doneField]||'').trim())done[w]=(done[w]||0)+1; });
       var keys=Object.keys(by).sort();
       if(!keys.length) return '';
       var h='<div style="margin-top:14px"><div class="kbd" style="margin-bottom:4px">주차별 진행</div>';
@@ -908,14 +926,16 @@
         shown++;
         var st=String(it['상태']||'미작업');
         var v1=String(it['1차 판별']||'').trim(), v2=String(it['2차 판별']||'').trim();
-        var label;
-        if(MODE==='write'){ label = statusLabel(st); }
-        else if(MODE==='agree'){ label = v1 || '미작업'; }
-        else if(v1 && v2){ label = v1+' · '+v2+' · '+(v1===v2?'일치':'불일치'); }
-        else if(v1){ label = v1; }
-        else { label = '미작업'; }
+        function vp(v){ return v==='신어'?'v-sin':v==='비신어'?'v-bi':'v-hold'; }   // 판별값 → pill 색상
+        var label, pcls;
+        if(MODE==='write'){ label = statusLabel(st); pcls = pillClass(st); }
+        else if(MODE==='agree'){ label = v1 || '미작업'; pcls = v1?vp(v1):'미작업'; }
+        else if(v1 && v2){ label = v1+' · '+v2+' · '+(v1===v2?'일치':'불일치'); pcls = (v1===v2)?vp(v1):'v-diff'; }
+        else if(v1){ label = v1; pcls = vp(v1); }
+        else if(v2){ label = '미작업 · '+v2; pcls = vp(v2); }   // 1차 미작업 상태에서 검수만 완료된 경우
+        else { label = '미작업'; pcls = '미작업'; }
         var meta = MODE==='agree' ? fmtName(it['작업자']) : (fmtName(it['작업자'])+' - '+fmtName(it['검수자'])+(it['배정 주차']?'('+esc(it['배정 주차'])+'주차)':''));
-        rows.push('<div class="item'+(i===CUR?' sel':'')+'" data-i="'+i+'" onclick="selectItem('+i+')"><div class="cand"><span class="nm">'+esc(it['신어 후보'])+'</span><span class="pill '+pillClass(st)+'">'+esc(label)+'</span></div><div class="meta">'+meta+'</div></div>');
+        rows.push('<div class="item'+(i===CUR?' sel':'')+'" data-i="'+i+'" onclick="selectItem('+i+')"><div class="cand"><span class="nm">'+esc(it['신어 후보'])+'</span><span class="pill '+pcls+'">'+esc(label)+'</span></div><div class="meta">'+meta+'</div></div>');
       }
       $('list').innerHTML = '<div class="list-count">신어 <b>'+shown+'</b>개</div>' + (rows.length ? rows.join('') : '<p class="kbd">조건에 맞는 항목이 없습니다.</p>');
     }
@@ -964,9 +984,10 @@
       }).join('')+'</div>';
     }
     function memoBox(stage,label,val,dis){ return '<div class="memo-wrap"><label>'+label+'</label><textarea id="memo-'+stage+'"'+(dis?' disabled':' oninput="markDirty()"')+'>'+esc(val||'')+'</textarea></div>'; }
-    function actionRow(stage, allowed, isReviewer, when){
+    function actionRow(stage, allowed, isReviewer, when, canConfirm){
       if(!allowed) return '<div class="kbd" style="margin:6px 0 12px">읽기 전용</div>';
       var h='<div class="actions"><button class="btn save" onclick="save(\''+stage+'\')">저장</button>';
+      if(canConfirm) h+='<button class="btn confirm-first" onclick="confirmFirst()" title="작업자의 1차 판별·고유명·혐오 결과를 그대로 2차에 입력하고 저장합니다 (메모는 복사하지 않음)">✓ 1차 작업 확정 및 저장</button>';
       h+='<span class="kbd"><b>Ctrl</b>+<b>S</b> 저장</span>';
       h+='<span class="save-badge kbd"></span>';
       h+='<span class="saved-meta">'+(when?fmtTS(when):'')+'</span></div>';
@@ -976,7 +997,19 @@
       var when = stage==='1차'?it['1차 일시']:it['2차 일시'];
       var memoLabel = stage==='1차'?'작업자 메모':'검수자 메모';
       var memoVal = stage==='1차'?it['1차 메모']:it['2차 메모'];
-      return '<div class="stage-panel '+cls+'"><div class="sp-head">'+title+'</div>'+verdictCards(stage, SEL[stage], allowed)+checkCard(stage, allowed)+memoBox(stage,memoLabel,memoVal,!allowed)+actionRow(stage,allowed,isReviewer,when)+'</div>';
+      // 검수 패널: 1차(판별·고유명·혐오)가 완료된 경우에만 '1차 작업 확정' 노출
+      var canConfirm = stage==='2차' && allowed && MODE!=='agree'
+        && !!(String(it['1차 판별']||'').trim() && chkOkF(it['1차 고유명 여부']) && chkOkF(it['1차 혐오 표현 여부']));
+      return '<div class="stage-panel '+cls+'"><div class="sp-head">'+title+'</div>'+verdictCards(stage, SEL[stage], allowed)+checkCard(stage, allowed)+memoBox(stage,memoLabel,memoVal,!allowed)+actionRow(stage,allowed,isReviewer,when,canConfirm)+'</div>';
+    }
+    function chkOkF(v){ v=String(v||'').trim(); return v==='Y'||v==='N'; }
+    // 1차 작업 확정: 작업자 1차 결과(판별·고유명·혐오)를 2차에 그대로 복사 후 즉시 저장·다음 항목
+    function confirmFirst(){
+      var it=ITEMS[CUR]; if(!it || !canEdit(it,2)) return;
+      var v=String(it['1차 판별']||'').trim(), p=String(it['1차 고유명 여부']||'').trim(), h=String(it['1차 혐오 표현 여부']||'').trim();
+      if(!v || !chkOkF(p) || !chkOkF(h)){ toast('1차 작업이 완료되지 않아 확정할 수 없습니다.'); return; }
+      SEL['2차']=v; CHK['2차'].proper=p; CHK['2차'].hate=h;
+      doSave('2차', true);
     }
     function renderDetail(){
       var it=ITEMS[CUR];

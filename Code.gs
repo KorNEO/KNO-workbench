@@ -440,20 +440,24 @@ function researcherOrder_() {
 function getProgress(token, kind, projectId) {
   me_(token);
   var sh = projItemSheet_(projectId), idx = sh ? headerIndex_(sh) : {}, n = sh ? sh.getLastRow() - 1 : 0;
-  var overall = { total: 0, 미작업: 0, '1차완료': 0, '2차완료': 0, weeks: {} }, groups = {};
+  var overall = { total: 0, 미작업: 0, '1차완료': 0, '2차완료': 0, done1: 0, done2: 0, weeks: {} }, groups = {};
   if (sh && n > 0) {
-    var need = ['작업자', '검수자', '배정 주차', '상태'], cmin = Infinity, cmax = -1;
+    var need = ['작업자', '검수자', '배정 주차', '상태', '1차 판별', '2차 판별'], cmin = Infinity, cmax = -1;
     for (var ni = 0; ni < need.length; ni++) { var ci = idx[need[ni]]; if (ci != null) { if (ci < cmin) cmin = ci; if (ci > cmax) cmax = ci; } }
     var data = sh.getRange(2, cmin + 1, n, cmax - cmin + 1).getValues();
     var dW = idx['작업자'] - cmin, dR = idx['검수자'] - cmin, dWk = idx['배정 주차'] - cmin, dS = idx['상태'] - cmin;
+    var dV1 = idx['1차 판별'] != null ? idx['1차 판별'] - cmin : -1, dV2 = idx['2차 판별'] != null ? idx['2차 판별'] - cmin : -1;
     for (var r = 0; r < data.length; r++) {
       var st = String(data[r][dS]).trim() || '미작업';
+      var f1 = dV1 >= 0 && !!String(data[r][dV1]).trim(), f2 = dV2 >= 0 && !!String(data[r][dV2]).trim();   // 1차·2차 각각 독립 완료 여부
       overall.total++; if (overall[st] !== undefined) overall[st]++;
+      if (f1) overall.done1++; if (f2) overall.done2++;
       var wk = String(data[r][dWk]).trim(); if (wk) overall.weeks[wk] = (overall.weeks[wk] || 0) + 1;
       var w = String(data[r][dW]).trim(), rv = String(data[r][dR]).trim();
       var key = (kind === '일치도') ? (w || '(미배정)') : ((w || '?') + ' / ' + (rv || '?'));
-      if (!groups[key]) groups[key] = { label: key, worker: w, reviewer: rv, total: 0, 미작업: 0, '1차완료': 0, '2차완료': 0, weeks: {} };
+      if (!groups[key]) groups[key] = { label: key, worker: w, reviewer: rv, total: 0, 미작업: 0, '1차완료': 0, '2차완료': 0, done1: 0, done2: 0, weeks: {} };
       groups[key].total++; if (groups[key][st] !== undefined) groups[key][st]++;
+      if (f1) groups[key].done1++; if (f2) groups[key].done2++;
       if (wk) groups[key].weeks[wk] = (groups[key].weeks[wk] || 0) + 1;
     }
   }
