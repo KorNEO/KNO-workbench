@@ -890,7 +890,7 @@
       if($('f-assignee') && $('f-assignee').value) opts.worker=$('f-assignee').value;
       if(MODE==='real' && $('f-week') && $('f-week').value) opts.week=$('f-week').value;
       $('list').innerHTML='<p class="kbd">불러오는 중…</p>';
-      google.script.run.withSuccessHandler(function(items){ if(opts.full){ items.forEach(function(it){ it.__full=true; }); } ITEMS=items; CUR=-1; PREFETCHING={}; applyResults(); })
+      google.script.run.withSuccessHandler(function(items){ if(opts.full){ items.forEach(function(it){ it.__full=true; }); } ITEMS=items; CUR=-1; applyResults(); })
         .withFailureHandler(function(e){ $('list').innerHTML='<p class="kbd">조회 실패: '+esc(e.message)+'</p>'; }).getItems(TOKEN, opts);
     }
     function verdictOf(it, stage){ return String(it[stage===2?'2차 판별':'1차 판별']||'').trim(); }
@@ -947,30 +947,12 @@
       document.querySelectorAll('.item').forEach(function(el){ el.classList.toggle('sel', el.getAttribute('data-i')==i); });
       if(it.__full){ renderDetail(); prefetch(i+1); return; }
       $('detail').innerHTML='<div class="placeholder">불러오는 중…</div>';
-      prefetch(i+1);   // 현재 항목 로딩과 병렬로 다음 항목들 미리 받기
-      google.script.run.withSuccessHandler(function(full){ if(it.__full) return;   // 프리페치가 먼저 채운 경우 중복 렌더 방지
-          for(var k in full) it[k]=full[k]; it.__full=true; if(CUR===i){ renderDetail(); } })
-        .withFailureHandler(function(e){ if(!it.__full) $('detail').innerHTML='<div class="placeholder">상세 불러오기 실패: '+esc(e.message)+'</div>'; }).getItem(TOKEN, it['ID']);
+      google.script.run.withSuccessHandler(function(full){ for(var k in full) it[k]=full[k]; it.__full=true; if(CUR===i){ renderDetail(); prefetch(i+1); } })
+        .withFailureHandler(function(e){ $('detail').innerHTML='<div class="placeholder">상세 불러오기 실패: '+esc(e.message)+'</div>'; }).getItem(TOKEN, it['ID']);
     }
-    // 윈도 프리페치: i부터 필터 통과 항목 최대 8개를 getItemsBatch 1회 호출로 캐싱(왕복 1번)
-    var PREFETCH_N = 8, PREFETCHING = {};
     function prefetch(i){
-      var ids=[], pick={};
-      for(var j=i; j<ITEMS.length && ids.length<PREFETCH_N; j++){
-        var nx=ITEMS[j];
-        if(!nx || nx.__full || PREFETCHING[nx['ID']] || !itemPasses(nx)) continue;
-        ids.push(nx['ID']); pick[nx['ID']]=nx;
-      }
-      if(!ids.length) return;
-      ids.forEach(function(id){ PREFETCHING[id]=true; });
-      google.script.run.withSuccessHandler(function(map){
-        ids.forEach(function(id){
-          delete PREFETCHING[id];
-          var full=map&&map[id], nx=pick[id]; if(!full||!nx||nx.__full) return;
-          for(var k in full) nx[k]=full[k]; nx.__full=true;
-          if(ITEMS[CUR]===nx) renderDetail();   // 사용자가 그 사이 이 항목으로 이동한 경우
-        });
-      }).withFailureHandler(function(){ ids.forEach(function(id){ delete PREFETCHING[id]; }); }).getItemsBatch(TOKEN, ids);
+      var nx=ITEMS[i]; if(!nx || nx.__full) return;
+      google.script.run.withSuccessHandler(function(full){ for(var k in full) nx[k]=full[k]; nx.__full=true; }).withFailureHandler(function(){}).getItem(TOKEN, nx['ID']);
     }
 
     function canEdit(it, stage){

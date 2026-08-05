@@ -65,7 +65,7 @@ var API = {
   getProjects: getProjects, createProject: createProject, updateProject: updateProject, deleteProject: deleteProject, exportProject: exportProject, getTemplate: getTemplate,
   getResearchers: getResearchers, saveResearchers: saveResearchers,
   getAssignees: getAssignees, genAgree: genAgree, genReal: genReal,
-  getProgress: getProgress, getItems: getItems, getItem: getItem, getItemsBatch: getItemsBatch,
+  getProgress: getProgress, getItems: getItems, getItem: getItem,
   saveFirst: saveFirst, saveSecond: saveSecond, saveWrite: saveWrite, addWriteItem: addWriteItem, deleteWriteItem: deleteWriteItem, logClientFail: logClientFail,
   requestOtp: requestOtp, registerAccount: registerAccount, login: login, resetPassword: resetPassword, adminResetPassword: adminResetPassword
 };
@@ -340,13 +340,7 @@ function projItemSheet_(projectId) {   // 프로젝트 전용 스프레드시트
   var p = projById_(projectId); if (!p || !p.fileId) return null;
   try { var pss = SpreadsheetApp.openById(p.fileId); return pss.getSheetByName('항목') || pss.getSheets()[0]; } catch (e) { return null; }
 }
-function projItemsCount_(p) {   // 항목 수 캐싱 — openById가 비싸서(프로젝트당 ~1초) 목록 화면 병목이었음
-  var ck = 'cnt:' + p.id, hit = cacheGet_(ck);
-  if (hit != null) return hit;
-  var sh = projItemSheet_(p.id), c = sh ? Math.max(0, sh.getLastRow() - 1) : 0;
-  cachePut_(ck, c, 300);
-  return c;
-}
+function projItemsCount_(p) { var sh = projItemSheet_(p.id); return sh ? Math.max(0, sh.getLastRow() - 1) : 0; }
 function projSheetOfRow_(rowId) { return projItemSheet_(String(rowId).split('::')[0]); }
 function projSetStatus_(projectId, status) { var p = projById_(projectId); if (!p) return; var reg = projRegSheet_(), idx = headerIndex_(reg); reg.getRange(p._row, idx['상태'] + 1).setValue(status); }
 
@@ -407,7 +401,6 @@ function deleteProject(token, kind, id) {
   var p = projById_(id); if (!p) return { ok: true };
   if (p.fileId) { try { DriveApp.getFileById(p.fileId).setTrashed(true); } catch (e) {} }   // 파일 → 휴지통(영구삭제 아님)
   projRegSheet_().deleteRow(p._row);
-  projCacheDel_(id);
   return { ok: true };
 }
 function exportProject(token, kind, id) {
@@ -444,18 +437,8 @@ function researcherOrder_() {
   for (var i = 0; i < names.length; i++) map[String(names[i][0]).trim()] = i;
   return map;
 }
-var KINDS_ = ['실제', '일치도', '집필', ''];   // modeKind() 실제 값(판별='실제')
-function progKey_(projectId, kind) { return 'prog:' + (projectId || '') + ':' + (kind || ''); }
-function progDel_(projectId) { cacheDel_(KINDS_.map(function (k) { return progKey_(projectId, k); })); }
-// 구조 변경(업로드·배분·항목 추가/삭제·삭제) 시: 진행률 + 항목 수 + 팀 목록 캐시 전부 무효화
-function projCacheDel_(projectId) {
-  progDel_(projectId);
-  cacheDel_(['cnt:' + projectId].concat(KINDS_.map(function (k) { return 'asg:' + projectId + ':' + k; })));
-}
 function getProgress(token, kind, projectId) {
   me_(token);
-  var ck = progKey_(projectId, kind), hit = cacheGet_(ck);
-  if (hit) return hit;
   var sh = projItemSheet_(projectId), idx = sh ? headerIndex_(sh) : {}, n = sh ? sh.getLastRow() - 1 : 0;
   var overall = { total: 0, 미작업: 0, '1차완료': 0, '2차완료': 0, done1: 0, done2: 0, weeks: {} }, groups = {};
   if (sh && n > 0) {
@@ -481,9 +464,7 @@ function getProgress(token, kind, projectId) {
   var order = researcherOrder_(), arr = Object.keys(groups).map(function (k) { return groups[k]; });
   arr.sort(function (a, b) { var ia = order[a.worker], ib = order[b.worker]; ia = (ia == null ? 9999 : ia); ib = (ib == null ? 9999 : ib); return ia !== ib ? ia - ib : a.label.localeCompare(b.label, 'ko'); });
   var weekList = Object.keys(overall.weeks).sort(function (a, b) { return (parseInt(a, 10) || 0) - (parseInt(b, 10) || 0); });
-  var res = { overall: overall, groups: arr, weeks: weekList };
-  cachePut_(ck, res, 45);   // 45초 캐시 — 저장/배분 시 progDel_로 즉시 무효화
-  return res;
+  return { overall: overall, groups: arr, weeks: weekList };
 }
 
 // ── 항목 조회 ──────────────────────────────────────────
@@ -543,42 +524,7 @@ function getItem(token, rowId) {
   for (var key in idx) obj[key] = String(row[idx[key]]);   // 시트 실제 컬럼 전부(판별·집필 공용)
   return obj;
 }
-// 여러 행 일괄 조회(프리페치용): 시트 1회 오픈 + ID 컬럼 1회 스캔으로 왕복 최소화. 반환 {rowId: obj}
-function getItemsBatch(token, rowIds) {
-  me_(token);
-  rowIds = (rowIds || []).slice(0, 20);
-  var byPid = {}, out = {};
-  for (var i = 0; i < rowIds.length; i++) {
-    var id = String(rowIds[i]).trim(); if (!id) continue;
-    var pid = id.split('::')[0];
-    (byPid[pid] = byPid[pid] || []).push(id);
-  }
-  Object.keys(byPid).forEach(function (pid) {
-    var sh = projItemSheet_(pid); if (!sh) return;
-    var idx = headerIndex_(sh), n = sh.getLastRow() - 1; if (n <= 0) return;
-    var want = {}, left = byPid[pid].length;
-    byPid[pid].forEach(function (id) { want[id] = true; });
-    var ids = sh.getRange(2, idx['ID'] + 1, n, 1).getValues(), lastCol = sh.getLastColumn(), found = [];
-    for (var r = 0; r < n && left > 0; r++) {
-      var rid = String(ids[r][0]).trim();
-      if (!want[rid]) continue;
-      found.push([r + 2, rid]); left--;
-    }
-    if (!found.length) return;
-    function toObj(row) { var obj = {}; for (var key in idx) obj[key] = String(row[idx[key]]); return obj; }
-    var mn = found[0][0], mx = found[found.length - 1][0];
-    if (mx - mn + 1 <= 40) {   // 프리페치 창은 대개 연속 행 → 블록 1회 읽기
-      var blk = sh.getRange(mn, 1, mx - mn + 1, lastCol).getValues();
-      found.forEach(function (p) { out[p[1]] = toObj(blk[p[0] - mn]); });
-    } else {
-      found.forEach(function (p) { out[p[1]] = toObj(sh.getRange(p[0], 1, 1, lastCol).getValues()[0]); });
-    }
-  });
-  return out;
-}
 function getAssignees(kind, projectId) {   // 프론트가 (kind, pid)로 호출(토큰 없음)
-  var ck = 'asg:' + (projectId || '') + ':' + (kind || ''), hit = cacheGet_(ck);
-  if (hit) return hit;   // 팀 구성은 배분 시에만 변경 → projCacheDel_로 무효화
   var sh = projItemSheet_(projectId); if (!sh) return [];
   var idx = headerIndex_(sh), n = sh.getLastRow() - 1; if (n <= 0) return [];
   var need = ['작업자', '검수자'], cmin = Infinity, cmax = -1;
@@ -616,7 +562,7 @@ function genAgree(token, projectId, names) {
   if (out.length) sh.getRange(2, 1, out.length, lastCol).setValues(out);
   styleHeader_(sh, HEADERS.length);
   try { PropertiesService.getScriptProperties().deleteProperty('idx:' + sh.getParent().getId()); } catch (e) {}
-  projSetStatus_(projectId, '배분완료'); projCacheDel_(projectId);
+  projSetStatus_(projectId, '배분완료');
   return { ok: true, rows: out.length };
 }
 function genReal(token, projectId, cfg) {
@@ -646,7 +592,7 @@ function genReal(token, projectId, cfg) {
   if (sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, lastCol).clearContent();
   if (rows.length) sh.getRange(2, 1, rows.length, lastCol).setValues(rows);
   styleHeader_(sh, lastCol);
-  projSetStatus_(projectId, '배분완료'); projCacheDel_(projectId);
+  projSetStatus_(projectId, '배분완료');
   return { ok: true, rows: rows.length };
 }
 
@@ -668,22 +614,20 @@ function saveFirst(token, payload) {
     var sh = projSheetOfRow_(payload.row_id); if (!sh) throw new Error('프로젝트 없음');
     var idx = ensureCheckCols_(sh), rownum = findRow_(sh, idx, payload.row_id);
     if (rownum < 0) throw new Error('행 없음: ' + payload.row_id);
-    var cur = sh.getRange(rownum, 1, 1, sh.getLastColumn()).getValues()[0];   // 행 1회 읽기(개별 셀 read 6회 → 1회, 중간 flush 방지)
-    var cv = function (h) { return idx[h] != null ? String(cur[idx[h]]).trim() : ''; };
-    assertCanEditStage_(me, cv('작업자'), cv('검수자'), 1);
-    var cand = cv('신어 후보');
-    var prev = cv('상태');
-    var prevVerdict = cv('1차 판별');
-    var prevTs = cv('1차 일시');
+    assertCanEditStage_(me, sh.getRange(rownum, idx['작업자'] + 1).getValue(), sh.getRange(rownum, idx['검수자'] + 1).getValue(), 1);
+    var cand = String(sh.getRange(rownum, idx['신어 후보'] + 1).getValue());
+    var prev = String(sh.getRange(rownum, idx['상태'] + 1).getValue()).trim();
+    var prevVerdict = String(sh.getRange(rownum, idx['1차 판별'] + 1).getValue()).trim();
+    var prevTs = String(sh.getRange(rownum, idx['1차 일시'] + 1).getValue()).trim();
     setCell_(sh, rownum, idx, '1차 판별', payload.verdict);
     setCell_(sh, rownum, idx, '1차 메모', payload.memo || '');
     setCell_(sh, rownum, idx, '1차 고유명 여부', payload.proper);
     setCell_(sh, rownum, idx, '1차 혐오 표현 여부', payload.hate);
     if (!(prevVerdict === payload.verdict && prevTs)) setCell_(sh, rownum, idx, '1차 일시', now_());   // 같은 판별 재저장(체크 추가)이면 원래 일시 보존
-    var ns = cv('2차 판별') ? STATUS.SECOND : STATUS.FIRST;
+    var ns = String(sh.getRange(rownum, idx['2차 판별'] + 1).getValue()).trim() ? STATUS.SECOND : STATUS.FIRST;
     setCell_(sh, rownum, idx, '상태', ns);
     appendLog_(me, payload.row_id, cand, '1차', payload.verdict + ' (고유명' + payload.proper + '/혐오' + payload.hate + ')', payload.memo || '', prev, ns);
-    SpreadsheetApp.flush(); opMark_(payload.op_id); progDel_(String(payload.row_id).split('::')[0]);
+    SpreadsheetApp.flush(); opMark_(payload.op_id);
     return { ok: true };
   } finally { lock.releaseLock(); }
 }
@@ -697,13 +641,11 @@ function saveSecond(token, payload) {
     var sh = projSheetOfRow_(payload.row_id); if (!sh) throw new Error('프로젝트 없음');
     var idx = ensureCheckCols_(sh), rownum = findRow_(sh, idx, payload.row_id);
     if (rownum < 0) throw new Error('행 없음: ' + payload.row_id);
-    var cur = sh.getRange(rownum, 1, 1, sh.getLastColumn()).getValues()[0];   // 행 1회 읽기
-    var cv = function (h) { return idx[h] != null ? String(cur[idx[h]]).trim() : ''; };
-    assertCanEditStage_(me, cv('작업자'), cv('검수자'), 2);
-    var cand = cv('신어 후보');
-    var prev = cv('상태');
-    var prevVerdict = cv('2차 판별');
-    var prevTs = cv('2차 일시');
+    assertCanEditStage_(me, sh.getRange(rownum, idx['작업자'] + 1).getValue(), sh.getRange(rownum, idx['검수자'] + 1).getValue(), 2);
+    var cand = String(sh.getRange(rownum, idx['신어 후보'] + 1).getValue());
+    var prev = String(sh.getRange(rownum, idx['상태'] + 1).getValue()).trim();
+    var prevVerdict = String(sh.getRange(rownum, idx['2차 판별'] + 1).getValue()).trim();
+    var prevTs = String(sh.getRange(rownum, idx['2차 일시'] + 1).getValue()).trim();
     setCell_(sh, rownum, idx, '2차 판별', payload.verdict);
     setCell_(sh, rownum, idx, '2차 메모', payload.memo || '');
     setCell_(sh, rownum, idx, '2차 고유명 여부', payload.proper);
@@ -711,7 +653,7 @@ function saveSecond(token, payload) {
     if (!(prevVerdict === payload.verdict && prevTs)) setCell_(sh, rownum, idx, '2차 일시', now_());   // 같은 판별 재저장(체크 추가)이면 원래 일시 보존
     setCell_(sh, rownum, idx, '상태', STATUS.SECOND);
     appendLog_(me, payload.row_id, cand, '2차', payload.verdict + ' (고유명' + payload.proper + '/혐오' + payload.hate + ')', payload.memo || '', prev, STATUS.SECOND);
-    SpreadsheetApp.flush(); opMark_(payload.op_id); progDel_(String(payload.row_id).split('::')[0]);
+    SpreadsheetApp.flush(); opMark_(payload.op_id);
     return { ok: true };
   } finally { lock.releaseLock(); }
 }
@@ -725,18 +667,16 @@ function saveWrite(token, payload) {
     var idx = headerIndex_(sh), rownum = findRow_(sh, idx, payload.row_id);
     if (rownum < 0) throw new Error('행 없음: ' + payload.row_id);
     var stage = (parseInt(payload.stage, 10) === 2) ? 2 : 1;
-    var cur = sh.getRange(rownum, 1, 1, sh.getLastColumn()).getValues()[0];   // 행 1회 읽기
-    var cv = function (h) { return idx[h] != null ? String(cur[idx[h]]).trim() : ''; };
-    assertCanEditStage_(me, cv('작업자'), cv('검수자'), stage);
-    var cand = cv('신어 후보');
-    var prev = cv('상태');
+    assertCanEditStage_(me, sh.getRange(rownum, idx['작업자'] + 1).getValue(), sh.getRange(rownum, idx['검수자'] + 1).getValue(), stage);
+    var cand = String(sh.getRange(rownum, idx['신어 후보'] + 1).getValue());
+    var prev = String(sh.getRange(rownum, idx['상태'] + 1).getValue()).trim();
     var fields = payload.fields || {};
     for (var k = 0; k < WRITE_FIELDS.length; k++) { var f = WRITE_FIELDS[k]; if (f in idx && f in fields) setCell_(sh, rownum, idx, f, fields[f] == null ? '' : fields[f]); }
     var def = fields['뜻풀이'] == null ? '' : fields['뜻풀이'], ns;
     if (stage === 1) {
       if ('1차 뜻풀이' in idx) setCell_(sh, rownum, idx, '1차 뜻풀이', def);
       if ('1차 일시' in idx) setCell_(sh, rownum, idx, '1차 일시', now_());
-      ns = ('2차 뜻풀이' in idx && cv('2차 뜻풀이')) ? STATUS.SECOND : STATUS.FIRST;
+      ns = ('2차 뜻풀이' in idx && String(sh.getRange(rownum, idx['2차 뜻풀이'] + 1).getValue()).trim()) ? STATUS.SECOND : STATUS.FIRST;
     } else {
       if ('2차 뜻풀이' in idx) setCell_(sh, rownum, idx, '2차 뜻풀이', def);
       if ('2차 일시' in idx) setCell_(sh, rownum, idx, '2차 일시', now_());
@@ -744,7 +684,7 @@ function saveWrite(token, payload) {
     }
     if ('상태' in idx) setCell_(sh, rownum, idx, '상태', ns);
     appendLog_(me, payload.row_id, cand, stage === 1 ? '집필1차' : '집필2차', String(def).slice(0, 40), '', prev, ns);
-    SpreadsheetApp.flush(); opMark_(payload.op_id); progDel_(String(payload.row_id).split('::')[0]);
+    SpreadsheetApp.flush(); opMark_(payload.op_id);
     return { ok: true };
   } finally { lock.releaseLock(); }
 }
@@ -763,7 +703,7 @@ function addWriteItem(token, projectId, cand) {
     if (k === '작업자') return me.isManager ? '' : me.name;
     return '';
   });
-  sh.appendRow(row); styleHeader_(sh, HEADERS_WRITE.length); SpreadsheetApp.flush(); projCacheDel_(projectId);
+  sh.appendRow(row); styleHeader_(sh, HEADERS_WRITE.length); SpreadsheetApp.flush();
   return { id: rid, cand: cand };
 }
 // 집필 새 항목 삭제 — 새로 추가한 항목(::new-)만 허용, 배분된 항목은 불가
@@ -773,7 +713,7 @@ function deleteWriteItem(token, rowId) {
   var sh = projSheetOfRow_(rowId); if (!sh) throw new Error('프로젝트 없음');
   var idx = headerIndex_(sh), rownum = findRow_(sh, idx, rowId);
   if (rownum < 0) throw new Error('행 없음: ' + rowId);
-  sh.deleteRow(rownum); SpreadsheetApp.flush(); projCacheDel_(String(rowId).split('::')[0]);
+  sh.deleteRow(rownum); SpreadsheetApp.flush();
   return { ok: true };
 }
 
