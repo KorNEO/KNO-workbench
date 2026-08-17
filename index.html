@@ -373,6 +373,8 @@
               <option value="미작업">미작업</option>
               <option value="1차완료">1차 작업 완료</option>
               <option value="2차완료">2차 검수 완료</option>
+              <option value="_no1" class="opt-incomplete">⚠ 1차 미완료</option>
+              <option value="_no2" class="opt-incomplete">⚠ 2차 미완료</option>
             </select>
             <select id="f-v1" onchange="applyResults()" style="display:none" title="1차 작업 결과">
               <option value="">1차 작업 결과</option>
@@ -574,7 +576,7 @@
       $('view-researchers').classList.toggle('hidden', v!=='researchers');
       if(v==='projects') renderProjects();
       else if(v==='home'){ loadProgress(); loadAssign(); }
-      else if(v==='mine' || v==='all'){ $('f-status').value=''; $('f-q').value=''; $('f-v1').value=''; $('f-v2').value=''; $('f-proper').innerHTML=chkOptions('고유명 여부'); $('f-hate').innerHTML=chkOptions('혐오 표현 여부'); $('f-proper').value=''; $('f-hate').value=''; $('f-proper').style.display=(MODE!=='write')?'':'none'; $('f-hate').style.display=(MODE!=='write')?'':'none'; $('f-v1').style.display=(MODE!=='write')?'':'none'; $('f-v2').style.display=(MODE==='real')?'':'none'; var _wl=window.__weekList||[]; $('f-week').innerHTML='<option value="">전체 주차</option>'+_wl.map(function(w){return '<option value="'+esc(w)+'">'+esc(w)+'주차</option>';}).join(''); $('f-week').style.display=(MODE==='real')?'':'none'; populateAssignees(v); loadItems(); }
+      else if(v==='mine' || v==='all'){ var ps=_pendingStatus; _pendingStatus=''; $('f-status').value=ps; $('f-q').value=''; $('f-v1').value=''; $('f-v2').value=''; $('f-proper').innerHTML=chkOptions('고유명 여부'); $('f-hate').innerHTML=chkOptions('혐오 표현 여부'); $('f-proper').value=''; $('f-hate').value=''; $('f-proper').style.display=(MODE!=='write')?'':'none'; $('f-hate').style.display=(MODE!=='write')?'':'none'; $('f-v1').style.display=(MODE!=='write')?'':'none'; $('f-v2').style.display=(MODE==='real')?'':'none'; document.querySelectorAll('.opt-incomplete').forEach(function(o){o.hidden=!(MODE==='real'&&ME.isManager);}); var _wl=window.__weekList||[]; $('f-week').innerHTML='<option value="">전체 주차</option>'+_wl.map(function(w){return '<option value="'+esc(w)+'">'+esc(w)+'주차</option>';}).join(''); $('f-week').style.display=(MODE==='real')?'':'none'; populateAssignees(v); loadItems(); }
       else if(v==='researchers') loadResearchers();
     }
     var CURRENT_PROJECT = null, PROJ_LIST = [];
@@ -832,7 +834,17 @@
               +wl.map(function(w){return '<td>'+(wk[w]||0)+'</td>';}).join('')
               +'<td><b>'+g.total+'</b></td><td>'+gd1+'</td><td>'+gd2+'</td><td><b>'+pct+'%</b></td></tr>';
           }).join('');
-          $('second-body').innerHTML = '<table class="grp"><thead><tr>'+head+'</tr></thead><tbody>'+(rows||'<tr><td class="kbd">데이터 없음</td></tr>')+'</tbody></table>';
+          var tableHtml = '<table class="grp"><thead><tr>'+head+'</tr></thead><tbody>'+(rows||'<tr><td class="kbd">데이터 없음</td></tr>')+'</tbody></table>';
+          if(MODE==='real'){
+            var inc1=(o.total||0)-(d1||0), inc2=(o.total||0)-(d2||0);
+            if(inc1||inc2){
+              tableHtml+='<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">';
+              if(inc1) tableHtml+='<button class="btn ghost" onclick="goIncomplete(\'_no1\')" style="font-size:13px">⚠ 1차 미완료 '+inc1+'건 보기</button>';
+              if(inc2) tableHtml+='<button class="btn ghost" onclick="goIncomplete(\'_no2\')" style="font-size:13px">⚠ 2차 미완료 '+inc2+'건 보기</button>';
+              tableHtml+='</div>';
+            }
+          }
+          $('second-body').innerHTML = tableHtml;
         } else {
           $('second-title').textContent='나의 작업';
           $('second-body').innerHTML='<span class="kbd">불러오는 중…</span>';
@@ -872,8 +884,10 @@
       keys.forEach(function(w){ var dv=done[w]||0, tv=by[w], pct=tv?Math.round(dv/tv*100):0; h+=statLine(w+'주차', dv+' / '+tv+' ('+pct+'%)', "goWeek('"+w+"')"); });
       return h+'</div>';
     }
+    var _pendingStatus='';
     function goWeek(w){ showView('mine'); $('f-week').value=w; loadItems(); }
-    function goStatus(st){ showView('mine'); $('f-status').value=st; loadItems(); }
+    function goStatus(st){ _pendingStatus=st; showView('mine'); }
+    function goIncomplete(val){ _pendingStatus=val; showView('all'); }
     function populateAssignees(view){
       var sel=$('f-assignee');
       if(MODE==='agree' || view!=='all'){ sel.style.display='none'; return; }   // 팀 필터는 판별 '전체 작업'에서만(일치도는 블라인드)
@@ -885,7 +899,8 @@
 
     /* 목록 */
     function loadItems(){
-      var opts={ kind:modeKind(), status:$('f-status').value, q:$('f-q').value.trim(), onlyMine:(SCOPE==='mine'), projectId:(CURRENT_PROJECT&&CURRENT_PROJECT.id) };
+      var rawStatus=$('f-status').value, isClientFilter=rawStatus.charAt(0)==='_';
+      var opts={ kind:modeKind(), status:isClientFilter?'':rawStatus, q:$('f-q').value.trim(), onlyMine:(SCOPE==='mine'), projectId:(CURRENT_PROJECT&&CURRENT_PROJECT.id) };
       opts.full = opts.onlyMine;   // 본인 항목(한정 집합)은 상세까지 한 번에 받아 클릭 즉시 표시(서버 왕복 0)
       if($('f-assignee') && $('f-assignee').value) opts.worker=$('f-assignee').value;
       if(MODE==='real' && $('f-week') && $('f-week').value) opts.week=$('f-week').value;
@@ -902,6 +917,9 @@
     }
     var CHK_FILTERS = [['f-proper','고유명 여부'],['f-hate','혐오 표현 여부']];
     function itemPasses(it){
+      var fst=$('f-status').value;
+      if(fst==='_no1' && String(it['1차 판별']||'').trim()) return false;
+      if(fst==='_no2' && String(it['2차 판별']||'').trim()) return false;
       var v1=$('f-v1').value, v2=$('f-v2').value;
       if(v1 && verdictOf(it,1)!==v1) return false;
       if(MODE==='real' && v2 && verdictOf(it,2)!==v2) return false;
