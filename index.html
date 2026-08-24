@@ -18,7 +18,7 @@
     }
     body.dark header { background:linear-gradient(90deg,#2c3a8c,#1b2350); }
     body.dark input, body.dark textarea, body.dark select { background:var(--surface); color:var(--ink); border-color:var(--line); }
-    body.dark .llm-box { background:var(--surface2); border-color:var(--line); }
+    body.dark .llm-box { background:var(--surface); border-color:var(--line); }
     body.dark .stage-sec.s1 { background:#2a1f22; }
     body.dark .stage-sec.s2 { background:#1c2436; }
     body.dark .w-field.changed { background:#24344f; border-color:#40608f; }
@@ -104,11 +104,11 @@
     .cand-meta { color:#4a5168; font-size:15px; margin-bottom:14px; } .cand-meta b { color:var(--ink); }
     .llm-hint { display:inline-block; font-size:12px; color:var(--muted); background:#f1f3f9; padding:3px 10px; border-radius:8px; margin-bottom:8px; } .llm-hint b { color:var(--brand-d); }
     /* 집필(M5) */
-    .llm-box { background:#f6f8ff; border:1px solid #e0e6ff; border-radius:10px; padding:12px 14px; margin:14px 0; }
-    .llm-box h3 { margin:0 0 6px; font-size:16px; color:var(--brand-d); }
+    .llm-box { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin:14px 0 0; }
+    .llm-box h3 { margin:0 0 6px; font-size:19px; font-weight:800; color:var(--brand-d); }
     .llm-box .row { display:flex; gap:12px; padding:5px 0; font-size:15px; align-items:flex-start; } .llm-box .k { color:var(--muted); min-width:110px; font-weight:600; } .llm-box .v { color:var(--ink); flex:1; white-space:pre-wrap; }
-    .diff-box { border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin:14px 0; }
-    .diff-box h3 { margin:0 0 8px; font-size:15px; }
+    .diff-box { border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin:10px 0 0; }
+    .diff-box h3 { margin:0 0 6px; font-size:19px; font-weight:800; color:var(--brand-d); }
     .drow { display:flex; gap:10px; padding:6px 0; border-top:1px solid var(--line); font-size:15px; } .drow:first-of-type { border-top:none; }
     .drow .dl { min-width:56px; color:var(--muted); font-weight:700; font-size:12px; padding-top:2px; } .drow .dv { flex:1; white-space:pre-wrap; line-height:1.55; }
     .diff-box mark { border-radius:3px; padding:0 2px; }
@@ -132,7 +132,7 @@
     .stage-sec.s2 { background:#f4f8ff; border-left:4px solid #a3c0f0; }
     /* 집필 개편: 부(部) 탭·체인·양방향 하이라이트·LLM 복사·확인 창 */
     .ref-badges { display:flex; gap:6px; flex-wrap:wrap; margin:0 0 6px; }
-    .part-sec { border:1px solid var(--line); border-radius:12px; padding:10px 12px; margin-top:10px; }
+    .part-sec { border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin-top:10px; }
     .part-sec .ps-head { font-weight:800; font-size:19px; color:var(--brand-d); display:flex; align-items:center; gap:10px; margin-bottom:6px; }
     .part-sec .ps-state { font-weight:600; font-size:13px; color:var(--muted); background:var(--surface2); padding:2px 9px; border-radius:8px; }
     .part-sec.locked { background:var(--surface2); } .part-sec.locked .ps-state { background:var(--hold-bg); color:var(--hold); }
@@ -168,7 +168,7 @@
     .rev-note { font-size:14px; color:#8a5a00; background:#fff7e0; border-radius:6px; padding:3px 8px; margin-top:2px; }
     .chk-native { display:flex; align-items:center; gap:6px; font-size:14px; margin-bottom:4px; cursor:pointer; } .chk-native input { margin:0; }
     .llm-copy { border:1px solid var(--line); background:var(--surface); border-radius:7px; padding:5px 11px; font-size:13px; cursor:pointer; white-space:nowrap; font-weight:700; color:var(--brand-d); }
-    .llm-foot { display:flex; justify-content:flex-end; margin-top:8px; padding-top:8px; border-top:1px dashed #c6d0f5; } .llm-all { padding:7px 16px; font-size:14px; }
+    .llm-foot { display:flex; justify-content:flex-end; margin-top:8px; padding-top:8px; border-top:1px solid var(--line); } .llm-all { padding:7px 16px; font-size:14px; }
     .llm-copy:hover:not(:disabled) { border-color:var(--brand); background:#eef1ff; } .llm-copy:disabled { opacity:.35; cursor:default; }
     .vfy-err { color:var(--bisineo); background:var(--bisineo-bg); border-radius:8px; padding:10px 14px; margin:8px 0; font-size:15px; }
     .vfy-ok { color:var(--sineo); background:var(--sineo-bg); border-radius:8px; padding:10px 14px; margin:8px 0; font-size:15px; }
@@ -1474,8 +1474,15 @@
       saveWriteForm(part,2); nextItem();
     }
     function addNewWriteItem(){
-      var cand=prompt('새 표제어(신어 후보)를 입력하세요:'); if(cand===null) return;
-      cand=String(cand).trim(); if(!cand){ toast('표제어를 입력하세요.'); return; }
+      var box=$('waddModal'); if(!box){ box=document.createElement('div'); box.id='waddModal'; box.className='modal'; box.addEventListener('click', function(e){ if(e.target===box) box.classList.add('hidden'); }); document.body.appendChild(box); }
+      box.innerHTML='<div class="modal-box" style="width:min(460px,92vw)"><button class="x" onclick="$(\'waddModal\').classList.add(\'hidden\')">×</button><h2 style="margin-top:0">새 항목 추가</h2>'
+        + '<div class="pf"><label>색인표제어를 입력해 주세요.</label><input id="wadd-cand" class="w-field" onkeydown="if(event.key===\'Enter\')submitNewWriteItem()"></div>'
+        + '<div class="actions" style="margin-top:12px"><button class="btn save" onclick="submitNewWriteItem()">추가</button><button class="btn reject" onclick="$(\'waddModal\').classList.add(\'hidden\')">취소</button></div></div>';
+      box.classList.remove('hidden'); setTimeout(function(){ $('wadd-cand').focus(); }, 0);
+    }
+    function submitNewWriteItem(){
+      var cand=String(($('wadd-cand')||{}).value||'').trim(); if(!cand){ toast('색인표제어를 입력해 주세요.'); return; }
+      $('waddModal').classList.add('hidden');
       function addLocal(id){ var it={'__full':true,'ID':id,'신어 후보':cand,'작업자':(ME.isManager?'':ME.name)||'','검수자':'','형태부 상태':'미작업','의미부 상태':'미작업'}; ITEMS.unshift(it); CUR=0; renderList(); renderWriteDetail(it); }
       var pid=CURRENT_PROJECT&&CURRENT_PROJECT.id; if(!pid){ toast('먼저 프로젝트를 여세요.'); return; }
       google.script.run.withSuccessHandler(function(r){ addLocal(r.id); toast('새 항목을 추가했습니다.'); })
