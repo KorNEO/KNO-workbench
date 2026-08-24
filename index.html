@@ -1181,7 +1181,7 @@
     function projPhase(){ return (CURRENT_PROJECT&&CURRENT_PROJECT.phase)||'형태부'; }
     function tok_(s){ return String(s||'').trim().split(/\s+/).filter(Boolean); }
     function wordDiff_(prev, cur, cls){
-      if(!String(cur||'').trim()) return '<span class="kbd">(없음)</span>';
+      if(!String(cur||'').trim()) return '<span class="kbd">-</span>';
       var pset={}; tok_(prev).forEach(function(w){ pset[w]=(pset[w]||0)+1; });
       return tok_(cur).map(function(w){ if(pset[w]>0){ pset[w]--; return esc(w); } return '<mark class="'+(cls||'')+'">'+esc(w)+'</mark>'; }).join(' ');
     }
@@ -1335,14 +1335,14 @@
         + '<span class="pill s1">형태부 '+esc(it['형태부 상태']||'미작업')+'</span><span class="pill s2">의미부 '+esc(it['의미부 상태']||'미작업')+'</span></div>';
       // LLM 생성 결과 — 값마다 복사하기(1차 작업 필드로). 대상 필드가 비활성이면 버튼도 비활성
       h+='<div class="llm-box"><h3>LLM 생성 결과</h3>'+LLM_MAP.map(function(m,i){ var val=String(it[m[0]]||'').trim();
-        return '<div class="row"><div class="k">'+esc(m[1])+'</div><div class="v">'+(val?esc(val):'<span class="kbd">(없음)</span>')+'</div><button type="button" class="llm-copy" data-llm="'+i+'" onclick="llmCopy(this)"'+(val?'':' disabled')+'>복사하기</button></div>'; }).join('')
+        return '<div class="row"><div class="k">'+esc(m[1])+'</div><div class="v">'+(val?esc(val):'<span class="kbd">-</span>')+'</div><button type="button" class="llm-copy" data-llm="'+i+'" onclick="llmCopy(this)"'+(val?'':' disabled')+'>복사하기</button></div>'; }).join('')
         + '<div class="llm-foot"><button type="button" class="llm-copy llm-all" onclick="llmCopyAll()">전체 복사하기</button></div></div>';
       // 판별 단계의 작업자 메모·검수자 메모
       var jm1=String(it['1차 메모']||'').trim(), jm2=String(it['2차 메모']||'').trim(), jv1=String(it['1차 판별']||'').trim(), jv2=String(it['2차 판별']||'').trim();
       function vpill(v){ return v ? '<span class="pill '+(v==='신어'?'v-sin':v==='비신어'?'v-bi':'v-hold')+'">'+esc(v)+'</span> ' : ''; }
       if(jm1||jm2||jv1||jv2) h+='<div class="llm-box"><h3>판별 메모</h3>'
-        + '<div class="row"><div class="k">1차 판별 · 작업자'+(it['판별 작업자']?' '+fmtName(it['판별 작업자']):'')+'</div><div class="v">'+vpill(jv1)+(jm1?esc(jm1):'<span class="kbd">(메모 없음)</span>')+'</div></div>'
-        + '<div class="row"><div class="k">2차 판별 · 검수자'+(it['판별 검수자']?' '+fmtName(it['판별 검수자']):'')+'</div><div class="v">'+vpill(jv2)+(jm2?esc(jm2):'<span class="kbd">(메모 없음)</span>')+'</div></div></div>';
+        + '<div class="row"><div class="k">1차 판별 · 작업자'+(it['판별 작업자']?' '+fmtName(it['판별 작업자']):'')+'</div><div class="v">'+vpill(jv1)+(jm1?esc(jm1):'<span class="kbd">-</span>')+'</div></div>'
+        + '<div class="row"><div class="k">2차 판별 · 검수자'+(it['판별 검수자']?' '+fmtName(it['판별 검수자']):'')+'</div><div class="v">'+vpill(jv2)+(jm2?esc(jm2):'<span class="kbd">-</span>')+'</div></div></div>';
       // 형태부 → 의미부 세로 섹션. 프로젝트 단계에 따라 잠금.
       PARTS.forEach(function(part){
         var locked=(part==='의미부' && phase==='형태부'), ro=(part==='형태부' && phase==='의미부');
@@ -1354,7 +1354,7 @@
       // 뜻풀이 변경 이력(맨 아래)
       var llmDef=String(it['LLM 뜻풀이']||'').trim();
       h+='<div class="diff-box"><h3>뜻풀이 변경 이력</h3>'
-        + '<div class="drow"><span class="dl">LLM</span><div class="dv">'+esc(llmDef||'(없음)')+'</div></div>'
+        + '<div class="drow"><span class="dl">LLM</span><div class="dv">'+esc(llmDef||'-')+'</div></div>'
         + '<div class="drow"><span class="dl">작업자</span><div class="dv">'+wordDiff_(llmDef,wv(it,1,'뜻풀이'),'m1')+'</div></div>'
         + '<div class="drow"><span class="dl">검수자</span><div class="dv">'+wordDiff_(wv(it,1,'뜻풀이'),wv(it,2,'뜻풀이'),'m2')+'</div></div></div>';
       $('detail').innerHTML=h;
@@ -1450,7 +1450,7 @@
     function openWriteConfirm(part, stage){
       var it=ITEMS[CUR]; if(!it) return;
       var vals=collectWrite_(part, stage), errs=validateWrite(part, vals, it);
-      var rows=Object.keys(vals).filter(function(k){ return !(k==='고유어' && vals[k]!=='Y'); }).map(function(k){ var v=tplBlank(k,vals[k])?'':vals[k]; return '<tr><th>'+esc(k)+'</th><td>'+(v?esc(v).replace(/\n/g,'<br>'):'<span class="kbd">(비어 있음)</span>')+'</td></tr>'; }).join('');
+      var rows=Object.keys(vals).filter(function(k){ return !(k==='고유어' && vals[k]!=='Y'); }).map(function(k){ var v=tplBlank(k,vals[k])?'':vals[k]; return '<tr><th>'+esc(k)+'</th><td>'+(v?esc(v).replace(/\n/g,'<br>'):'<span class="kbd">-</span>')+'</td></tr>'; }).join('');
       var box=$('wconfirm'); if(!box){ box=document.createElement('div'); box.id='wconfirm'; box.className='modal'; box.addEventListener('click', function(e){ if(e.target===box) closeWriteConfirm(); }); document.body.appendChild(box); }
       box.innerHTML='<div class="modal-box"><button class="x" onclick="closeWriteConfirm()">×</button><h2 style="margin-top:0">'+esc(part)+' '+stage+'차 저장 전 확인: '+esc(it['신어 후보'])+'</h2>'
         + (errs.length ? '<div class="vfy-err"><b>점검 오류 '+errs.length+'건. 저장할 수 없습니다.</b><ul style="margin:6px 0 0 18px">'+errs.map(function(e){ return '<li>'+esc(e)+'</li>'; }).join('')+'</ul></div>' : '<div class="vfy-ok">점검 통과. 아래 내용으로 저장합니다.</div>')
