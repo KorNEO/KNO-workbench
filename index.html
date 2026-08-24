@@ -128,6 +128,31 @@
     .ss-foot { margin-top:auto; padding-top:12px; }
     .stage-sec.s1 { background:#fff5f5; border-left:4px solid #f0a3a3; }
     .stage-sec.s2 { background:#f4f8ff; border-left:4px solid #a3c0f0; }
+    /* 집필 개편: 부(部) 탭·체인·양방향 하이라이트·LLM 복사·확인 창 */
+    .ref-badges { display:flex; gap:6px; flex-wrap:wrap; margin:0 0 6px; }
+    .part-tabs { display:flex; gap:6px; margin:14px 0 0; }
+    .part-tab { padding:9px 18px; border:1px solid var(--line); border-bottom:none; border-radius:10px 10px 0 0; background:var(--surface2); cursor:pointer; font-weight:800; font-size:14px; color:var(--muted); }
+    .part-tab.on { background:var(--surface); color:var(--brand-d); border-color:var(--brand); position:relative; top:1px; }
+    .part-tab.locked { opacity:.6; }
+    .part-body { border:1px solid var(--line); border-radius:0 12px 12px 12px; padding:12px 14px; }
+    .part-body .write-cols { margin:4px 0 0; }
+    .part-body.locked .write-cols { opacity:.45; pointer-events:none; filter:grayscale(.6); }
+    .part-lock { background:var(--hold-bg); color:var(--hold); border-radius:8px; padding:8px 12px; font-size:13px; margin-bottom:10px; }
+    .wf .step { display:inline-block; min-width:18px; height:18px; border-radius:9px; background:var(--brand); color:#fff; font-size:11px; text-align:center; line-height:18px; margin-right:6px; font-weight:800; }
+    .wf.off { opacity:.45; } .wf.off .step { background:#c3c8d6; }
+    .wf label .kbd { font-weight:400; margin-left:4px; }
+    .w-field:disabled { background:var(--surface3); color:var(--muted); cursor:not-allowed; }
+    .w-field.rev-diff { background:#fff1cc; border-color:#e0b04a; }
+    .rev-note { font-size:12px; color:#8a5a00; background:#fff7e0; border-radius:6px; padding:3px 8px; margin-top:2px; }
+    .chk-native { display:flex; align-items:center; gap:6px; font-size:13px; margin-bottom:4px; cursor:pointer; } .chk-native input { margin:0; }
+    .llm-box .row { align-items:flex-start; } .llm-box .row .v { flex:1; }
+    .llm-copy { border:1px solid var(--line); background:var(--surface); border-radius:7px; padding:3px 9px; font-size:12px; cursor:pointer; white-space:nowrap; font-weight:700; color:var(--brand-d); }
+    .llm-copy:hover:not(:disabled) { border-color:var(--brand); background:#eef1ff; } .llm-copy:disabled { opacity:.35; cursor:default; }
+    .vfy-err { color:var(--bisineo); background:var(--bisineo-bg); border-radius:8px; padding:8px 12px; margin:8px 0; font-size:13px; }
+    .vfy-ok { color:var(--sineo); background:var(--sineo-bg); border-radius:8px; padding:8px 12px; margin:8px 0; font-size:13px; }
+    .cf-tbl { width:100%; border-collapse:collapse; font-size:13px; } .cf-tbl th, .cf-tbl td { border-bottom:1px solid var(--line); padding:5px 8px; text-align:left; vertical-align:top; } .cf-tbl th { color:var(--muted); width:130px; font-weight:600; white-space:nowrap; }
+    body.dark .w-field.rev-diff { background:#4a3a12; border-color:#a8843a; } body.dark .rev-note { background:#3a2e12; color:#f0c86a; }
+    body.dark .part-tab { background:var(--surface2); } body.dark .part-tab.on { background:var(--surface); }
     .ss-head { font-weight:800; font-size:15px; margin-bottom:6px; } .ss-head .ss-who { font-weight:600; font-size:12px; color:var(--muted); margin-left:8px; }
     .w-field.changed { background:#dbe9ff; border-color:#6f9bf0; }
     .prior { background:#f7f8ff; border:1px solid #e2e6fb; border-radius:10px; padding:10px 12px; font-size:13px; margin-bottom:12px; } .prior .lab { color:var(--brand-d); font-weight:700; }
@@ -731,9 +756,43 @@
     function toggleDark(){ lsSet('kno_dark', lsGet('kno_dark','0')==='1'?'0':'1'); applyPrefs(); }
     applyPrefs();
     (function init(){
+      if((new URLSearchParams(location.search)).get('demo')==='write'){ setTimeout(demoWrite,0); return; }   // 스크립트 하단 var 초기화 이후 실행
       if(!TOKEN){ try{ TOKEN = localStorage.getItem('kno_token') || ''; }catch(e){} }
       if(TOKEN) doBootstrap(); else showLogin();
     })();
+    /* ── 개발용 데모 모드 (?demo=write[&phase=의미부][&as=작업자|검수자]) — 백엔드 호출 없이 샘플 항목으로 화면만 렌더 ── */
+    function demoWrite(){
+      var q=new URLSearchParams(location.search), as=q.get('as')||'';
+      apiCall_=function(){ return Promise.reject(new Error('데모 모드: 서버 호출 없음')); };
+      ME = as==='작업자' ? {name:'이준',role:'작업자',isManager:false} : as==='검수자' ? {name:'송현주',role:'검수자',isManager:false} : {name:'관리자',role:'관리자',isManager:true};
+      MODE='write'; CURRENT_PROJECT={id:'demo',name:'데모 프로젝트',type:'집필',phase:q.get('phase')||'형태부'};
+      var base={ '__full':true, '작업자':'이준','검수자':'송현주','형태부 주차':'1','의미부 주차':'4','출처':'NN','작업 구분':'집필','2차 판별':'신어' };
+      function mk(o){ var it={}; for(var k in base) it[k]=base[k]; for(var k2 in o) it[k2]=o[k2]; return it; }
+      ITEMS=[
+        mk({ 'ID':'demo::1','신어 후보':'가족돌봄학생','추출 시기':'202411','2차 고유명 여부':'N','2차 혐오 표현 여부':'N','형태부 상태':'미작업','의미부 상태':'미작업',
+             'LLM 조어법':'합성','LLM 품사':'「명사」','LLM 전문 분야':'『복지』','LLM 의미 범주':'〔사회생활〕',
+             'LLM 뜻풀이':'아픈 가족을 돌보는 책임을 지고 있는 학생.','LLM 용례':'¶가족돌봄학생은 학업과 간병을 병행하느라 어려움을 겪는다.',
+             '용례':'최지영(가명·15) 양도 “아픈 가족이 있다 보니 내가 돌봐야 한다”며 가족돌봄학생의 어려움을 털어놓았다.','용례 일자':'2024-11-27 08:57:00','용례 URL':'https://n.news.naver.com/','검색 URL':'https://search.naver.com/' }),
+        mk({ 'ID':'demo::2','신어 후보':'가발킹','추출 시기':'202411','출처':'공통','2차 고유명 여부':'Y','2차 혐오 표현 여부':'Y','형태부 상태':'2차완료','의미부 상태':'미작업',
+             'LLM 조어법':'합성','LLM 품사':'「명사」','LLM 전문 분야':'','LLM 의미 범주':'〔인간〕','LLM 뜻풀이':'가발을 쓴 것으로 의심되는 사람을 조롱하여 이르는 말.','LLM 용례':'¶누리꾼들은 그를 가발킹이라고 불렀다.',
+             '1차 단어/구':'단어','1차 조어법':'합성','1차 품사':'「명사」','1차 일상어/전문어':'일상어','1차 등재표제어':'가발-킹','1차 색인표제어':'가발킹','1차 원어':'가발<영>king','1차 어종 표시':'고+영','1차 의미 영역':'〔인간〕','1차 집필 메모(형태부)':'가발이 고유어인지 확인 필요',
+             '2차 단어/구':'단어','2차 조어법':'합성','2차 품사':'「명사」','2차 일상어/전문어':'일상어','2차 등재표제어':'가발-킹','2차 색인표제어':'가발킹','2차 원어':'假髮<영>king','2차 어종 표시':'한+영','2차 의미 영역':'〔인간〕','2차 검수 메모(형태부)':'가발(假髮)은 한자어. 원어·어종 수정.',
+             '용례':'당원게시판에는 그를 가발킹이라 부르며 조롱하는 글이 잇따랐다.','용례 일자':'2024-11-29 14:00:00','용례 URL':'https://n.news.naver.com/','검색 URL':'https://search.naver.com/' }),
+        mk({ 'ID':'demo::3','신어 후보':'가세연방지법','추출 시기':'202501','2차 고유명 여부':'Y','2차 혐오 표현 여부':'N','형태부 상태':'미작업','의미부 상태':'미작업',
+             'LLM 조어법':'합성','LLM 품사':'','LLM 전문 분야':'『법률』','LLM 의미 범주':'〔정치와 행정〕','LLM 뜻풀이':'유튜브 채널 가세연으로 인한 허위 사실 유포를 막기 위해 발의된 법안을 이르는 말.','LLM 용례':'¶가세연방지법 청원이 등장했다.' })
+      ];
+      document.querySelector('header').style.display=''; document.querySelector('main').style.display='';
+      $('loginOverlay').classList.add('hidden');
+      $('who').innerHTML=esc(ME.name)+' <span class="role">'+esc(ME.role)+'</span> <span class="role">데모</span>';
+      SCOPE='mine';
+      ['view-landing','view-projects','view-home','view-researchers'].forEach(function(v){ $(v).classList.add('hidden'); });
+      $('view-work').classList.remove('hidden'); $('nav').style.display=''; $('modeBadge').classList.remove('hidden'); $('modeBadge').textContent=modeName()+' · '+CURRENT_PROJECT.name+' ('+CURRENT_PROJECT.phase+' 단계)';
+      document.querySelectorAll('nav.tabs button').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-view')==='mine'); });
+      ['f-assignee','f-week','f-v1','f-v2','f-proper','f-hate'].forEach(function(id){ $(id).style.display='none'; });
+      $('btn-add-item').style.display='block';
+      CUR=-1; renderList(); selectItem(parseInt(q.get('i')||'0',10)||0);
+      if(q.get('confirm')) setTimeout(function(){ openWriteConfirm(projPhase(), parseInt(q.get('confirm'),10)||1); }, 50);
+    }
     function showLogin(){ document.querySelector('header').style.display='none'; document.querySelector('main').style.display='none'; $('loginOverlay').classList.remove('hidden'); resetLoginForm(); }
     function resetLoginForm(){
       ['login-id','login-pw','reg-name','reg-email','reg-code','reg-id','reg-pw','reset-email','reset-code','reset-pw'].forEach(function(id){ var el=$(id); if(el) el.value=''; });
@@ -946,7 +1005,7 @@
         var v1=String(it['1차 판별']||'').trim(), v2=String(it['2차 판별']||'').trim();
         function vp(v){ return v==='신어'?'v-sin':v==='비신어'?'v-bi':'v-hold'; }   // 판별값 → pill 색상
         var label, pcls;
-        if(MODE==='write'){ label = statusLabel(st); pcls = pillClass(st); }
+        if(MODE==='write'){ var ph=projPhase(), pst=String(it[ph+' 상태']||it['상태']||'미작업'); label = ph+' '+statusLabel(pst); pcls = pillClass(pst); }
         else if(MODE==='agree'){ label = v1 || '미작업'; pcls = v1?vp(v1):'미작업'; }
         else if(v1 && v2){ label = v1+' · '+v2+' · '+(v1===v2?'일치':'불일치'); pcls = (v1===v2)?vp(v1):'v-diff'; }
         else if(v1){ label = v1; pcls = vp(v1); }
@@ -1061,99 +1120,267 @@
     // ── 집필(M5) ──
     var FIELD_67=['교육','문학','민속','언어','역사','철학','인문 일반','경영','경제','군사','매체','법률','복지','심리','정치','행정','사회 일반','동물','물리','생명','수학','식물','지구','지리','천문','천연자원','해양','화학','환경','자연 일반','공업','광업','농업','서비스업','수산업','임업','산업 일반','수의','식품','약학','의학','한의','보건 일반','건설','교통','기계','재료','전기·전자','정보·통신','공학 일반','체육','연기','영상','무용','음악','미술','복식','공예','예체능 일반','가톨릭','기독교','불교','종교 일반','인명','지명','책명','고유명 일반'];
     var FIELD_15=['인간','삶','식생활','의생활','주생활','사회생활','경제생활','교육','종교','문화','정치와 행정','자연','동식물','개념','보건·의학'];
+    var POS_LIST=['명사','대명사','수사','조사','동사','형용사','관형사','부사','감탄사','접사','의존 명사','보조 동사','보조 형용사','어미','관·명','수·관','명·부','감·명','대·부','대·감','동·형','관·감','부·감','의명·조','수·관·명','대·관'];
+    var WF_TYPES=['생성','차용','합성','파생','혼성','축약'];
+    var LANG_ABBR=['고','한','그','네','노','독','라','러','루','말','몽','베','불','산','세','와','스','아','영','에','이','인','일','중','체','타','터','페','포','폴','프','헝','히','힌'];
+    var HATE_NOTE='차별이나 비하의 의미가 포함되어 있으므로 사용에 주의가 필요하다.';
+    var PARTS=['형태부','의미부'];
+    var PART_FIELDS={ '형태부':['단어/구','조어법','품사','일상어/전문어','전문 분야','등재표제어','색인표제어','고유어','원어','어종 표시','어원','의미 영역','집필 메모(형태부)'],
+                      '의미부':['뜻풀이','수정 용례','용례','용례 출처','용례 URL','X년 Y월 신어','집필 메모(의미부)'] };
+    // LLM 참고값 → 복사 대상 필드 (컬럼명 잠정)
+    var LLM_MAP=[['LLM 조어법','조어법','형태부'],['LLM 품사','품사','형태부'],['LLM 전문 분야','전문 분야','형태부'],['LLM 의미 범주','의미 영역','형태부'],['LLM 뜻풀이','뜻풀이','의미부'],['LLM 용례','수정 용례','의미부']];
+    var TPL={'어원':'【】','용례':'¶','수정 용례':'¶','용례 출처':'≪≫'};   // 빈 칸에 기호 미리 채움
+    function tplBlank(f,v){ v=String(v==null?'':v).trim(); return !v || v===(TPL[f]||' '); }   // 템플릿 기호만 있으면 빈 값
+    function wv(it,stage,f){ return String(it[stage+'차 '+f]==null?'':it[stage+'차 '+f]); }
+    function fv(it,f){ var v2=wv(it,2,f); return v2.trim()?v2:wv(it,1,f); }   // 최종값 = 2차 우선
+    function projPhase(){ return (CURRENT_PROJECT&&CURRENT_PROJECT.phase)||'형태부'; }
     function tok_(s){ return String(s||'').trim().split(/\s+/).filter(Boolean); }
     function wordDiff_(prev, cur, cls){
       if(!String(cur||'').trim()) return '<span class="kbd">(없음)</span>';
       var pset={}; tok_(prev).forEach(function(w){ pset[w]=(pset[w]||0)+1; });
       return tok_(cur).map(function(w){ if(pset[w]>0){ pset[w]--; return esc(w); } return '<mark class="'+(cls||'')+'">'+esc(w)+'</mark>'; }).join(' ');
     }
-    function refRow_(k,v){ return '<div class="row"><div class="k">'+esc(k)+'</div><div class="v">'+esc(v||'-')+'</div></div>'; }
+    function ea(s){ return esc(String(s==null?'':s)).replace(/"/g,'&quot;'); }
+    function idxBase_(head){ return String(head||'').replace(/[-^]/g,'').replace(/\d+$/,'').trim(); }
+    // 색인표제어 자동: 등재표제어에서 -·^ 제거, 목록 내 같은 색인표제어가 있으면 순서대로 01·02
+    function indexHeadword(it, head){
+      var base=idxBase_(head); if(!base) return '';
+      var same=[]; ITEMS.forEach(function(x){ var h=(x===it)?head:fv(x,'등재표제어'); if(idxBase_(h)===base) same.push(x); });
+      if(same.length<2) return base;
+      var n=same.indexOf(it)+1; return base+(n<10?'0'+n:String(n));
+    }
     function mark2(el){ el.classList.toggle('changed', String(el.value)!==String(el.getAttribute('data-orig')||'')); }
-    function toggleCond(el){ var sec=el.closest('.stage-sec'); if(!sec) return; var t=el.getAttribute('data-target'); var f=sec.querySelector('[data-f="'+t+'"],[data-f2="'+t+'"]'); if(f) f.disabled=(el.value!==el.getAttribute('data-enable')); }
+    function onWriteInput(el){
+      var sec=el.closest('.stage-sec'); if(!sec) return;
+      if(el.classList.contains('w2')) mark2(el);
+      var stage=parseInt(sec.getAttribute('data-stage'),10), part=sec.getAttribute('data-part');
+      if(part==='형태부') chainApply(sec, stage===1 && sec.getAttribute('data-chain')==='1');
+      refreshLlmBtns();
+    }
+    function secVal(sec,f){ var el=sec.querySelector('[data-f="'+f+'"]'); if(!el) return ''; if(el.type==='checkbox') return el.checked?'Y':''; return String(el.value||'').trim(); }
+    function secSet(sec,f,v){ var el=sec.querySelector('[data-f="'+f+'"]'); if(!el) return; if(el.type==='checkbox'){ el.checked=(v==='Y'); return; } el.value=v; if(el.classList.contains('w2')) mark2(el); }
+    // 형태부 체인: 단어/구 → 조어법 → 품사(단어만) → 일상어/전문어 → 전문 분야(전문어만) → 등재표제어 → 고유어·원어 → 어종 → 어원 → 의미 영역
+    function chainApply(sec, chain){
+      var it=ITEMS[CUR]||{};
+      var wg=secVal(sec,'단어/구'), wf=secVal(sec,'조어법'), reg=secVal(sec,'일상어/전문어'), native=secVal(sec,'고유어')==='Y';
+      var posSkip=(wg==='구'), fldSkip=(reg!=='전문어');
+      if(posSkip) secSet(sec,'품사', reg==='일상어'?'「구」':'');            // 구: 품사는 일상어/전문어가 결정
+      else if(chain && wf && !secVal(sec,'품사')) secSet(sec,'품사','「명사」');   // 단어: 기본값 명사
+      if(fldSkip && reg) secSet(sec,'전문 분야','');
+      if(native){ secSet(sec,'원어',''); secSet(sec,'어원',''); if(!secVal(sec,'어종 표시')) secSet(sec,'어종 표시','고'); }
+      var head=secVal(sec,'등재표제어'); secSet(sec,'색인표제어', indexHeadword(it, head));
+      var pos=secVal(sec,'품사'), fld=secVal(sec,'전문 분야'), orig=secVal(sec,'원어'), et=secVal(sec,'어종 표시');
+      var en={};
+      en['단어/구']=true;
+      en['조어법']=!!wg;
+      en['품사']=!!wf && !posSkip;
+      en['일상어/전문어']=!!wf && (posSkip || !!pos);
+      en['전문 분야']=!!reg && !fldSkip;
+      en['등재표제어']=!!reg && (fldSkip || !!fld);
+      en['색인표제어']=false;
+      en['고유어']=!!head;
+      en['원어']=!!head && !native;
+      en['어종 표시']=!!head && (native || !!orig);
+      en['어원']=en['어종 표시'] && !!et && !native;
+      en['의미 영역']=en['어종 표시'] && !!et;
+      en['집필 메모(형태부)']=true; en['검수 메모(형태부)']=true;
+      sec.querySelectorAll('[data-f]').forEach(function(el){
+        var f=el.getAttribute('data-f'), ro=el.getAttribute('data-ro')==='1';
+        var on = ro ? false : (chain ? !!en[f] : true);
+        if(f==='색인표제어') on=false;
+        el.disabled=!on;
+        var wf_=el.closest('.wf'); if(wf_) wf_.classList.toggle('off', chain && !en[f] && !ro && f!=='색인표제어');
+      });
+    }
+    // 저장 전 점검 — 전부 오류(저장 차단)
+    function validateWrite(part, v, it){
+      var E=[]; function has(s,ch){ return String(s||'').indexOf(ch)>=0; }
+      if(part==='형태부'){
+        var wg=v['단어/구'], wf=v['조어법'], pos=v['품사'], reg=v['일상어/전문어'], fld=v['전문 분야'], head=v['등재표제어'], native=v['고유어']==='Y', orig=v['원어'], et=v['어종 표시'], ety=tplBlank('어원',v['어원'])?'':v['어원'], sem=v['의미 영역'];
+        if(!wg) E.push('단어/구를 선택하세요.'); if(!wf) E.push('조어법을 선택하세요.'); if(!reg) E.push('일상어/전문어를 선택하세요.'); if(!head) E.push('등재표제어를 입력하세요.');
+        if(head){
+          if(/[^가-힣ㄱ-ㅎㅏ-ㅣ\-\^·\s0-9]/.test(head)) E.push('등재표제어: 한글·-·^··(가운뎃점)·공백·번호 외 문자가 있습니다(로마자 금지).');
+          if(has(head,'^') && /\s/.test(head)) E.push('등재표제어: ^과 공백은 함께 쓸 수 없습니다.');
+          if(wg==='단어' && (/\s/.test(head)||has(head,'^'))) E.push('등재표제어: 단어인데 공백/^이 있습니다.');
+          if(wg==='구' && has(head,'-')) E.push('등재표제어: 구인데 -이 있습니다(-는 단어 내부 분석에만).');
+          if((head.match(/-/g)||[]).length>=2) E.push('등재표제어: -는 한 표제어에 하나만 허용됩니다.');
+          if((wf==='혼성'||wf==='축약') && has(head,'-')) E.push('등재표제어: 조어법이 '+wf+'이면 붙임표를 쓰지 않습니다.');
+          if(/\d+$/.test(head)){ var b=idxBase_(head), n=0; ITEMS.forEach(function(x){ if(idxBase_(x===it?head:fv(x,'등재표제어'))===b) n++; }); if(n<2) E.push('등재표제어: 어깨 번호가 있으나 목록 내 동형어가 없습니다.'); }
+        }
+        if(wg==='구' && reg==='일상어'){ if(head && !/\s/.test(head)) E.push('일반어 구: 등재표제어에 공백이 있어야 합니다.'); if(pos!=='「구」') E.push('일반어 구: 품사는 「구」여야 합니다.'); if(fld) E.push('일반어 구: 전문 분야를 줄 수 없습니다(「구」와 『』 동시 불가).'); }
+        if(wg==='구' && reg==='전문어'){ if(head && !has(head,'^')) E.push('전문어 구: 등재표제어에 ^이 있어야 합니다.'); if(pos) E.push('전문어 구: 품사를 표시하지 않습니다.'); if(!fld) E.push('전문어 구: 전문 분야가 필요합니다.'); }
+        if(wg==='단어'){ if(!pos||pos==='「구」') E.push('단어: 품사(9품사)를 입력하세요.'); if(reg==='전문어'&&!fld) E.push('전문어: 전문 분야가 필요합니다.'); if(reg==='일상어'&&fld) E.push('일상어: 전문 분야를 줄 수 없습니다.'); }
+        if(pos && pos!=='「구」'){ var pm=pos.match(/^「(.+)」$/); if(!pm || POS_LIST.indexOf(pm[1])<0) E.push('품사: 「」 안에 허용 품사만 쓸 수 있습니다.'); }
+        if(fld){ var fm=fld.match(/^『(.+)』$/); if(!fm || FIELD_67.indexOf(fm[1])<0) E.push('전문 분야: 『』 안에 67 중분류만 쓸 수 있습니다.'); }
+        if(sem){ var sm=sem.match(/^〔(.+)〕$/); if(!sm || FIELD_15.indexOf(sm[1])<0) E.push('의미 영역: 〔〕 안에 15 범주만 쓸 수 있습니다.'); }
+        if(wf==='차용'){ if(has(orig,'▼')) E.push('차용: 원어에 ▼(한국식 조어)를 쓸 수 없습니다.'); if(!ety) E.push('차용: 어원란에 내부 결합 관계를 밝혀야 합니다.'); }
+        if(orig && /[^가-힣ㄱ-ㅎㅏ-ㅣ一-鿿㐀-䶿A-Za-z←▼▽<>\[\]\/\s0-9]/.test(orig)) E.push('원어: 한글·한자·로마자·←▼▽·<언어명>·[ ] 외 문자가 있습니다(^·-·+ 금지).');
+        if(native){ if(orig) E.push('고유어: 원어를 비워야 합니다.'); if(ety) E.push('고유어: 어원을 비워야 합니다.'); if(et && /[^고+_^()\s]/.test(et)) E.push('고유어: 어종에 고 외 토큰이 있습니다.'); }
+        else if(!orig) E.push('원어를 입력하세요(고유어면 고유어 체크).');
+        if(et){
+          var toks=et.replace(/[+_^()\s]/g,'|').split('|').filter(Boolean);
+          toks.forEach(function(t){ if(LANG_ABBR.indexOf(t)<0) E.push('어종 표시: 허용되지 않는 토큰 "'+t+'"'); });
+          var seqH=(head||'').replace(/\d+$/,'').replace(/[^-\s^]/g,'').replace(/-/g,'+').replace(/\s/g,'_'), seqE=et.replace(/[^+_^]/g,'');
+          if(head && seqH!==seqE) E.push('어종 표시: 기호 열('+(seqE||'없음')+')이 등재표제어의 분절('+(seqH||'없음')+')과 다릅니다.');
+          (et.match(/\([^()]*\)/g)||[]).forEach(function(g){ var tt=g.replace(/[()+_^\s]/g,'|').split('|').filter(Boolean); if(tt.length && tt.every(function(x){ return x===tt[0]; })) E.push('어종 표시: 같은 어종끼리는 괄호로 묶지 않습니다 '+g); });
+        } else if(head) E.push('어종 표시를 입력하세요.');
+      } else {
+        var def=v['뜻풀이'], ex=tplBlank('수정 용례',v['수정 용례'])?'':v['수정 용례'], src=tplBlank('용례 출처',v['용례 출처'])?'':v['용례 출처'], xy=v['X년 Y월 신어'];
+        if(!def) E.push('뜻풀이를 입력하세요.');
+        if(src && !/^≪[^,≪≫]+ \d{4}년 \d{1,2}월≫$/.test(src)) E.push('용례 출처: ≪매체 OOOO년 OO월≫ 형식이어야 합니다(쉼표·섹션명 없음).');
+        if(xy && !/^【\d{4}년 \d{1,2}월 신어】$/.test(xy)) E.push('X년 Y월 신어: 【OOOO년 OO월 신어】 형식이어야 합니다.');
+        function romanOut(s){ return /[A-Za-z]/.test(String(s||'').replace(/\([^)]*\)/g,'')); }
+        if(romanOut(def)) E.push('뜻풀이: 괄호 밖에 로마자가 단독으로 드러날 수 없습니다.');
+        if(romanOut(ex)) E.push('작성례: 괄호 밖에 로마자가 단독으로 드러날 수 없습니다.');
+        if(String(it['2차 혐오 표현 여부']||'').trim()==='Y' && def.indexOf(HATE_NOTE)<0) E.push('혐오 표현 항목: 뜻풀이 끝에 주의 문구가 있어야 합니다. "'+HATE_NOTE+'"');
+      }
+      return E;
+    }
     function renderWriteDetail(it){
       var isW=(ME.isManager||ME.name===String(it['작업자']||'').trim());
       var isR=(ME.isManager||ME.name===String(it['검수자']||'').trim());
-      var canField=isW||isR;   // 집필 필드: 작업자 또는 검수자(전수 수정)
-      var TPL={'원어':'()','품사':'「」','어원':'【】','용례':'¶','수정 용례':'¶','용례 출처':'≪≫'};   // 빈 칸에 기호 미리 채움
-      function pv(f){ var x=it[f]||''; if(x) return x;
-        if(f==='X년 Y월 신어'){ var m=String(it['추출 시기']||'').match(/(\d{4})\.(\d{1,2})/); return m ? '【'+m[1]+'년 '+parseInt(m[2],10)+'월 신어】' : '【    년   월 신어】'; }
-        return TPL[f]||''; }
-      function ea(s){ return esc(String(s==null?'':s)).replace(/"/g,'&quot;'); }   // 속성값 이스케이프
-      function inp(f,ed){ return '<input class="w-field" data-f="'+esc(f)+'" value="'+ea(pv(f))+'"'+(ed?'':' readonly')+'>'; }
-      function ta(f,rows,ed){ return '<textarea class="w-field" data-f="'+esc(f)+'" rows="'+(rows||2)+'"'+(ed?'':' readonly')+'>'+esc(pv(f))+'</textarea>'; }
-      function dl(f,list,ed){ return '<input class="w-field" data-f="'+esc(f)+'" list="'+list+'" value="'+ea(pv(f))+'" placeholder="선택"'+(ed?'':' readonly')+'>'; }
-      function fld(label,ctrl){ return '<div class="wf"><label>'+esc(label)+'</label>'+ctrl+'</div>'; }
-      // 2차 검수 = 1차 표시값 그대로 복사(프리필 포함), 변경 시 하이라이트
-      function inp2(f,ed){ var v=pv(f); return '<input class="w-field w2" data-f2="'+esc(f)+'" data-orig="'+ea(v)+'" value="'+ea(v)+'" oninput="mark2(this)"'+(ed?'':' readonly')+'>'; }
-      function ta2(f,rows,ed){ var v=pv(f); return '<textarea class="w-field w2" data-f2="'+esc(f)+'" data-orig="'+ea(v)+'" rows="'+(rows||2)+'" oninput="mark2(this)"'+(ed?'':' readonly')+'>'+esc(v)+'</textarea>'; }
-      function dl2(f,list,ed){ var v=pv(f); return '<input class="w-field w2" data-f2="'+esc(f)+'" data-orig="'+ea(v)+'" list="'+list+'" value="'+ea(v)+'" placeholder="선택" oninput="mark2(this)"'+(ed?'':' readonly')+'>'; }
-      // 조건부 선택(단어/구 → 품사, 일상어/전문어 → 전문 분야). two=2차
-      function cond(f,opts,target,enableVal,two,ed){ var v=it[f]||'', a=two?'data-f2':'data-f', cls=two?'w-field w2':'w-field', orig=two?' data-orig="'+ea(v)+'"':'', oc='onchange="'+(two?'mark2(this);':'')+'toggleCond(this)"'; var o=[''].concat(opts).map(function(x){return '<option value="'+ea(x)+'"'+(x===v?' selected':'')+'>'+(esc(x)||'선택')+'</option>';}).join(''); return '<select class="'+cls+'" '+a+'="'+esc(f)+'"'+orig+' data-target="'+esc(target)+'" data-enable="'+esc(enableVal)+'" '+oc+(ed?'':' disabled')+'>'+o+'</select>'; }
-      var llmDef=String((it['GPT 정의문']||'')+' '+(it['GPT 설명문']||'')).trim();
+      var phase=projPhase(), part=window.__writePart||phase; if(PARTS.indexOf(part)<0) part=phase;
+      var newItem=String(it['ID']||'').indexOf('::new-')>=0;
       var h='<div class="cand-label">신어 집필</div><div class="cand-term">'+esc(it['신어 후보'])+'</div>'
-        + '<div class="cand-meta">최초 출현 <b>'+(it['최초출현일']?ymd(it['최초출현일']):(it['추출 시기']?ym(it['추출 시기']):'-'))+'</b> &nbsp;·&nbsp; '+esc(it['작업자']||'?')+' - '+esc(it['검수자']||'?')+(it['배정 주차']?' ('+esc(it['배정 주차'])+'주차)':'')
-        + (String(it['ID']||'').indexOf('::new-')>=0 ? ' &nbsp; <button class="btn ghost del-item" onclick="deleteWriteItem()">🗑 새 항목 삭제</button>' : '')
+        + '<div class="cand-meta">출처 <b>'+srcLabel(it['출처'])+'</b> &nbsp;·&nbsp; 출현 시점 <b>'+(it['추출 시기']?ym(it['추출 시기']):'-')+'</b> &nbsp;·&nbsp; '+fmtName(it['작업자']||'?')+' - '+fmtName(it['검수자']||'?')
+        + (it['형태부 주차']?' &nbsp;·&nbsp; 형태부 '+esc(it['형태부 주차'])+'주차':'')+(it['의미부 주차']?' / 의미부 '+esc(it['의미부 주차'])+'주차':'')
+        + (newItem ? ' &nbsp; <button class="btn ghost del-item" onclick="deleteWriteItem()">🗑 새 항목 삭제</button>' : '')
         + '</div>';
-      h+='<div class="llm-box"><h3>🤖 GPT 1차 초안</h3>'+refRow_('의미 범주',it['GPT 의미 범주'])+refRow_('정의문',it['GPT 정의문'])+refRow_('설명문',it['GPT 설명문'])+refRow_('용례',it['GPT 용례'])+'</div>';
+      // 판별 참조 배지
+      var hate=String(it['2차 혐오 표현 여부']||'').trim(), proper=String(it['2차 고유명 여부']||'').trim(), vd=String(it['2차 판별']||'').trim();
+      h+='<div class="ref-badges">'+(vd?'<span class="pill '+(vd==='신어'?'v-sin':'v-hold')+'">판별 '+esc(vd)+'</span>':'')
+        + (proper?'<span class="pill '+(proper==='Y'?'v-hold':'미작업')+'">고유명 '+esc(proper)+'</span>':'')
+        + (hate?'<span class="pill '+(hate==='Y'?'v-bi':'미작업')+'">혐오 표현 '+esc(hate)+'</span>':'')
+        + '<span class="pill s1">형태부 '+esc(it['형태부 상태']||'미작업')+'</span><span class="pill s2">의미부 '+esc(it['의미부 상태']||'미작업')+'</span></div>';
+      // LLM 참고 박스 — 값마다 복사하기
+      h+='<div class="llm-box"><h3>🤖 LLM 생성 결과 (참고)</h3>'+LLM_MAP.map(function(m,i){
+        var val=String(it[m[0]]||''); return '<div class="row"><div class="k">'+esc(m[1])+'</div><div class="v">'+(val?esc(val):'<span class="kbd">(없음)</span>')+'</div>'
+          + '<button class="llm-copy" data-llm="'+i+'" onclick="llmCopy('+i+')"'+(val?'':' disabled')+'>복사하기</button></div>';
+      }).join('')+'</div>';
+      // 뜻풀이 변경 이력(의미부)
+      var llmDef=String(it['LLM 뜻풀이']||'').trim();
       h+='<div class="diff-box"><h3>✍️ 뜻풀이 변경 이력</h3>'
         + '<div class="drow"><span class="dl">LLM</span><div class="dv">'+esc(llmDef||'(없음)')+'</div></div>'
-        + '<div class="drow"><span class="dl">작업자</span><div class="dv">'+wordDiff_(llmDef,it['1차 뜻풀이'],'m1')+'</div></div>'
-        + '<div class="drow"><span class="dl">검수자</span><div class="dv">'+wordDiff_(it['1차 뜻풀이'],it['2차 뜻풀이'],'m2')+'</div></div></div>';
-      h+='<div class="write-cols">';
-      // ← 1차 작업(작업자)
-      h+='<div class="stage-sec s1"><div class="ss-head">📝 1차 작업 <span class="ss-who">작업자 '+esc(it['작업자']||'?')+'</span></div>'
-        + '<div class="write-form">'
-        + fld('색인표제어',inp('색인표제어',canField))+fld('등재표제어',inp('등재표제어',canField))
-        + fld('원어',inp('원어',canField))+fld('어종 표시',inp('어종 표시',canField))+fld('어원',inp('어원',canField))
-        + fld('단어/구',cond('단어/구',['단어','구'],'품사','단어',false,canField))+fld('품사',inp('품사',canField))
-        + fld('일상어/전문어',cond('일상어/전문어',['일상어','전문어'],'전문 분야','전문어',false,canField))+fld('전문 분야',dl('전문 분야','dl-jm',canField))+fld('의미 영역',dl('의미 영역','dl-um',canField))
-        + fld('뜻풀이',ta('뜻풀이',3,canField))
-        + fld('작성례',ta('수정 용례',3,canField))
-        + '<div class="wf-sec">📎 참고 용례</div>'
-        + fld('용례',ta('용례',3,canField))+fld('용례 출처',inp('용례 출처',canField))+fld('용례 URL',inp('용례 URL',canField))
-        + fld('X년 Y월 신어',inp('X년 Y월 신어',canField))
-        + '<div class="wf-sec">📝 작업 메모</div>'
-        + fld('형태부',ta('집필 메모(형태부)',2,canField))+fld('의미부',ta('집필 메모(의미부)',2,canField))
-        + '</div>'
-        + '<div class="ss-foot">'+(isW?'<button class="btn save" onclick="saveWriteForm(1,false)">1차 작업 저장</button> <span class="save-badge"></span>':'<span class="kbd">작업자만 저장</span>')+'</div>'
-        + '</div>';
-      // → 2차 검수(검수자) — 1차 복사본, 변경분 하이라이트
-      h+='<div class="stage-sec s2"><div class="ss-head">🔎 2차 검수 <span class="ss-who">검수자 '+esc(it['검수자']||'?')+'</span></div>'
-        + '<div class="write-form">'
-        + fld('색인표제어',inp2('색인표제어',isR))+fld('등재표제어',inp2('등재표제어',isR))
-        + fld('원어',inp2('원어',isR))+fld('어종 표시',inp2('어종 표시',isR))+fld('어원',inp2('어원',isR))
-        + fld('단어/구',cond('단어/구',['단어','구'],'품사','단어',true,isR))+fld('품사',inp2('품사',isR))
-        + fld('일상어/전문어',cond('일상어/전문어',['일상어','전문어'],'전문 분야','전문어',true,isR))+fld('전문 분야',dl2('전문 분야','dl-jm',isR))+fld('의미 영역',dl2('의미 영역','dl-um',isR))
-        + fld('뜻풀이',ta2('뜻풀이',3,isR))
-        + fld('작성례',ta2('수정 용례',3,isR))
-        + '<div class="wf-sec">📎 참고 용례</div>'
-        + fld('용례',ta2('용례',3,isR))+fld('용례 출처',inp2('용례 출처',isR))+fld('용례 URL',inp2('용례 URL',isR))
-        + fld('X년 Y월 신어',inp2('X년 Y월 신어',isR))
-        + '<div class="wf-sec">🔎 검수 메모</div>'
-        + fld('형태부',ta('검수 메모(형태부)',2,isR))+fld('의미부',ta('검수 메모(의미부)',2,isR))
-        + '</div>'
-        + '<div class="ss-foot">'+(isR?'<button class="btn save" onclick="saveWriteForm(2,false)">2차 검수 저장</button> <span class="save-badge"></span>':'<span class="kbd">검수자만 저장</span>')+'</div>'
-        + '</div>';
-      h+='</div>';
+        + '<div class="drow"><span class="dl">작업자</span><div class="dv">'+wordDiff_(llmDef,wv(it,1,'뜻풀이'),'m1')+'</div></div>'
+        + '<div class="drow"><span class="dl">검수자</span><div class="dv">'+wordDiff_(wv(it,1,'뜻풀이'),wv(it,2,'뜻풀이'),'m2')+'</div></div></div>';
+      // 형태부/의미부 탭
+      h+='<div class="part-tabs">'+PARTS.map(function(p){ var locked=(p!==phase); return '<div class="part-tab'+(p===part?' on':'')+(locked?' locked':'')+'" onclick="setWritePart(\''+p+'\')">'+(p==='형태부'?'🔤 형태부':'📖 의미부')+(locked?(p==='의미부'?' 🔒':' (읽기 전용)'):' · 진행 중')+'</div>'; }).join('')+'</div>';
+      var partLocked=(part==='의미부' && phase==='형태부');
+      h+='<div class="part-body'+(partLocked?' locked':'')+'" data-part="'+part+'">';
+      if(partLocked) h+='<div class="part-lock">🔒 지금은 <b>형태부 단계</b>입니다. 관리자가 프로젝트를 의미부 단계로 전환하면 의미부 작업이 열립니다.</div>';
+      else if(part==='형태부' && phase==='의미부') h+='<div class="part-lock">형태부는 완료되어 읽기 전용입니다. 검수자만 수정할 수 있습니다.</div>';
+      var ed1=!partLocked && isW && !(part==='형태부' && phase==='의미부');
+      var ed2=!partLocked && isR;
+      h+='<div class="write-cols">'+stageSec(it,part,1,ed1)+stageSec(it,part,2,ed2)+'</div></div>';
       h+='<datalist id="dl-jm">'+FIELD_67.map(function(x){return '<option value="『'+esc(x)+'』">';}).join('')+'</datalist>';
       h+='<datalist id="dl-um">'+FIELD_15.map(function(x){return '<option value="〔'+esc(x)+'〕">';}).join('')+'</datalist>';
+      h+='<datalist id="dl-pos">'+POS_LIST.map(function(x){return '<option value="「'+esc(x)+'」">';}).join('')+'</datalist>';
       $('detail').innerHTML=h;
-      document.querySelectorAll('#detail select[data-target]').forEach(toggleCond);
+      document.querySelectorAll('#detail .stage-sec[data-part="형태부"]').forEach(function(sec){ chainApply(sec, sec.getAttribute('data-chain')==='1'); });
+      refreshLlmBtns();
     }
-    function collectWrite_(stage){ var f={}; document.querySelectorAll('#detail .stage-sec.s'+(stage===2?2:1)+' .w-field').forEach(function(el){ var k=el.getAttribute('data-f2')||el.getAttribute('data-f'); if(k) f[k]=el.value; }); return f; }
-    function saveWriteForm(stage, silent){
+    function setWritePart(p){ window.__writePart=p; renderDetail(); }
+    // 단계 폼: 1차(작업자)·2차(검수자). 2차는 1차 값 복사 + 변경분 하이라이트. 1차는 2차가 고친 필드를 역표시.
+    function stageSec(it, part, stage, ed){
+      var chain=(part==='형태부' && stage===1 && ed);
+      var who=stage===1?'작업자 '+fmtName(it['작업자']||'?'):'검수자 '+fmtName(it['검수자']||'?');
+      var h='<div class="stage-sec s'+stage+'" data-part="'+part+'" data-stage="'+stage+'" data-chain="'+(chain?1:0)+'"><div class="ss-head">'+(stage===1?'📝 1차 작업':'🔎 2차 검수')+' <span class="ss-who">'+who+'</span></div><div class="write-form">';
+      function pv(f){   // 표시값: 해당 단계 값 → (2차면 1차 복사) → 프리필
+        var v=wv(it,stage,f); if(v.trim()) return v;
+        if(stage===2){ v=wv(it,1,f); if(v.trim()) return v; }
+        if(f==='X년 Y월 신어'){ var m=String(it['추출 시기']||'').match(/(\d{4})\.?(\d{2})/); return m ? '【'+m[1]+'년 '+parseInt(m[2],10)+'월 신어】' : '【    년   월 신어】'; }
+        if(f==='뜻풀이' && String(it['2차 혐오 표현 여부']||'').trim()==='Y') return HATE_NOTE;
+        return TPL[f]||'';
+      }
+      function attrs(f, extra){
+        var v=pv(f), a=' data-f="'+esc(f)+'" onchange="onWriteInput(this)" oninput="onWriteInput(this)"';
+        if(stage===2) a+=' data-orig="'+ea(wv(it,1,f))+'"';
+        if(!ed) a+=' data-ro="1"';
+        return a+(extra||'');
+      }
+      function revNote(f){   // 1차 폼: 검수자가 고친 값 표시
+        if(stage!==1) return ['',''];
+        var v1=wv(it,1,f), v2=wv(it,2,f); if(!v2.trim() || v2===v1) return ['',''];
+        return [' rev-diff','<div class="rev-note">검수자: '+esc(v2)+'</div>'];
+      }
+      function cls(f){ return 'w-field'+(stage===2?' w2':'')+(stage===2 && wv(it,2,f).trim() && wv(it,2,f)!==wv(it,1,f)?' changed':'')+revNote(f)[0]; }
+      function inp(f,ph){ return '<input class="'+cls(f)+'"'+attrs(f)+' value="'+ea(pv(f))+'"'+(ph?' placeholder="'+ea(ph)+'"':'')+'>'+revNote(f)[1]; }
+      function ta(f,rows){ return '<textarea class="'+cls(f)+'"'+attrs(f)+' rows="'+(rows||2)+'">'+esc(pv(f))+'</textarea>'+revNote(f)[1]; }
+      function dl(f,list){ return '<input class="'+cls(f)+'"'+attrs(f)+' list="'+list+'" value="'+ea(pv(f))+'" placeholder="선택 또는 입력">'+revNote(f)[1]; }
+      function sel(f,opts){ var v=pv(f); return '<select class="'+cls(f)+'"'+attrs(f)+'>'+[''].concat(opts).map(function(x){ return '<option value="'+ea(x)+'"'+(x===v?' selected':'')+'>'+(esc(x)||'선택')+'</option>'; }).join('')+'</select>'+revNote(f)[1]; }
+      function fld(step,label,ctrl,hint){ return '<div class="wf"><label>'+(step?'<span class="step">'+step+'</span>':'')+esc(label)+(hint?' <span class="kbd">'+hint+'</span>':'')+'</label>'+ctrl+'</div>'; }
+      var memoF = part==='형태부' ? (stage===1?'집필 메모(형태부)':'검수 메모(형태부)') : (stage===1?'집필 메모(의미부)':'검수 메모(의미부)');
+      if(part==='형태부'){
+        h+=fld(1,'단어/구',sel('단어/구',['단어','구']))
+          +fld(2,'조어법',sel('조어법',WF_TYPES))
+          +fld(3,'품사',dl('품사','dl-pos'),'단어: 9품사(기본 「명사」) · 구: 자동')
+          +fld(4,'일상어/전문어',sel('일상어/전문어',['일상어','전문어']))
+          +fld(5,'전문 분야',dl('전문 분야','dl-jm'),'전문어만')
+          +fld(6,'등재표제어',inp('등재표제어'),'단어 - · 일반어 구 공백 · 전문어 구 ^')
+          +fld('','색인표제어',inp('색인표제어'),'자동')
+          +fld(7,'원어','<label class="chk-native"><input type="checkbox"'+attrs('고유어')+(pv('고유어')==='Y'?' checked':'')+'> 고유어(원어 없음)</label>'+inp('원어','예: 假髮<영>king · ▼ 한국식 조어 · ← 변형'))
+          +fld(8,'어종 표시',inp('어종 표시','예: 한+영 · 고_영 · 한^한'))
+          +fld(9,'어원',inp('어원'),'차용어 내부 결합·약어 풀이 【 】')
+          +fld(10,'의미 영역',dl('의미 영역','dl-um'))
+          +'<div class="wf-sec">📝 '+(stage===1?'작업 메모':'검수 메모')+'</div>'
+          +fld('','형태부',ta(memoF,2));
+      } else {
+        h+=fld('','뜻풀이',ta('뜻풀이',3))
+          +fld('','작성례',ta('수정 용례',3))
+          +'<div class="wf-sec">📎 참고 용례</div>'
+          +fld('','용례',ta('용례',3))+fld('','용례 출처',inp('용례 출처'),'≪매체 OOOO년 OO월≫')+fld('','용례 URL',inp('용례 URL'))
+          +fld('','X년 Y월 신어',inp('X년 Y월 신어'))
+          +'<div class="wf-sec">📝 '+(stage===1?'작업 메모':'검수 메모')+'</div>'
+          +fld('','의미부',ta(memoF,2));
+      }
+      h+='</div><div class="ss-foot">'+(ed?'<button class="btn save" onclick="openWriteConfirm(\''+part+'\','+stage+')">'+(stage===1?'1차 작업 저장':'2차 검수 저장')+'</button> <span class="save-badge"></span>':'<span class="kbd">'+(stage===1?'작업자만 저장':'검수자만 저장')+'</span>')+'</div></div>';
+      return h;
+    }
+    function collectWrite_(part, stage){
+      var sec=document.querySelector('#detail .stage-sec[data-part="'+part+'"][data-stage="'+stage+'"]'), f={}; if(!sec) return f;
+      sec.querySelectorAll('[data-f]').forEach(function(el){ var k=el.getAttribute('data-f'); if(el.type==='checkbox') f[k]=el.checked?'Y':''; else f[k]=String(el.value||'').trim(); });
+      return f;
+    }
+    // LLM 값 복사: 현재 사용자가 편집 가능한 단계 폼의 대상 필드로
+    function llmTarget(i){
+      var m=LLM_MAP[i], part=m[2]; var secs=document.querySelectorAll('#detail .stage-sec[data-part="'+part+'"]');
+      for(var k=0;k<secs.length;k++){ var el=secs[k].querySelector('[data-f="'+m[1]+'"]'); if(el && !el.disabled) return el; }
+      return null;
+    }
+    function refreshLlmBtns(){ document.querySelectorAll('#detail .llm-copy').forEach(function(b){ var i=parseInt(b.getAttribute('data-llm'),10), it=ITEMS[CUR]||{}; b.disabled=!(String(it[LLM_MAP[i][0]]||'').trim() && llmTarget(i)); }); }
+    function llmCopy(i){
+      var it=ITEMS[CUR]; if(!it) return; var el=llmTarget(i); if(!el){ toast('대상 필드가 아직 활성화되지 않았습니다.'); return; }
+      el.value=String(it[LLM_MAP[i][0]]||''); onWriteInput(el); el.focus(); toast(LLM_MAP[i][1]+'에 복사했습니다.');
+    }
+    // 저장 전 확인 창: 전 필드 + 점검 결과
+    function openWriteConfirm(part, stage){
       var it=ITEMS[CUR]; if(!it) return;
-      var fields=collectWrite_(stage);
-      for(var k in fields) it[k]=fields[k];
-      if(stage===1) it['1차 뜻풀이']=fields['뜻풀이']||''; else it['2차 뜻풀이']=fields['뜻풀이']||'';
-      google.script.run.withSuccessHandler(function(){ setSaveBadge('저장 완료',false); if(!silent) toast((stage===2?'2차 검수':'1차 작업')+' 저장 완료'); })
-        .withFailureHandler(function(e){ setSaveBadge('저장 실패',true); if(!silent) toast('실패: '+e.message); })
-        .saveWrite(TOKEN,{ row_id:it['ID'], stage:stage, fields:fields, op_id:newOpId() });
+      var vals=collectWrite_(part, stage), errs=validateWrite(part, vals, it);
+      var rows=Object.keys(vals).map(function(k){ var v=vals[k]; return '<tr><th>'+esc(k)+'</th><td>'+(v?esc(v).replace(/\n/g,'<br>'):'<span class="kbd">(비어 있음)</span>')+'</td></tr>'; }).join('');
+      var box=$('wconfirm'); if(!box){ box=document.createElement('div'); box.id='wconfirm'; box.className='modal'; box.addEventListener('click', function(e){ if(e.target===box) closeWriteConfirm(); }); document.body.appendChild(box); }
+      box.innerHTML='<div class="modal-box"><button class="x" onclick="closeWriteConfirm()">×</button><h2 style="margin-top:0">'+esc(part)+' '+stage+'차 저장 전 확인 — '+esc(it['신어 후보'])+'</h2>'
+        + (errs.length ? '<div class="vfy-err"><b>점검 오류 '+errs.length+'건 — 저장할 수 없습니다.</b><ul style="margin:6px 0 0 18px">'+errs.map(function(e){ return '<li>'+esc(e)+'</li>'; }).join('')+'</ul></div>' : '<div class="vfy-ok">점검 통과 — 아래 내용으로 저장합니다.</div>')
+        + '<table class="cf-tbl">'+rows+'</table>'
+        + '<div class="actions" style="margin-top:14px"><button class="btn save" onclick="saveWriteForm(\''+part+'\','+stage+')"'+(errs.length?' disabled':'')+'>저장</button><button class="btn reject" onclick="closeWriteConfirm()">돌아가서 수정</button></div></div>';
+      box.classList.remove('hidden');
+    }
+    function closeWriteConfirm(){ var b=$('wconfirm'); if(b) b.classList.add('hidden'); }
+    function saveWriteForm(part, stage){
+      var it=ITEMS[CUR]; if(!it) return;
+      var fields=collectWrite_(part, stage);
+      if(validateWrite(part, fields, it).length) return;
+      closeWriteConfirm();
+      for(var k in fields) it[stage+'차 '+k]=fields[k];
+      var stKey=part+' 상태'; it[stKey] = stage===2 ? '2차완료' : (String(it[stKey]||'')==='2차완료' ? '2차완료' : '1차완료');
+      renderList(); renderDetail();
+      google.script.run.withSuccessHandler(function(){ setSaveBadge('저장 완료',false); toast(part+' '+stage+'차 저장 완료'); })
+        .withFailureHandler(function(e){ setSaveBadge('저장 실패',true); toast('실패: '+e.message); })
+        .saveWrite(TOKEN,{ row_id:it['ID'], part:part, stage:stage, fields:fields, op_id:newOpId() });
     }
     function addNewWriteItem(){
       var cand=prompt('새 표제어(신어 후보)를 입력하세요:'); if(cand===null) return;
       cand=String(cand).trim(); if(!cand){ toast('표제어를 입력하세요.'); return; }
-      function addLocal(id){ var it={'__full':true,'ID':id,'신어 후보':cand,'작업자':(ME.isManager?'':ME.name)||'','검수자':'','배정 주차':'','상태':'미작업'}; ITEMS.unshift(it); CUR=0; renderList(); renderWriteDetail(it); }
+      function addLocal(id){ var it={'__full':true,'ID':id,'신어 후보':cand,'작업자':(ME.isManager?'':ME.name)||'','검수자':'','형태부 상태':'미작업','의미부 상태':'미작업'}; ITEMS.unshift(it); CUR=0; renderList(); renderWriteDetail(it); }
       var pid=CURRENT_PROJECT&&CURRENT_PROJECT.id; if(!pid){ toast('먼저 프로젝트를 여세요.'); return; }
       google.script.run.withSuccessHandler(function(r){ addLocal(r.id); toast('새 항목을 추가했습니다.'); })
         .withFailureHandler(function(e){ toast('실패: '+e.message); })
