@@ -790,14 +790,14 @@
       var base={ '__full':true, '작업자':'이준','검수자':'송현주','형태부 주차':'1','의미부 주차':'4','출처':'NN','작업 구분':'집필','2차 판별':'신어' };
       function mk(o){ var it={}; for(var k in base) it[k]=base[k]; for(var k2 in o) it[k2]=o[k2]; return it; }
       ITEMS=[
-        mk({ 'ID':'demo::1','신어 후보':'가족돌봄학생','추출 시기':'202411','2차 고유명 여부':'N','2차 혐오 표현 여부':'N','형태부 상태':'미작업','의미부 상태':'미작업',
+        mk({ 'ID':'demo::1','신어 후보':'가족돌봄학생','추출 시기':'202411','2차 고유명 여부':'N','2차 혐오 표현 여부':'N','1차 메모':'','2차 메모':'같은 기사에 출현하는 동의어입니다. 신어 지위 확인 부탁드립니다.','형태부 상태':'미작업','의미부 상태':'미작업',
              'LLM 색인표제어':'가족돌봄학생','LLM 조어법':'합성','LLM 품사':'「명사」','LLM 일상어/전문어':'전문어','LLM 전문 분야':'『복지』','LLM 의미 범주':'〔사회생활〕',
              'LLM 뜻풀이':'아픈 가족을 돌보는 책임을 지고 있는 학생.','LLM 용례':'¶가족돌봄학생은 학업과 간병을 병행하느라 어려움을 겪는다.',
              '용례':'최지영(가명·15) 양도 “아픈 가족이 있다 보니 내가 돌봐야 한다”며 가족돌봄학생의 어려움을 털어놓았다.','용례 일자':'2024-11-27 08:57:00','용례 URL':'https://n.news.naver.com/','검색 URL':'https://search.naver.com/' }),
-        mk({ 'ID':'demo::2','신어 후보':'가발킹','추출 시기':'202411','출처':'공통','2차 고유명 여부':'Y','2차 혐오 표현 여부':'Y','형태부 상태':'2차완료','의미부 상태':'미작업',
+        mk({ 'ID':'demo::2','신어 후보':'가발킹','추출 시기':'202411','출처':'공통','2차 고유명 여부':'Y','2차 혐오 표현 여부':'Y','1차 메모':'','2차 메모':'가발킹 자체가 고유명은 아님. 다만 한동훈 대표를 지시하므로 고유명으로 체크.','형태부 상태':'2차완료','의미부 상태':'미작업',
              'LLM 색인표제어':'가발킹','LLM 조어법':'합성','LLM 품사':'「명사」','LLM 일상어/전문어':'일상어','LLM 전문 분야':'','LLM 의미 범주':'〔인간〕','LLM 뜻풀이':'가발을 쓴 것으로 의심되는 사람을 조롱하여 이르는 말.','LLM 용례':'¶누리꾼들은 그를 가발킹이라고 불렀다.',
-             '1차 단어/구':'단어','1차 조어법':'합성','1차 품사':'「명사」','1차 일상어/전문어':'일상어','1차 등재표제어':'가발-킹','1차 색인표제어':'가발킹','1차 원어':'가발<영>king','1차 어종 표시':'고+영','1차 의미 영역':'〔인간〕','1차 집필 메모(형태부)':'가발이 고유어인지 확인 필요',
-             '2차 단어/구':'단어','2차 조어법':'합성','2차 품사':'「명사」','2차 일상어/전문어':'일상어','2차 등재표제어':'가발-킹','2차 색인표제어':'가발킹','2차 원어':'假髮<영>king','2차 어종 표시':'한+영','2차 의미 영역':'〔인간〕','2차 검수 메모(형태부)':'가발(假髮)은 한자어. 원어·어종 수정.',
+             '1차 단어/구':'단어','1차 조어법':'합성','1차 품사':'「명사」','1차 일상어/전문어':'일상어','1차 등재표제어':'가발-킹','1차 색인표제어':'가발킹','1차 원어':'(가발<영>king)','1차 어종 표시':'고+영','1차 의미 영역':'〔인간〕','1차 집필 메모(형태부)':'가발이 고유어인지 확인 필요',
+             '2차 단어/구':'단어','2차 조어법':'합성','2차 품사':'「명사」','2차 일상어/전문어':'일상어','2차 등재표제어':'가발-킹','2차 색인표제어':'가발킹','2차 원어':'(假髮<영>king)','2차 어종 표시':'한+영','2차 의미 영역':'〔인간〕','2차 검수 메모(형태부)':'가발(假髮)은 한자어. 원어·어종 수정.',
              '용례':'당원게시판에는 그를 가발킹이라 부르며 조롱하는 글이 잇따랐다.','용례 일자':'2024-11-29 14:00:00','용례 URL':'https://n.news.naver.com/','검색 URL':'https://search.naver.com/' }),
         mk({ 'ID':'demo::3','신어 후보':'가세연방지법','추출 시기':'202501','2차 고유명 여부':'Y','2차 혐오 표현 여부':'N','형태부 상태':'미작업','의미부 상태':'미작업',
              'LLM 색인표제어':'가세연방지법','LLM 조어법':'합성','LLM 품사':'','LLM 일상어/전문어':'전문어','LLM 전문 분야':'『법률』','LLM 의미 범주':'〔정치와 행정〕','LLM 뜻풀이':'유튜브 채널 가세연으로 인한 허위 사실 유포를 막기 위해 발의된 법안을 이르는 말.','LLM 용례':'¶가세연방지법 청원이 등장했다.' })
@@ -1174,7 +1174,7 @@
     function toggleHelp(el, ev){ if(ev) ev.stopPropagation(); var pop=el.nextElementSibling, open=pop.style.display!=='none';
       document.querySelectorAll('.help-pop').forEach(function(x){ x.style.display='none'; }); pop.style.display=open?'none':''; }
     document.addEventListener('click', function(){ document.querySelectorAll('.help-pop').forEach(function(x){ x.style.display='none'; }); });
-    var TPL={'어원':'【】','용례':'¶','참고 용례':'¶'};   // 빈 칸에 기호 미리 채움
+    var TPL={'원어':'()','어원':'【】','용례':'¶','참고 용례':'¶'};   // 빈 칸에 기호 미리 채움
     function tplBlank(f,v){ v=String(v==null?'':v).trim(); return !v || v===(TPL[f]||' '); }   // 템플릿 기호만 있으면 빈 값
     function wv(it,stage,f){ return String(it[stage+'차 '+f]==null?'':it[stage+'차 '+f]); }
     function fv(it,f){ var v2=wv(it,2,f); return v2.trim()?v2:wv(it,1,f); }   // 최종값 = 2차 우선
@@ -1247,6 +1247,7 @@
       else if(chain && wf && !secVal(sec,'품사')) secSet(sec,'품사','「명사」');   // 단어: 기본값 명사
       if(fldSkip && reg) secSet(sec,'전문 분야','');
       if(native){ secSet(sec,'원어',''); secSet(sec,'어원',''); if(!secVal(sec,'어종 표시')) secSet(sec,'어종 표시','고'); }
+      else { if(!secVal(sec,'원어')) secSet(sec,'원어','()'); if(!secVal(sec,'어원')) secSet(sec,'어원','【】'); }
       var head=secVal(sec,'등재표제어'); secSet(sec,'색인표제어', indexHeadword(it, head)); var ix=sec.querySelector('[data-f="색인표제어"]'); if(ix) ix.classList.remove('changed');   // 자동 생성값은 변경 표시 안 함
       var pos=secVal(sec,'품사'), fld=secVal(sec,'전문 분야'), orig=secVal(sec,'원어'), et=secVal(sec,'어종 표시');
       var en={};
@@ -1277,7 +1278,8 @@
     function validateWrite(part, v, it){
       var E=[]; function has(s,ch){ return String(s||'').indexOf(ch)>=0; }
       if(part==='형태부'){
-        var wg=v['단어/구'], wf=v['조어법'], pos=v['품사'], reg=v['일상어/전문어'], fld=v['전문 분야'], head=v['등재표제어'], native=v['고유어']==='Y', orig=v['원어'], et=v['어종 표시'], ety=tplBlank('어원',v['어원'])?'':v['어원'], sem=v['의미 영역'];
+        var wg=v['단어/구'], wf=v['조어법'], pos=v['품사'], reg=v['일상어/전문어'], fld=v['전문 분야'], head=v['등재표제어'], native=v['고유어']==='Y', orig=tplBlank('원어',v['원어'])?'':v['원어'], et=v['어종 표시'], ety=tplBlank('어원',v['어원'])?'':v['어원'], sem=v['의미 영역'];
+        if(orig && !/^\(.+\)$/.test(orig)) E.push('원어: ( ) 안에 씁니다.');
         if(!wg) E.push('단어/구를 선택하세요.'); if(wg==='단어' && !wf) E.push('조어법을 선택하세요.'); if(!reg) E.push('일상어/전문어를 선택하세요.'); if(!head) E.push('등재표제어를 입력하세요.');
         if(head){
           if(/[^가-힣ㄱ-ㅎㅏ-ㅣ\-\^·\s0-9]/.test(head)) E.push('등재표제어: 한글·-·^··(가운뎃점)·공백·번호 외 문자가 있습니다(로마자 금지).');
@@ -1295,7 +1297,7 @@
         if(fld){ var fm=fld.match(/^『(.+)』$/); if(!fm || FIELD_67.indexOf(fm[1])<0) E.push('전문 분야: 『』 안에 67 중분류만 쓸 수 있습니다.'); }
         if(sem){ var sm=sem.match(/^〔(.+)〕$/); if(!sm || FIELD_15.indexOf(sm[1])<0) E.push('의미 영역: 〔〕 안에 15 범주만 쓸 수 있습니다.'); }
         if(wf==='차용'){ if(has(orig,'▼')) E.push('차용: 원어에 ▼(한국식 조어)를 쓸 수 없습니다.'); if(!ety) E.push('차용: 어원란에 내부 결합 관계를 밝혀야 합니다.'); }
-        if(orig && /[^가-힣ㄱ-ㅎㅏ-ㅣ一-鿿㐀-䶿A-Za-z←▼▽<>\[\]\/\s0-9]/.test(orig)) E.push('원어: 한글·한자·로마자·←▼▽·<언어명>·[ ] 외 문자가 있습니다(^·-·+ 금지).');
+        if(orig && /[^가-힣ㄱ-ㅎㅏ-ㅣ一-鿿㐀-䶿A-Za-z←▼▽<>\[\]()\/\s0-9]/.test(orig)) E.push('원어: 한글·한자·로마자·←▼▽·<언어명>·[ ] 외 문자가 있습니다(^·-·+ 금지).');
         if(native){ if(orig) E.push('고유어: 원어를 비워야 합니다.'); if(ety) E.push('고유어: 어원을 비워야 합니다.'); if(et && /[^고+_^()\s]/.test(et)) E.push('고유어: 어종에 고 외 토큰이 있습니다.'); }
         else if(!orig) E.push('원어를 입력하세요(고유어면 고유어 체크).');
         if(et){
@@ -1335,6 +1337,11 @@
       h+='<div class="llm-box"><h3>LLM 생성 결과</h3>'+LLM_MAP.map(function(m,i){ var val=String(it[m[0]]||'').trim();
         return '<div class="row"><div class="k">'+esc(m[1])+'</div><div class="v">'+(val?esc(val):'<span class="kbd">(없음)</span>')+'</div><button type="button" class="llm-copy" data-llm="'+i+'" onclick="llmCopy(this)"'+(val?'':' disabled')+'>복사하기</button></div>'; }).join('')
         + '<div class="llm-foot"><button type="button" class="llm-copy llm-all" onclick="llmCopyAll()">전체 복사하기</button></div></div>';
+      // 판별 단계의 작업자 메모·검수자 메모
+      var jm1=String(it['1차 메모']||'').trim(), jm2=String(it['2차 메모']||'').trim();
+      if(jm1||jm2) h+='<div class="llm-box"><h3>판별 메모</h3>'
+        + '<div class="row"><div class="k">작업자 메모</div><div class="v">'+(jm1?esc(jm1):'<span class="kbd">(없음)</span>')+'</div></div>'
+        + '<div class="row"><div class="k">검수자 메모</div><div class="v">'+(jm2?esc(jm2):'<span class="kbd">(없음)</span>')+'</div></div></div>';
       // 형태부 → 의미부 세로 섹션. 프로젝트 단계에 따라 잠금.
       PARTS.forEach(function(part){
         var locked=(part==='의미부' && phase==='형태부'), ro=(part==='형태부' && phase==='의미부');
