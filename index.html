@@ -1428,8 +1428,8 @@
           +fld('',(stage===1?'작업 메모':'검수 메모'),ta(memoF,2));
       }
       var canConfirm = stage===2 && ed && /1차완료|2차완료/.test(String(it[part+' 상태']||''));
-      h+='</div><div class="ss-foot">'+(ed?'<button class="btn save" onclick="openWriteConfirm(\''+part+'\','+stage+')">'+(stage===1?'1차 작업 저장':'2차 검수 저장')+'</button>'
-        +(canConfirm?' <button class="btn confirm-first" onclick="confirmFirstWrite(\''+part+'\')" title="작업자의 1차 작업 값을 그대로 2차에 입력하고 저장합니다 (메모는 복사하지 않음)">✓ 1차 작업 확정 및 저장</button>':'')
+      h+='</div><div class="ss-foot">'+(ed?(canConfirm?'<button class="btn confirm-first" style="margin-left:0;margin-right:6px" onclick="confirmFirstWrite(\''+part+'\')" title="작업자의 1차 작업 값을 그대로 2차에 입력하고 저장합니다 (메모는 복사하지 않음)">✓ 1차 작업 확정 및 저장</button>':'')
+        +'<button class="btn save" onclick="openWriteConfirm(\''+part+'\','+stage+')">'+(stage===1?'1차 작업 저장':'2차 검수 저장')+'</button>'
         +' <span class="save-badge"></span>':'<span class="kbd">'+(stage===1?'작업자만 저장':'검수자만 저장')+'</span>')+'</div></div>';
       return h;
     }
