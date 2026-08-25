@@ -159,12 +159,13 @@
     .ref-body { flex:1; min-height:0; overflow-y:auto; overflow-x:hidden; padding:10px 14px 16px; }
     .ref-sub { font-size:13px; font-weight:700; color:var(--muted); letter-spacing:.5px; margin:8px 0 8px; padding:6px 2px; display:flex; align-items:center; gap:8px; position:sticky; top:-10px; background:var(--surface); z-index:1; } .ref-sub .ref-count { margin:0; font-weight:400; }
     .ref-empty { color:var(--muted); font-size:14px; margin:0 2px 14px; }
-    .ref-item { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:10px 12px 8px; margin-bottom:10px; }
+    .ref-item { background:#f6f8ff; border:1px solid #e0e6ff; border-radius:10px; padding:10px 12px 8px; margin-bottom:10px; }
+    body.dark .ref-item { background:var(--surface2); border-color:var(--line); }
     .ref-title { font-size:18px; font-weight:800; display:flex; align-items:center; gap:8px; margin-bottom:6px; } .ref-title mark { background:#fff2a8; color:inherit; padding:0 2px; border-radius:3px; }
     .ref-year { margin-left:auto; font-size:12px; font-weight:600; color:var(--muted); background:var(--surface3); border-radius:8px; padding:2px 8px; }
     .ref-tbl { width:100%; border-collapse:collapse; font-size:15px; }
-    .ref-tbl th, .ref-tbl td { padding:5px 6px; border-top:1px solid var(--line); text-align:left; vertical-align:top; line-height:1.5; }
-    .ref-tbl th { color:var(--muted); font-weight:600; width:96px; white-space:nowrap; } .ref-tbl td { overflow-wrap:anywhere; }
+    .ref-tbl th, .ref-tbl td { padding:5px 6px; border-top:1px solid #e0e6ff; text-align:left; vertical-align:top; line-height:1.5; }
+    .ref-tbl th { color:var(--muted); font-weight:600; width:1%; white-space:nowrap; padding-right:14px; } .ref-tbl td { overflow-wrap:anywhere; width:99%; }
     body.dark .ref-title mark { background:#5a4a12; }
     .ac { position:relative; }
     .ac-list { position:absolute; left:0; right:0; top:100%; z-index:20; background:var(--surface); border:1px solid var(--line); border-radius:8px; box-shadow:0 8px 24px rgba(20,30,60,.14); max-height:240px; overflow:auto; margin-top:3px; }
