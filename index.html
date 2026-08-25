@@ -1347,10 +1347,10 @@
       function jrow(st, role, who){
         var v=String(it[st+'차 판별']||'').trim(), pr=String(it[st+'차 고유명 여부']||'').trim(), ht=String(it[st+'차 혐오 표현 여부']||'').trim(), memo=String(it[st+'차 메모']||'').trim();
         function c(x){ return x?esc(x):'<span class="kbd">-</span>'; }
-        return '<tr><td>'+st+'차</td><td>'+role+(who?' '+fmtName(who):'')+'</td><td>'+(v?'<span class="pill '+(v==='신어'?'v-sin':v==='비신어'?'v-bi':'v-hold')+'">'+esc(v)+'</span>':'<span class="kbd">-</span>')+'</td><td>'+c(pr)+'</td><td>'+c(ht)+'</td><td class="jmemo">'+c(memo)+'</td></tr>';
+        return '<tr><td>'+(st===1?'작업':'검수')+'</td><td>'+(who?fmtName(who):'<span class="kbd">-</span>')+'</td><td>'+(v?'<span class="pill '+(v==='신어'?'v-sin':v==='비신어'?'v-bi':'v-hold')+'">'+esc(v)+'</span>':'<span class="kbd">-</span>')+'</td><td>'+c(pr)+'</td><td>'+c(ht)+'</td><td class="jmemo">'+c(memo)+'</td></tr>';
       }
       var hasJ=['1차 판별','2차 판별','1차 메모','2차 메모','1차 고유명 여부','2차 고유명 여부'].some(function(k){ return String(it[k]||'').trim(); });
-      if(hasJ) h+='<div class="llm-box"><h3>판별 메모</h3><table class="jtbl"><thead><tr><th>단계</th><th>담당</th><th>판별</th><th>고유명 여부</th><th>혐오 표현 여부</th><th>메모</th></tr></thead><tbody>'
+      if(hasJ) h+='<div class="llm-box"><h3>판별 메모</h3><table class="jtbl"><thead><tr><th>단계</th><th>담당자</th><th>판별 결과</th><th>고유명 여부</th><th>혐오 표현 여부</th><th>메모</th></tr></thead><tbody>'
         + jrow(1, '작업자', it['판별 작업자']) + jrow(2, '검수자', it['판별 검수자']) + '</tbody></table></div>';
       // 형태부 → 의미부 세로 섹션. 프로젝트 단계에 따라 잠금.
       PARTS.forEach(function(part){
