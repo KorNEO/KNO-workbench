@@ -143,8 +143,9 @@
     /* 좌우 날개 탭: 세로 알약 모양. 작업 화면에서는 좌우 52px를 비워 두고 그 안에 놓아 본문을 덮지 않음 */
     body.work-view main { padding-left:54px; padding-right:54px; transition:padding .2s; }
     body.work-view.ref-open main { padding-right:434px; }
-    .wing { position:fixed; top:50%; transform:translateY(-50%); width:36px; padding:16px 0; border:none; border-radius:999px; background:var(--brand); color:#fff; font-size:14px; font-weight:800; letter-spacing:1px; writing-mode:vertical-rl; text-orientation:upright; cursor:pointer; z-index:121; box-shadow:0 4px 14px rgba(63,81,181,.35); transition:left .2s, right .2s, background .12s; }
-    .wing:hover { background:var(--brand-d); }
+    .wing { position:fixed; top:50%; transform:translateY(-50%); width:36px; padding:18px 0; border:1px solid rgba(63,81,181,.28); border-radius:999px; background:rgba(63,81,181,.10); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); color:var(--brand-d); font-size:13px; font-weight:700; letter-spacing:2px; writing-mode:vertical-rl; text-orientation:upright; cursor:pointer; z-index:121; box-shadow:0 2px 10px rgba(20,30,60,.08); transition:left .2s, right .2s, background .15s, color .15s; }
+    .wing:hover { background:rgba(63,81,181,.22); color:var(--brand-d); border-color:rgba(63,81,181,.5); }
+    body.dark .wing { background:rgba(139,151,247,.14); border-color:rgba(139,151,247,.35); color:#c2d7ff; } body.dark .wing:hover { background:rgba(139,151,247,.28); }
     .wing-l { left:9px; }
     .wing-r { right:9px; } body.ref-open .wing-r { right:389px; }
     body.list-collapsed .work-wrap { grid-template-columns:1fr; } body.list-collapsed .list-col { display:none; }
