@@ -1476,7 +1476,7 @@
         return a+(extra||'');
       }
       function isDiff(f){ var v1=wv(it,1,f), v2=wv(it,2,f); return !!(v2.trim() && v2!==v1) && f.indexOf('메모')<0; }
-      function revNote(f){ return [isDiff(f)?' rev-diff':'','']; }   // 저장된 1차·2차가 다른 칸: 양쪽 모두 강조
+      function revNote(f){ return [(stage===1 && isDiff(f))?' rev-diff':'','']; }   // 검수자가 고친 칸은 1차(작업자) 쪽에만 표시
       function diffTag(f){ return ''; }
       function cls(f){ return 'w-field'+(stage===2?' w2':'')+revNote(f)[0]; }
       function inp(f,ph){ return '<input class="'+cls(f)+'"'+attrs(f)+' value="'+ea(pv(f))+'"'+(ph?' placeholder="'+ea(ph)+'"':'')+'>'+revNote(f)[1]; }
