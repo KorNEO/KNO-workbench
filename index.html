@@ -102,6 +102,7 @@
     .placeholder { color:var(--muted); text-align:center; padding:60px 0; }
     .cand-label { color:var(--muted); font-size:12px; font-weight:700; letter-spacing:.5px; }
     .cand-term { font-size:30px; font-weight:800; margin:2px 0 6px; }
+    .cand-links { font-size:15px; margin:-8px 0 14px; } .cand-links a { font-weight:600; } .cand-links .sep { color:var(--muted); margin:0 8px; }
     .cand-meta { color:#4a5168; font-size:15px; margin-bottom:14px; } .cand-meta b { color:var(--ink); font-weight:700; }
     .llm-hint { display:inline-block; font-size:12px; color:var(--muted); background:#f1f3f9; padding:3px 10px; border-radius:8px; margin-bottom:8px; } .llm-hint b { color:var(--brand-d); }
     /* 집필(M5) */
@@ -1398,7 +1399,8 @@
         + '<div class="cand-meta">출처 <b>'+srcLabel(it['출처']).replace('〉·〈','〉, 〈')+'</b> &nbsp;·&nbsp; 출현 시점 <b>'+(it['추출 시기']?ym(it['추출 시기']):'-')+'</b> &nbsp;·&nbsp; '+fmtName(it['작업자']||'?')+' - '+fmtName(it['검수자']||'?')
         + (it['형태부 주차']?' &nbsp;·&nbsp; 형태부 '+esc(it['형태부 주차'])+'주차':'')+(it['의미부 주차']?' / 의미부 '+esc(it['의미부 주차'])+'주차':'')
         + (newItem ? ' &nbsp; <button class="btn ghost del-item" onclick="deleteWriteItem()">새 항목 삭제</button>' : '')
-        + '</div>';
+        + '</div>'
+        + '<div class="cand-links">'+link(it['용례 URL'],'기사문 링크')+'<span class="sep">·</span>'+link(it['검색 URL'],'〈네이버 뉴스〉 검색 화면 링크')+'</div>';
 
       // LLM 생성 결과 — 값마다 복사하기(1차 작업 필드로). 대상 필드가 비활성이면 버튼도 비활성
       h+='<div class="llm-box"><h3>LLM 생성 결과</h3>'+LLM_MAP.map(function(m,i){ var val=String(it[m[0]]||'').trim();
