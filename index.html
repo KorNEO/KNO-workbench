@@ -187,7 +187,6 @@
     .wf.off .w-field[data-f="색인표제어"] { color:var(--ink); }
     .write-form.rail > .wf { padding-left:42px; position:relative; }
     .write-form.rail > .wf.stepped { padding-top:12px; border-top:1px solid var(--line); }
-    .part-sec[data-part="의미부"] .write-form.rail > .wf { padding-top:12px; border-top:1px solid var(--line); } .part-sec[data-part="의미부"] .write-form.rail > .wf:first-child { border-top:none; padding-top:0; }
     .write-form.rail > .wf.stepped.half + .wf.stepped.half { border-top:1px solid var(--line); }
     .write-form.rail > .wf.stepped::before { content:''; position:absolute; left:14px; top:42px; bottom:-16px; width:2px; background:var(--line); }
     .write-form.rail > .wf.stepped:last-of-type::before, .write-form.rail > .wf.stepped.half + .wf.stepped.half::before { display:none; }
@@ -1591,11 +1590,11 @@
           +fld(10,'의미 영역',ac('의미 영역','um'),'','의미 영역')
           +fld('','형태부 메모',ta(memoF,2));
       } else {
-        h+=fld('','뜻풀이',ta('뜻풀이',2)+(ed?'<div class="fld-tools"><button type="button" class="llm-copy" onclick="appendHateNote(this)">혐오 표현 문구 복사하기</button></div>':''),'','뜻풀이')
-          +fld('','용례',ta('용례',2),'','용례')
-          +fld('','참고 용례',ta('참고 용례',2)+(ed?symBar():''),'','참고 용례')
-          +fld('','참고 용례 URL',inp('참고 용례 URL'),'','참고 용례 URL',true)
-          +fld('','X년 Y월 신어',inp('X년 Y월 신어'),'','X년 Y월 신어',true)
+        h+=fld(1,'뜻풀이',ta('뜻풀이',2)+(ed?'<div class="fld-tools"><button type="button" class="llm-copy" onclick="appendHateNote(this)">혐오 표현 문구 복사하기</button></div>':''),'','뜻풀이')
+          +fld(2,'용례',ta('용례',2),'','용례')
+          +fld(3,'참고 용례',ta('참고 용례',2)+(ed?symBar():''),'','참고 용례')
+          +fld(4,'참고 용례 URL',inp('참고 용례 URL'),'','참고 용례 URL',true)
+          +fld(5,'X년 Y월 신어',inp('X년 Y월 신어'),'','X년 Y월 신어',true)
           +fld('','의미부 메모',ta(memoF,2));
       }
       h+='</div>';
