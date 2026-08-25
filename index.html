@@ -124,7 +124,7 @@
     .write-cols { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px; align-items:stretch; margin:14px 0; }
     @media (max-width:900px){ .write-cols { grid-template-columns:1fr; } }
     .stage-sec { border:1px solid var(--line); border-radius:12px; padding:10px 14px; display:flex; flex-direction:column; }
-    .stage-sec .write-form { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px 12px; margin-top:10px; }
+    .stage-sec .write-form { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:14px 12px; margin-top:10px; }
     .stage-sec .write-form > .wf { grid-column:1 / -1; } .stage-sec .write-form > .wf.half { grid-column:auto; }
     .stage-sec .write-form > .wf.half:has(textarea) { grid-column:auto; }
     .ss-foot { margin-top:auto; padding-top:8px; }
@@ -161,9 +161,15 @@
     .part-lock { background:var(--hold-bg); color:var(--hold); border-radius:8px; padding:8px 12px; font-size:13px; margin-bottom:10px; }
     .w-field[data-f="색인표제어"], .w-field[data-f="색인표제어"]:disabled { font-size:18px; font-weight:700; color:var(--ink); background:var(--surface2); cursor:default; }
     .wf.off .w-field[data-f="색인표제어"] { color:var(--ink); }
-    .wf .step { display:inline-block; min-width:26px; height:22px; padding:0 6px; border-radius:6px; background:#eef1ff; color:var(--brand-d); border:1px solid #c6d0f5; font-size:13px; text-align:center; line-height:20px; margin-right:7px; font-weight:800; }
-    body.dark .wf .step { background:#213a63; color:#c2d7ff; border-color:#40608f; }
-    .wf.off { opacity:.45; } .wf.off .step { background:var(--surface3); color:var(--muted); border-color:var(--line); }
+    .write-form.rail > .wf { padding-left:38px; position:relative; }
+    .write-form.rail > .wf.stepped { padding-top:12px; border-top:1px solid var(--line); }
+    .write-form.rail > .wf.stepped.half + .wf.stepped.half { border-top:1px solid var(--line); }
+    .write-form.rail > .wf.stepped::before { content:''; position:absolute; left:12px; top:38px; bottom:-18px; width:2px; background:var(--line); }
+    .write-form.rail > .wf.stepped:last-of-type::before, .write-form.rail > .wf.stepped.half + .wf.stepped.half::before { display:none; }
+    .wf .step { position:absolute; left:0; top:12px; width:26px; height:26px; border-radius:7px; background:var(--surface); color:var(--ink); border:2px solid var(--ink); font-size:13px; text-align:center; line-height:22px; font-weight:800; box-sizing:border-box; }
+    .wf.off .step { border-color:var(--line); color:var(--muted); background:var(--surface); }
+    body.dark .wf .step { border-color:#e7e9f1; color:#e7e9f1; }
+    .wf.off { opacity:.5; }
     .wf label .kbd { font-weight:400; margin-left:4px; }
     .w-field:disabled { background:var(--surface3); color:var(--muted); cursor:not-allowed; }
     .w-field.rev-diff { background:#fff1cc; border-color:#e0b04a; }
@@ -1367,7 +1373,7 @@
     function stageSec(it, part, stage, ed){
       var chain=(part==='형태부' && stage===1 && ed);
       var who=stage===1?'작업자 '+fmtName(it['작업자']||'?'):'검수자 '+fmtName(it['검수자']||'?');
-      var h='<div class="stage-sec s'+stage+'" data-part="'+part+'" data-stage="'+stage+'" data-chain="'+(chain?1:0)+'"><div class="ss-head">'+(stage===1?'1차 작업':'2차 검수')+' <span class="ss-who">'+who+'</span></div><div class="write-form">';
+      var h='<div class="stage-sec s'+stage+'" data-part="'+part+'" data-stage="'+stage+'" data-chain="'+(chain?1:0)+'"><div class="ss-head">'+(stage===1?'1차 작업':'2차 검수')+' <span class="ss-who">'+who+'</span></div><div class="write-form'+(part==='형태부'?' rail':'')+'">';
       function pv(f){   // 표시값: 해당 단계 값 → (2차면 1차 복사) → 프리필
         var v=wv(it,stage,f); if(v.trim()) return v;
         if(stage===2){ v=wv(it,1,f); if(v.trim()) return v; }
@@ -1397,7 +1403,7 @@
           + '</div>'+revNote(f)[1]; }
       function fld(step,label,ctrl,hint,f,half){ var block=(f==='뜻풀이'||f==='용례');
         var hk=f||label, help=FIELD_HELP[hk] ? '<span class="help-wrap"><span class="help" onclick="toggleHelp(this,event)">?</span><div class="help-pop" style="display:none" onclick="event.stopPropagation()">'+esc(FIELD_HELP[hk])+'</div></span>' : '';
-        return '<div class="wf'+(half?' half':'')+'"><label>'+(step?'<span class="step">'+step+'</span>':'')+esc(label)+help+(hint?' <span class="kbd">'+hint+'</span>':'')+'</label>'+ctrl+'</div>'; }
+        return '<div class="wf'+(half?' half':'')+(step?' stepped':'')+'"><label>'+(step?'<span class="step">'+step+'</span>':'')+esc(label)+help+(hint?' <span class="kbd">'+hint+'</span>':'')+'</label>'+ctrl+'</div>'; }
       var memoF = part==='형태부' ? (stage===1?'집필 메모(형태부)':'검수 메모(형태부)') : (stage===1?'집필 메모(의미부)':'검수 메모(의미부)');
       if(part==='형태부'){
         h+=fld('','색인표제어',inp('색인표제어'),'','색인표제어')
