@@ -70,7 +70,7 @@
     .stat-line:last-child { border-bottom:none; } .stat-line .lbl { color:var(--muted); } .stat-line .val { font-weight:800; font-size:16px; }
     .stat-line .val.go { color:var(--brand); cursor:pointer; text-decoration:underline; }
     .work-wrap { display:grid; grid-template-columns:320px minmax(0,1fr) auto; gap:14px; align-items:start; }
-    @media(max-width:1500px){ .ref-col { width:380px !important; } body.ref-collapsed .ref-col { width:40px !important; } }
+    @media(max-width:1500px){ .ref-col { width:380px; } }
     .list-col { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:10px; max-height:calc(100vh - 100px); overflow:auto; position:sticky; top:72px; }
     .filters { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:10px; }
     .filters input, .filters select { height:34px; padding:6px 8px; border:1px solid var(--line); border-radius:8px; font-size:13px; line-height:1.2; box-sizing:border-box; vertical-align:middle; width:100%; min-width:0; }
@@ -142,11 +142,11 @@
     .part-sec.locked .write-cols { opacity:.45; pointer-events:none; filter:grayscale(.6); }
     .part-sec .write-cols { margin:4px 0 0; }
     /* 집필 사례: 본문 오른쪽 열. 접으면 세로 띠(버튼)만 남음 */
-    .ref-col { position:sticky; top:72px; height:calc(100vh - 100px); width:420px; display:flex; flex-direction:column; background:var(--surface); border:1px solid var(--line); border-radius:14px; overflow:visible; transition:width .2s; }
-    body.ref-collapsed .ref-col { width:40px; }
-    .ref-toggle { position:absolute; right:0; top:50%; transform:translateY(-50%); width:28px; padding:14px 0; border:none; border-radius:8px 0 0 8px; background:var(--brand); color:#fff; font-weight:700; font-size:13px; letter-spacing:2px; writing-mode:vertical-rl; text-orientation:upright; cursor:pointer; z-index:2; }
+    .ref-col { position:sticky; top:72px; height:calc(100vh - 100px); width:420px; display:flex; flex-direction:column; background:var(--surface); border:1px solid var(--line); border-radius:14px; overflow:hidden; }
+    .ref-toggle { flex:none; border:none; border-radius:14px 14px 0 0; background:var(--brand); color:#fff; font-weight:800; font-size:15px; padding:10px 16px; cursor:pointer; text-align:left; }
     .ref-toggle:hover { background:var(--brand-d); }
-    .ref-inner { flex:1; min-height:0; display:flex; flex-direction:column; padding:10px 34px 12px 12px; } body.ref-collapsed .ref-inner { display:none; }
+    body.ref-collapsed .ref-col { width:auto; height:auto; border:none; background:transparent; } body.ref-collapsed .ref-toggle { border-radius:12px; }
+    .ref-inner { flex:1; min-height:0; display:flex; flex-direction:column; padding:10px 12px 12px; } body.ref-collapsed .ref-inner { display:none; }
     .ref-head { display:flex; align-items:center; gap:10px; margin-bottom:8px; } .ref-head .ref-sec { margin:0; flex:none; font-size:16px; } .ref-head .w-field { flex:1; font-size:15px; padding:6px 10px; }
     .ref-body { flex:1; min-height:0; overflow-y:auto; overflow-x:hidden; padding:0 2px 0 0; }
     .ref-sub { font-size:15px; font-weight:700; color:var(--muted); margin:0 0 6px; padding:6px 2px; display:flex; align-items:center; gap:8px; position:sticky; top:0; background:var(--surface); z-index:1; } .ref-sub .ref-count { margin:0; font-weight:400; }
@@ -487,9 +487,9 @@
         </aside>
         <div class="detail-col" id="detail"><div class="placeholder">왼쪽에서 신어 후보 항목을 선택하세요.</div></div>
         <aside id="ref-box" class="ref-col" style="display:none">
-          <button class="ref-toggle" onclick="toggleRef()" id="ref-toggle">접기</button>
+          <button class="ref-toggle" onclick="toggleRef()" id="ref-toggle">집필 사례</button>
           <div class="ref-inner">
-            <div class="ref-head"><span class="ref-sec">집필 사례</span><input id="ref-q" class="w-field" oninput="refRender()"></div>
+            <div class="ref-head"><input id="ref-q" class="w-field" oninput="refRender()"></div>
             <div id="ref-body" class="ref-body"></div>
           </div>
         </aside>
@@ -1352,12 +1352,12 @@
       if(n>=2) return [30+n,'접두',a.slice(0,n)];
       return null;
     }
-    function toggleRef(){ var c=document.body.classList.toggle('ref-collapsed'); lsSet('kno_ref_collapsed', c?'1':'0'); $('ref-toggle').textContent=c?'펴기':'접기'; }
+    function toggleRef(){ var c=document.body.classList.toggle('ref-collapsed'); lsSet('kno_ref_collapsed', c?'1':'0'); }
     if(lsGet('kno_ref_collapsed','0')==='1'){ document.body.classList.add('ref-collapsed'); }
     // 현재 항목 기준으로 집필 사례 갱신(집필 모드에서 항목을 고를 때마다)
     function refUpdate(){
       var it=ITEMS[CUR], box=$('ref-box'); if(!box) return; if(!it || !isWrite()){ box.style.display='none'; return; }
-      box.style.display=''; $('ref-toggle').textContent=document.body.classList.contains('ref-collapsed')?'펴기':'접기';
+      box.style.display='';
       var sec=document.querySelector('#detail .stage-sec[data-part="형태부"][data-stage="1"]');
       $('ref-q').value=(sec && secVal(sec,'색인표제어')) || String(it['신어 후보']||'');
       refRender(); refLoad(refRender);
