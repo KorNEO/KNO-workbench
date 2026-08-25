@@ -144,9 +144,9 @@
     /* 집필 사례: 본문 오른쪽 열. 접으면 세로 띠(버튼)만 남음 */
     .ref-col { position:sticky; top:72px; height:calc(100vh - 100px); width:420px; display:flex; flex-direction:column; background:var(--surface); border:1px solid var(--line); border-radius:14px; overflow:hidden; transition:width .2s; }
     body.ref-collapsed .ref-col { width:40px; }
-    .ref-toggle { flex:none; border:none; background:var(--surface3); color:var(--brand-d); font-weight:700; font-size:13px; padding:8px 10px; cursor:pointer; text-align:left; }
+    .ref-toggle { flex:none; border:none; background:var(--surface3); color:var(--brand-d); font-weight:700; font-size:13px; padding:8px 10px; cursor:pointer; text-align:left; border-radius:14px 14px 0 0; }
     .ref-toggle:hover { background:#e2e6fb; }
-    body.ref-collapsed .ref-toggle { height:100%; writing-mode:vertical-rl; text-orientation:upright; letter-spacing:2px; text-align:center; padding:14px 0; }
+    body.ref-collapsed .ref-toggle { height:auto; writing-mode:vertical-rl; text-orientation:upright; letter-spacing:2px; text-align:center; padding:14px 0; }   /* 접혀도 같은 자리(열 맨 위)에 세로 글씨로 */
     .ref-inner { flex:1; min-height:0; display:flex; flex-direction:column; padding:10px 12px 12px; } body.ref-collapsed .ref-inner { display:none; }
     .ref-head { display:flex; align-items:center; gap:10px; margin-bottom:8px; } .ref-head .ref-sec { margin:0; flex:none; font-size:16px; } .ref-head .w-field { flex:1; font-size:15px; padding:6px 10px; }
     .ref-body { flex:1; min-height:0; overflow-y:auto; overflow-x:hidden; padding:0 2px 0 0; }
