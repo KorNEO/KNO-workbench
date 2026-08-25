@@ -393,7 +393,7 @@
     <div class="hdr-ctl">
       <button class="hbtn" onclick="setFont(-1)" title="글씨 작게">A−</button>
       <button class="hbtn" onclick="setFont(1)" title="글씨 크게">A+</button>
-      <button class="hbtn" id="darkBtn" onclick="toggleDark()" title="다크 모드">다크</button>
+      <button class="hbtn" id="darkBtn" onclick="toggleDark()" title="다크 모드">🌙</button>
     </div>
     <button class="guide-btn" id="guideBtn">신어 판별 지침</button>
     <button class="guide-btn" id="guideBtnWrite">신어 집필 지침</button>
@@ -833,7 +833,7 @@
       document.body.style.zoom='';
       var dark=lsGet('kno_dark','0')==='1';
       document.body.classList.toggle('dark',dark);
-      var db=$('darkBtn'); if(db) db.textContent=dark?'밝게':'다크';
+      var db=$('darkBtn'); if(db) db.textContent=dark?'☀':'🌙';
     }
     function setFont(d){ var fs=(parseInt(lsGet('kno_fs','0'),10)||0)+d; fs=Math.max(-1,Math.min(6,fs)); lsSet('kno_fs',fs); applyPrefs(); }
     function toggleDark(){ lsSet('kno_dark', lsGet('kno_dark','0')==='1'?'0':'1'); applyPrefs(); }
