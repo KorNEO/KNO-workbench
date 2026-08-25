@@ -747,40 +747,40 @@ function validateWrite_(part, v, hateY) {
   if (part === '형태부') {
     var wg = S('단어/구'), wf = S('조어법'), pos = S('품사'), reg = S('일상어/전문어'), fld = S('전문 분야'), head = S('등재표제어'), native = S('고유어') === 'Y';
     var orig = wBlank_('원어', v['원어']) ? '' : S('원어'), et = S('어종 표시'), ety = wBlank_('어원', v['어원']) ? '' : S('어원'), sem = S('의미 영역');
-    if (!wg) E.push('단어/구를 선택하세요.'); if (wg === '단어' && !wf) E.push('조어법을 선택하세요.'); if (!reg) E.push('일상어/전문어를 선택하세요.'); if (!head) E.push('등재표제어를 입력하세요.');
+    if (!wg) E.push('단어/구 미선택'); if (wg === '단어' && !wf) E.push('조어법 미선택'); if (!reg) E.push('일상어/전문어 미선택'); if (!head) E.push('등재표제어 없음');
     if (head) {
-      if (/[^가-힣ㄱ-ㅎㅏ-ㅣ\-\^ㆍ\s0-9]/.test(head)) E.push('등재표제어: 한글, -, ^, ㆍ(가운뎃점), 공백, 번호 외 문자가 있습니다(로마자 금지).');
-      if (has(head, '^') && /\s/.test(head)) E.push('등재표제어: ^과 공백은 함께 쓸 수 없습니다.');
-      if (wg === '단어' && (/\s/.test(head) || has(head, '^'))) E.push('등재표제어: 단어인데 공백/^이 있습니다.');
-      if (wg === '구' && has(head, '-')) E.push('등재표제어: 구인데 -이 있습니다(-는 단어 내부 분석에만).');
-      if ((head.match(/-/g) || []).length >= 2) E.push('등재표제어: -는 한 표제어에 하나만 허용됩니다.');
-      if ((wf === '혼성' || wf === '축약') && has(head, '-')) E.push('등재표제어: 조어법이 ' + wf + '이면 붙임표를 쓰지 않습니다.');
+      if (/[^가-힣ㄱ-ㅎㅏ-ㅣ\-\^ㆍ\s0-9]/.test(head)) E.push('등재표제어: 허용 외 문자');
+      if (has(head, '^') && /\s/.test(head)) E.push('등재표제어: ^과 공백 병용');
+      if (wg === '단어' && (/\s/.test(head) || has(head, '^'))) E.push('등재표제어: 단어에 공백/^');
+      if (wg === '구' && has(head, '-')) E.push('등재표제어: 구에 -');
+      if ((head.match(/-/g) || []).length >= 2) E.push('등재표제어: - 2개 이상');
+      if ((wf === '혼성' || wf === '축약') && has(head, '-')) E.push('등재표제어: ' + wf + '에 -');
     }
-    if (wg === '구' && reg === '일상어') { if (head && !/\s/.test(head)) E.push('일반어 구: 등재표제어에 공백이 있어야 합니다.'); if (pos !== '「구」') E.push('일반어 구: 품사는 「구」여야 합니다.'); if (fld) E.push('일반어 구: 전문 분야를 줄 수 없습니다(「구」와 『』 동시 불가).'); }
-    if (wg === '구' && reg === '전문어') { if (head && !has(head, '^')) E.push('전문어 구: 등재표제어에 ^이 있어야 합니다.'); if (pos) E.push('전문어 구: 품사를 표시하지 않습니다.'); if (!fld) E.push('전문어 구: 전문 분야가 필요합니다.'); }
-    if (wg === '단어') { if (!pos || pos === '「구」') E.push('단어: 품사(9품사)를 입력하세요.'); if (reg === '전문어' && !fld) E.push('전문어: 전문 분야가 필요합니다.'); if (reg === '일상어' && fld) E.push('일상어: 전문 분야를 줄 수 없습니다.'); }
-    if (pos && pos !== '「구」') { var pm = pos.match(/^「(.+)」$/); if (!pm || W_POS.indexOf(pm[1]) < 0) E.push('품사: 「」 안에 허용 품사만 쓸 수 있습니다.'); }
-    if (fld) { var fm = fld.match(/^『(.+)』$/); if (!fm || W_FIELD_67.indexOf(fm[1]) < 0) E.push('전문 분야: 『』 안에 67 중분류만 쓸 수 있습니다.'); }
-    if (sem) { var sm = sem.match(/^〔(.+)〕$/); if (!sm || W_FIELD_15.indexOf(sm[1]) < 0) E.push('의미 영역: 〔〕 안에 15 범주만 쓸 수 있습니다.'); }
-    if (wf === '차용') { if (has(orig, '▼')) E.push('차용: 원어에 ▼(한국식 조어)를 쓸 수 없습니다.'); if (!ety) E.push('차용: 어원란에 내부 결합 관계를 밝혀야 합니다.'); }
-    if (orig && !/^\(.+\)$/.test(orig)) E.push('원어: ( ) 안에 씁니다.');
-    if (orig && /[^가-힣ㄱ-ㅎㅏ-ㅣ一-鿿㐀-䶿A-Za-z←▼▽<>\[\]()\/\s0-9]/.test(orig)) E.push('원어: 한글·한자·로마자·←▼▽·<언어명>·[ ] 외 문자가 있습니다(^·-·+ 금지).');
-    if (native) { if (orig) E.push('고유어: 원어를 비워야 합니다.'); if (ety) E.push('고유어: 어원을 비워야 합니다.'); if (et && /[^고+_^()\s]/.test(et)) E.push('고유어: 어종에 고 외 토큰이 있습니다.'); }
-    else if (!orig) E.push('원어를 입력하세요(고유어면 고유어 체크).');
+    if (wg === '구' && reg === '일상어') { if (head && !/\s/.test(head)) E.push('일반어 구: 공백 없음'); if (pos !== '「구」') E.push('일반어 구: 품사≠「구」'); if (fld) E.push('일반어 구: 전문 분야 있음'); }
+    if (wg === '구' && reg === '전문어') { if (head && !has(head, '^')) E.push('전문어 구: ^ 없음'); if (pos) E.push('전문어 구: 품사 있음'); if (!fld) E.push('전문어 구: 전문 분야 없음'); }
+    if (wg === '단어') { if (!pos || pos === '「구」') E.push('단어: 품사 없음'); if (reg === '전문어' && !fld) E.push('전문어: 전문 분야 없음'); if (reg === '일상어' && fld) E.push('일상어: 전문 분야 있음'); }
+    if (pos && pos !== '「구」') { var pm = pos.match(/^「(.+)」$/); if (!pm || W_POS.indexOf(pm[1]) < 0) E.push('품사: 목록 외'); }
+    if (fld) { var fm = fld.match(/^『(.+)』$/); if (!fm || W_FIELD_67.indexOf(fm[1]) < 0) E.push('전문 분야: 목록 외'); }
+    if (sem) { var sm = sem.match(/^〔(.+)〕$/); if (!sm || W_FIELD_15.indexOf(sm[1]) < 0) E.push('의미 영역: 목록 외'); }
+    if (wf === '차용') { if (has(orig, '▼')) E.push('차용: 원어에 ▼'); if (!ety) E.push('차용: 어원 없음'); }
+    if (orig && !/^\(.+\)$/.test(orig)) E.push('원어: ( ) 없음');
+    if (orig && /[^가-힣ㄱ-ㅎㅏ-ㅣ一-鿿㐀-䶿A-Za-z←▼▽<>\[\]()\/\s0-9]/.test(orig)) E.push('원어: 허용 외 문자');
+    if (native) { if (orig) E.push('고유어: 원어 있음'); if (ety) E.push('고유어: 어원 있음'); if (et && /[^고+_^()\s]/.test(et)) E.push('고유어: 어종에 고 외'); }
+    else if (!orig) E.push('원어 없음');
     if (et) {
-      et.replace(/[+_^()\s]/g, '|').split('|').filter(function (x) { return x; }).forEach(function (t) { if (W_LANG.indexOf(t) < 0) E.push('어종 표시: 허용되지 않는 토큰 "' + t + '"'); });
+      et.replace(/[+_^()\s]/g, '|').split('|').filter(function (x) { return x; }).forEach(function (t) { if (W_LANG.indexOf(t) < 0) E.push('어종 표시: 허용 외 토큰 ' + t); });
       var seqH = (head || '').replace(/\d+$/, '').replace(/[^-\s^]/g, '').replace(/-/g, '+').replace(/\s/g, '_'), seqE = et.replace(/[^+_^]/g, '');
-      if (head && seqH !== seqE) E.push('어종 표시: 기호 열(' + (seqE || '없음') + ')이 등재표제어의 분절(' + (seqH || '없음') + ')과 다릅니다.');
-      (et.match(/\([^()]*\)/g) || []).forEach(function (g) { var tt = g.replace(/[()+_^\s]/g, '|').split('|').filter(function (x) { return x; }); if (tt.length && tt.every(function (x) { return x === tt[0]; })) E.push('어종 표시: 같은 어종끼리는 괄호로 묶지 않습니다 ' + g); });
-    } else if (head) E.push('어종 표시를 입력하세요.');
+      if (head && seqH !== seqE) E.push('어종 표시: 등재표제어 분절 불일치');
+      (et.match(/\([^()]*\)/g) || []).forEach(function (g) { var tt = g.replace(/[()+_^\s]/g, '|').split('|').filter(function (x) { return x; }); if (tt.length && tt.every(function (x) { return x === tt[0]; })) E.push('어종 표시: 같은 어종 괄호 ' + g); });
+    } else if (head) E.push('어종 표시 없음');
   } else {
     var def = S('뜻풀이'), ex = wBlank_('용례', v['용례']) ? '' : S('용례'), xy = S('X년 Y월 신어');
-    if (!def) E.push('뜻풀이를 입력하세요.');
-    if (xy && !/^【\d{4}년 \d{1,2}월 신어】$/.test(xy)) E.push('X년 Y월 신어: 【OOOO년 OO월 신어】 형식이어야 합니다.');
+    if (!def) E.push('뜻풀이 없음');
+    if (xy && !/^【\d{4}년 \d{1,2}월 신어】$/.test(xy)) E.push('X년 Y월 신어: 형식 오류');
     function romanOut(t) { return /[A-Za-z]/.test(String(t || '').replace(/\([^)]*\)/g, '')); }
-    if (romanOut(def)) E.push('뜻풀이: 괄호 밖에 로마자가 단독으로 드러날 수 없습니다.');
-    if (romanOut(ex)) E.push('용례: 괄호 밖에 로마자가 단독으로 드러날 수 없습니다.');
-    if (hateY && def.indexOf(HATE_NOTE) < 0) E.push('혐오 표현 항목: 뜻풀이 끝에 주의 문구가 있어야 합니다.');
+    if (romanOut(def)) E.push('뜻풀이: 괄호 밖 로마자');
+    if (romanOut(ex)) E.push('용례: 괄호 밖 로마자');
+    if (hateY && def.indexOf(HATE_NOTE) < 0) E.push('혐오 표현: 주의 문구 없음');
   }
   return E;
 }
@@ -806,7 +806,7 @@ function saveWrite(token, payload) {
     if (!canEditWrite_(me, p.type, cur('작업자'), cur('검수자'), stage)) throw new Error('권한 없음: 배정된 담당자만 입력할 수 있습니다.');
     var fields = payload.fields || {}, errs = [];
     parts.forEach(function (pt) { validateWrite_(pt, fields[pt] || {}, cur('2차 혐오 표현 여부') === 'Y').forEach(function (e) { errs.push((parts.length > 1 ? pt + ' · ' : '') + e); }); });
-    if (errs.length) throw new Error('점검 오류 ' + errs.length + '건: ' + errs.join(' / '));
+    if (errs.length) throw new Error('형식 오류 ' + errs.length + '건 존재. ' + errs.join(' / '));
     parts.forEach(function (pt) {
       var cols = writeStageCols_(pt, stage), fv = fields[pt] || {};
       cols.forEach(function (c) { var f = c.slice(3); if (f in fv) setCell_(sh, rownum, idx, c, fv[f] == null ? '' : fv[f]); });
