@@ -101,7 +101,7 @@
     .placeholder { color:var(--muted); text-align:center; padding:60px 0; }
     .cand-label { color:var(--muted); font-size:12px; font-weight:700; letter-spacing:.5px; }
     .cand-term { font-size:30px; font-weight:800; margin:2px 0 6px; }
-    .cand-meta { color:#4a5168; font-size:15px; margin-bottom:14px; } .cand-meta b { color:var(--ink); }
+    .cand-meta { color:#4a5168; font-size:15px; margin-bottom:14px; } .cand-meta b { color:var(--ink); font-weight:700; }
     .llm-hint { display:inline-block; font-size:12px; color:var(--muted); background:#f1f3f9; padding:3px 10px; border-radius:8px; margin-bottom:8px; } .llm-hint b { color:var(--brand-d); }
     /* 집필(M5) */
     .llm-box { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin:14px 0 0; }
@@ -159,7 +159,8 @@
     .llm-inline .k { color:var(--brand-d); font-weight:700; white-space:nowrap; font-size:13px; padding-top:2px; } .llm-inline .v { flex:1; white-space:pre-wrap; }
     body.dark .llm-inline { background:var(--surface2); border-color:var(--line); }
     .part-lock { background:var(--hold-bg); color:var(--hold); border-radius:8px; padding:8px 12px; font-size:13px; margin-bottom:10px; }
-    .wf:first-child .w-field[data-f="색인표제어"] { font-size:18px; font-weight:700; }
+    .w-field[data-f="색인표제어"], .w-field[data-f="색인표제어"]:disabled { font-size:18px; font-weight:700; color:var(--ink); background:var(--surface2); cursor:default; }
+    .wf.off .w-field[data-f="색인표제어"] { color:var(--ink); }
     .wf .step { display:inline-block; min-width:26px; height:22px; padding:0 6px; border-radius:6px; background:var(--brand); color:#fff; font-size:13px; text-align:center; line-height:22px; margin-right:7px; font-weight:800; }
     .wf.off { opacity:.45; } .wf.off .step { background:#c3c8d6; }
     .wf label .kbd { font-weight:400; margin-left:4px; }
@@ -174,7 +175,7 @@
     .vfy-ok { color:var(--sineo); background:var(--sineo-bg); border-radius:8px; padding:10px 14px; margin:8px 0; font-size:15px; }
     .cf-tbl { width:100%; border-collapse:collapse; font-size:15px; } .cf-tbl th, .cf-tbl td { border-bottom:1px solid var(--line); padding:5px 8px; text-align:left; vertical-align:top; } .cf-tbl th { color:var(--muted); width:130px; font-weight:600; white-space:nowrap; }
     body.dark .w-field.rev-diff { background:#4a3a12; border-color:#a8843a; } body.dark .rev-note { background:#3a2e12; color:#f0c86a; }
-    .ss-head { font-weight:800; font-size:17px; margin-bottom:6px; } .ss-head .ss-who { font-weight:600; font-size:13px; color:var(--muted); margin-left:8px; }
+    .ss-head { font-weight:800; font-size:17px; margin-bottom:6px; } .ss-head .ss-who { font-weight:400; font-size:13px; color:var(--muted); margin-left:8px; }
     .w-field.changed { background:#dbe9ff; border-color:#6f9bf0; }
     .prior { background:#f7f8ff; border:1px solid #e2e6fb; border-radius:10px; padding:10px 12px; font-size:13px; margin-bottom:12px; } .prior .lab { color:var(--brand-d); font-weight:700; }
     .stages.two { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
