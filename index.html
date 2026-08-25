@@ -178,6 +178,7 @@
     .rev-note { font-size:14px; color:#8a5a00; background:#fff7e0; border-radius:6px; padding:3px 8px; margin-top:2px; }
     .chk-native { display:flex; align-items:center; gap:6px; font-size:14px; margin-bottom:4px; cursor:pointer; } .chk-native input { margin:0; }
     .llm-copy { border:1px solid var(--line); background:var(--surface); border-radius:7px; padding:5px 11px; font-size:13px; cursor:pointer; white-space:nowrap; font-weight:700; color:var(--brand-d); }
+    .fld-tools { display:flex; justify-content:flex-end; margin-top:4px; }
     .llm-foot { display:flex; justify-content:flex-end; margin-top:8px; padding-top:8px; border-top:1px solid var(--line); } .llm-all { padding:7px 16px; font-size:14px; }
     .llm-copy:hover:not(:disabled) { border-color:var(--brand); background:#eef1ff; } .llm-copy:disabled { opacity:.35; cursor:default; }
     .vfy-err { color:var(--bisineo); background:var(--bisineo-bg); border-radius:8px; padding:10px 14px; margin:8px 0; font-size:15px; }
@@ -1438,7 +1439,7 @@
           +fld(10,'의미 영역',ac('의미 영역','um'),'','의미 영역')
           +fld('',(stage===1?'작업 메모':'검수 메모'),ta(memoF,2));
       } else {
-        h+=fld('','뜻풀이',ta('뜻풀이',2),'','뜻풀이')
+        h+=fld('','뜻풀이',ta('뜻풀이',2)+(ed?'<div class="fld-tools"><button type="button" class="llm-copy" onclick="appendHateNote(this)">혐오 표현 문구 복사하기</button></div>':''),'','뜻풀이')
           +fld('','용례',ta('용례',2),'','용례')
           +fld('','참고 용례',ta('참고 용례',2),'','참고 용례')
           +fld('','참고 용례 URL',inp('참고 용례 URL'),'','참고 용례 URL',true)
@@ -1463,6 +1464,13 @@
       var it=ITEMS[CUR]; if(!it) return; var i=parseInt(btn.getAttribute('data-llm'),10), el=llmTargetOf(i);
       if(!el || el.disabled){ toast('이 필드는 아직 활성화되지 않았습니다.'); return; }
       el.value=String(it[LLM_MAP[i][0]]||''); if(el.classList.contains('seg-val')) segSync(el); onWriteInput(el); if(!el.classList.contains('seg-val')) el.focus(); toast(LLM_MAP[i][1]+'에 복사했습니다.');
+    }
+    // 혐오 표현 문구: 뜻풀이 끝에 붙임(이미 있으면 그대로)
+    function appendHateNote(btn){
+      var ta=btn.closest('.wf').querySelector('textarea[data-f="뜻풀이"]'); if(!ta || ta.disabled) return;
+      var v=ta.value.replace(/\s+$/,'');
+      if(v.indexOf(HATE_NOTE)<0) ta.value=(v?v+' ':'')+HATE_NOTE;
+      onWriteInput(ta); ta.focus();
     }
     // 전체 복사하기: 순서대로 복사하며 체인 활성화를 따라감(비활성 필드는 건너뜀)
     function llmCopyAll(){
