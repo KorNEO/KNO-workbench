@@ -143,8 +143,8 @@
     .part-sec .write-cols { margin:4px 0 0; }
     .ref-box { flex:1 1 42%; min-height:0; display:flex; flex-direction:column; margin-top:12px; padding-top:10px; border-top:1px solid var(--line); }
     .ref-head { display:flex; align-items:center; gap:10px; margin-bottom:8px; } .ref-head .ref-sec { margin:0; flex:none; } .ref-head .w-field { flex:1; font-size:14px; padding:5px 9px; }
-    .ref-body { flex:1; min-height:0; overflow:auto; padding:0; }
-    .ref-sub { font-size:13px; font-weight:700; color:var(--muted); margin:6px 2px 6px; display:flex; align-items:center; gap:8px; } .ref-sub .ref-count { margin:0; font-weight:400; }
+    .ref-body { flex:1; min-height:0; overflow-y:auto; overflow-x:hidden; padding:0 2px 0 0; }
+    .ref-sub { font-size:13px; font-weight:700; color:var(--muted); margin:0 0 6px; padding:6px 2px; display:flex; align-items:center; gap:8px; position:sticky; top:0; background:var(--surface); z-index:1; } .ref-sub .ref-count { margin:0; font-weight:400; }
     .ref-count { font-size:13px; color:var(--muted); margin:2px 2px 8px; }
     .ref-item { background:var(--surface2); border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:8px; }
     .ref-title { font-size:16px; font-weight:800; display:flex; align-items:center; gap:8px; margin-bottom:8px; } .ref-title mark { background:#fff2a8; color:inherit; padding:0 2px; border-radius:3px; }
@@ -1363,14 +1363,7 @@
     function refRender(){
       var q=refKey_(($('ref-q')||{}).value||''), body=$('ref-body'); if(!body) return;
       var it=ITEMS[CUR], html='';
-      // 1) 유사 사례(2025): 이 프로젝트(배분 목록) 안의 다른 항목. 최종값(2차 있으면 2차, 없으면 1차)
-      var cur=[];
-      if(q.length>=2) ITEMS.forEach(function(x){ if(x===it) return; var t=headSrc_(x), sm=refSim_(q, refKey_(t)); if(!sm) return;
-        var vals={}; ['단어/구','조어법','품사','일상어/전문어','등재표제어','원어','어원','전문 분야'].forEach(function(f){ vals[f]=fv(x,f); }); vals['어종']=fv(x,'어종 표시'); vals['의미 범주']=fv(x,'의미 영역');
-        cur.push([sm,{title:t, year:'', vals:vals, def:fv(x,'뜻풀이')}]); });
-      cur.sort(function(x,y){ return y[0][0]-x[0][0]; });
-      html+='<div class="ref-sub">2025<span class="ref-count">'+cur.length+'건</span></div>'+(cur.length?cur.slice(0,40).map(function(h){ return refCard_(h[1], h[0][2]); }).join(''):'<div class="ref-empty">-</div>');
-      // 2) 유사 사례(2020-2024): KNO_DATASET
+      // 1) 2020-2024: KNO_DATASET
       var hits=[];
       if(REF && q.length>=2){ var cI=refCol('색인표제어'), cH=refCol('등재표제어'), cY=refCol('수집 연도');
         REF.rows.forEach(function(r){ var sm=refSim_(q, refKey_(r[cI])); if(sm) hits.push([sm,r]); });
@@ -1378,6 +1371,13 @@
       html+='<div class="ref-sub">2020-2024<span class="ref-count">'+(REF?hits.length+'건'+(hits.length>60?' 중 60건':''):'불러오는 중')+'</span></div>';
       html+=hits.length?hits.slice(0,60).map(function(h){ var r=h[1], vals={}; REF.cols.forEach(function(c,i){ vals[c]=r[i]; });
         return refCard_({title:r[cI]||r[cH], year:r[cY], vals:vals, def:r[refCol('뜻풀이')]}, h[0][2]); }).join(''):'<div class="ref-empty">-</div>';
+      // 2) 2025: 이 프로젝트(배분 목록) 안의 다른 항목. 최종값(2차 있으면 2차, 없으면 1차)
+      var cur=[];
+      if(q.length>=2) ITEMS.forEach(function(x){ if(x===it) return; var t=headSrc_(x), sm=refSim_(q, refKey_(t)); if(!sm) return;
+        var vals={}; ['단어/구','조어법','품사','일상어/전문어','등재표제어','원어','어원','전문 분야'].forEach(function(f){ vals[f]=fv(x,f); }); vals['어종']=fv(x,'어종 표시'); vals['의미 범주']=fv(x,'의미 영역');
+        cur.push([sm,{title:t, year:'', vals:vals, def:fv(x,'뜻풀이')}]); });
+      cur.sort(function(x,y){ return y[0][0]-x[0][0]; });
+      html+='<div class="ref-sub">2025<span class="ref-count">'+cur.length+'건</span></div>'+(cur.length?cur.slice(0,40).map(function(h){ return refCard_(h[1], h[0][2]); }).join(''):'<div class="ref-empty">-</div>');
       body.innerHTML=html;
     }
     function segPick(btn){ var seg=btn.closest('.seg'), inp=seg.querySelector('.seg-val'); if(inp.disabled) return;
