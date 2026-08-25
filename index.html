@@ -1539,7 +1539,7 @@
     function llmCopy(btn){
       var it=ITEMS[CUR]; if(!it) return; var i=parseInt(btn.getAttribute('data-llm'),10), el=llmTargetOf(i);
       if(!el || el.getAttribute('data-ro')==='1') return;
-      llmSet_(i, el); toast('복사했습니다.');
+      llmSet_(i, el); toast('복사 완료');
     }
     // 기호 바(집필_시_특수기호.txt): 클릭하면 같은 칸의 커서 위치에 삽입
     var SYMS=['「」','『』','【】','≪≫','‘’','“”','〔〕','ㆍ','¶','…','▼','▽','←'];
@@ -1564,7 +1564,7 @@
     function llmCopyAll(){
       var it=ITEMS[CUR]; if(!it) return;
       LLM_MAP.forEach(function(m,i){ if(m[1]==='색인표제어' || !String(it[m[0]]||'').trim()) return; var el=llmTargetOf(i); if(!el || el.getAttribute('data-ro')==='1') return; llmSet_(i, el); });
-      refreshLlmBtns(); toast('복사했습니다.');
+      refreshLlmBtns(); toast('복사 완료');
     }
     // 저장 전 확인 창: 전 필드 + 점검 결과
     function collectAll_(stage){ var o={}; activeParts().forEach(function(part){ o[part]=collectWrite_(part, stage); }); return o; }
