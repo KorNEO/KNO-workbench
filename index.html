@@ -143,12 +143,12 @@
     /* 좌우 날개 탭: 세로 알약 모양, 날개(목록/유사 항목 패널)와 같이 움직임 */
     .wing { position:fixed; top:50%; transform:translateY(-50%); width:38px; padding:16px 0; border:none; border-radius:999px; background:var(--brand); color:#fff; font-size:14px; font-weight:800; letter-spacing:1px; writing-mode:vertical-rl; text-orientation:upright; cursor:pointer; z-index:121; box-shadow:0 4px 14px rgba(63,81,181,.35); transition:left .2s, right .2s, background .12s; }
     .wing:hover { background:var(--brand-d); }
-    .wing-l { left:352px; } body.list-collapsed .wing-l { left:8px; }
-    .wing-r { right:8px; } body.ref-open .wing-r { right:468px; }
+    .wing-l { left:329px; } body.list-collapsed .wing-l { left:8px; }
+    .wing-r { right:8px; } body.ref-open .wing-r { right:361px; }
     body.list-collapsed .work-wrap { grid-template-columns:1fr; } body.list-collapsed .list-col { display:none; }
-    .ref-pane { position:fixed; top:54px; right:-480px; width:460px; max-width:92vw; height:calc(100vh - 54px); background:var(--bg); border-left:1px solid var(--line); z-index:120; transition:right .2s; display:flex; flex-direction:column; }
+    .ref-pane { position:fixed; top:54px; right:-400px; width:380px; max-width:92vw; height:calc(100vh - 54px); background:var(--bg); border-left:1px solid var(--line); z-index:120; transition:right .2s; display:flex; flex-direction:column; }
     .ref-pane.open { right:0; }
-    main { transition:padding-right .2s; } body.ref-open main { padding-right:478px; }
+    main { transition:padding-right .2s; } body.ref-open main { padding-right:380px; }
     body.ref-open .list-col { position:static; }
     .ref-head { display:flex; gap:8px; align-items:center; padding:12px 14px; background:var(--surface); border-bottom:1px solid var(--line); } .ref-head .w-field { flex:1; font-size:16px; } .ref-head .x { float:none; flex:none; }
     .ref-body { flex:1; overflow:auto; padding:10px 14px 24px; }
@@ -156,7 +156,7 @@
     .ref-item { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin-bottom:10px; }
     .ref-title { font-size:17px; font-weight:800; display:flex; align-items:center; gap:8px; margin-bottom:8px; } .ref-title mark { background:#fff2a8; color:inherit; padding:0 2px; border-radius:3px; }
     .ref-year { margin-left:auto; font-size:12px; font-weight:600; color:var(--muted); background:var(--surface3); border-radius:8px; padding:2px 8px; }
-    .ref-grid { display:grid; grid-template-columns:1fr 1fr; gap:3px 12px; }
+    .ref-grid { display:grid; grid-template-columns:1fr; gap:3px 12px; }
     .ref-row { display:flex; gap:8px; font-size:14px; line-height:1.5; min-width:0; } .ref-row .k { color:var(--muted); flex:none; width:92px; white-space:nowrap; } .ref-row .v { min-width:0; overflow-wrap:anywhere; }
     .ref-row.full { grid-column:1 / -1; }
     .ref-sec { font-size:15px; font-weight:800; color:var(--brand-d); margin:6px 2px 8px; display:flex; align-items:center; gap:8px; } .ref-sec .ref-count { margin:0; font-weight:400; }
@@ -1356,7 +1356,7 @@
       var head=(sec && secVal(sec,'색인표제어')) || String(it['신어 후보']||'');
       var pane=$('refPane'); if(!pane){ pane=document.createElement('div'); pane.id='refPane'; pane.className='ref-pane'; document.body.appendChild(pane); }
       pane.innerHTML='<div class="ref-head"><input id="ref-q" class="w-field" value="'+ea(head)+'" oninput="refRender()"><button class="x" onclick="closeRef()">×</button></div><div id="ref-body" class="ref-body"><span class="kbd">불러오는 중</span></div>';
-      pane.classList.add('open'); document.body.classList.add('ref-open'); wingTabs(); refRender(); refLoad(refRender);
+      pane.classList.add('open'); document.body.classList.add('ref-open'); document.body.classList.add('list-collapsed'); wingTabs(); refRender(); refLoad(refRender);
     }
     function closeRef(){ var p=$('refPane'); if(p) p.classList.remove('open'); document.body.classList.remove('ref-open'); wingTabs(); }
     // 빈 곳(입력 칸·버튼·링크·폼 밖) 클릭 시 패널 닫힘
