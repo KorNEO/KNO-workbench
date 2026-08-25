@@ -142,12 +142,11 @@
     .part-sec.locked .write-cols { opacity:.45; pointer-events:none; filter:grayscale(.6); }
     .part-sec .write-cols { margin:4px 0 0; }
     /* 집필 사례: 본문 오른쪽 열. 접으면 세로 띠(버튼)만 남음 */
-    .ref-col { position:sticky; top:72px; height:calc(100vh - 100px); width:420px; display:flex; flex-direction:column; background:var(--surface); border:1px solid var(--line); border-radius:14px; overflow:hidden; transition:width .2s; }
+    .ref-col { position:sticky; top:72px; height:calc(100vh - 100px); width:420px; display:flex; flex-direction:column; background:var(--surface); border:1px solid var(--line); border-radius:14px; overflow:visible; transition:width .2s; }
     body.ref-collapsed .ref-col { width:40px; }
-    .ref-toggle { flex:none; border:none; background:var(--surface3); color:var(--brand-d); font-weight:700; font-size:13px; padding:8px 10px; cursor:pointer; text-align:left; border-radius:14px 14px 0 0; }
-    .ref-toggle:hover { background:#e2e6fb; }
-    body.ref-collapsed .ref-toggle { height:auto; writing-mode:vertical-rl; text-orientation:upright; letter-spacing:2px; text-align:center; padding:14px 0; }   /* 접혀도 같은 자리(열 맨 위)에 세로 글씨로 */
-    .ref-inner { flex:1; min-height:0; display:flex; flex-direction:column; padding:10px 12px 12px; } body.ref-collapsed .ref-inner { display:none; }
+    .ref-toggle { position:absolute; right:0; top:50%; transform:translateY(-50%); width:28px; padding:14px 0; border:none; border-radius:8px 0 0 8px; background:var(--brand); color:#fff; font-weight:700; font-size:13px; letter-spacing:2px; writing-mode:vertical-rl; text-orientation:upright; cursor:pointer; z-index:2; }
+    .ref-toggle:hover { background:var(--brand-d); }
+    .ref-inner { flex:1; min-height:0; display:flex; flex-direction:column; padding:10px 34px 12px 12px; } body.ref-collapsed .ref-inner { display:none; }
     .ref-head { display:flex; align-items:center; gap:10px; margin-bottom:8px; } .ref-head .ref-sec { margin:0; flex:none; font-size:16px; } .ref-head .w-field { flex:1; font-size:15px; padding:6px 10px; }
     .ref-body { flex:1; min-height:0; overflow-y:auto; overflow-x:hidden; padding:0 2px 0 0; }
     .ref-sub { font-size:15px; font-weight:700; color:var(--muted); margin:0 0 6px; padding:6px 2px; display:flex; align-items:center; gap:8px; position:sticky; top:0; background:var(--surface); z-index:1; } .ref-sub .ref-count { margin:0; font-weight:400; }
@@ -488,7 +487,7 @@
         </aside>
         <div class="detail-col" id="detail"><div class="placeholder">왼쪽에서 신어 후보 항목을 선택하세요.</div></div>
         <aside id="ref-box" class="ref-col" style="display:none">
-          <button class="ref-toggle" onclick="toggleRef()" id="ref-toggle">집필 사례 접기</button>
+          <button class="ref-toggle" onclick="toggleRef()" id="ref-toggle">접기</button>
           <div class="ref-inner">
             <div class="ref-head"><span class="ref-sec">집필 사례</span><input id="ref-q" class="w-field" oninput="refRender()"></div>
             <div id="ref-body" class="ref-body"></div>
@@ -1353,12 +1352,12 @@
       if(n>=2) return [30+n,'접두',a.slice(0,n)];
       return null;
     }
-    function toggleRef(){ var c=document.body.classList.toggle('ref-collapsed'); lsSet('kno_ref_collapsed', c?'1':'0'); $('ref-toggle').textContent=c?'집필 사례 펴기':'집필 사례 접기'; }
+    function toggleRef(){ var c=document.body.classList.toggle('ref-collapsed'); lsSet('kno_ref_collapsed', c?'1':'0'); $('ref-toggle').textContent=c?'펴기':'접기'; }
     if(lsGet('kno_ref_collapsed','0')==='1'){ document.body.classList.add('ref-collapsed'); }
     // 현재 항목 기준으로 집필 사례 갱신(집필 모드에서 항목을 고를 때마다)
     function refUpdate(){
       var it=ITEMS[CUR], box=$('ref-box'); if(!box) return; if(!it || !isWrite()){ box.style.display='none'; return; }
-      box.style.display=''; $('ref-toggle').textContent=document.body.classList.contains('ref-collapsed')?'집필 사례 펴기':'집필 사례 접기';
+      box.style.display=''; $('ref-toggle').textContent=document.body.classList.contains('ref-collapsed')?'펴기':'접기';
       var sec=document.querySelector('#detail .stage-sec[data-part="형태부"][data-stage="1"]');
       $('ref-q').value=(sec && secVal(sec,'색인표제어')) || String(it['신어 후보']||'');
       refRender(); refLoad(refRender);
