@@ -140,15 +140,17 @@
     .part-sec.locked { background:var(--surface2); } .part-sec.locked .ps-state { background:var(--hold-bg); color:var(--hold); }
     .part-sec.locked .write-cols { opacity:.45; pointer-events:none; filter:grayscale(.6); }
     .part-sec .write-cols { margin:4px 0 0; }
-    /* 좌우 날개 탭: 세로 알약 모양, 날개(목록/유사 항목 패널)와 같이 움직임 */
-    .wing { position:fixed; top:50%; transform:translateY(-50%); width:38px; padding:16px 0; border:none; border-radius:999px; background:var(--brand); color:#fff; font-size:14px; font-weight:800; letter-spacing:1px; writing-mode:vertical-rl; text-orientation:upright; cursor:pointer; z-index:121; box-shadow:0 4px 14px rgba(63,81,181,.35); transition:left .2s, right .2s, background .12s; }
+    /* 좌우 날개 탭: 세로 알약 모양. 작업 화면에서는 좌우 52px를 비워 두고 그 안에 놓아 본문을 덮지 않음 */
+    body.work-view main { padding-left:54px; padding-right:54px; transition:padding .2s; }
+    body.work-view.ref-open main { padding-right:434px; }
+    .wing { position:fixed; top:50%; transform:translateY(-50%); width:36px; padding:16px 0; border:none; border-radius:999px; background:var(--brand); color:#fff; font-size:14px; font-weight:800; letter-spacing:1px; writing-mode:vertical-rl; text-orientation:upright; cursor:pointer; z-index:121; box-shadow:0 4px 14px rgba(63,81,181,.35); transition:left .2s, right .2s, background .12s; }
     .wing:hover { background:var(--brand-d); }
-    .wing-l { left:329px; } body.list-collapsed .wing-l { left:8px; }
-    .wing-r { right:8px; } body.ref-open .wing-r { right:361px; }
+    .wing-l { left:9px; }
+    .wing-r { right:9px; } body.ref-open .wing-r { right:389px; }
     body.list-collapsed .work-wrap { grid-template-columns:1fr; } body.list-collapsed .list-col { display:none; }
-    .ref-pane { position:fixed; top:54px; right:-400px; width:380px; max-width:92vw; height:calc(100vh - 54px); background:var(--bg); border-left:1px solid var(--line); z-index:120; transition:right .2s; display:flex; flex-direction:column; }
+    .ref-pane { position:fixed; top:54px; right:-400px; width:380px; max-width:92vw; box-shadow:-6px 0 18px rgba(20,30,60,.08); height:calc(100vh - 54px); background:var(--bg); border-left:1px solid var(--line); z-index:120; transition:right .2s; display:flex; flex-direction:column; }
     .ref-pane.open { right:0; }
-    main { transition:padding-right .2s; } body.ref-open main { padding-right:380px; }
+
     body.ref-open .list-col { position:static; }
     .ref-head { display:flex; gap:8px; align-items:center; padding:12px 14px; background:var(--surface); border-bottom:1px solid var(--line); } .ref-head .w-field { flex:1; font-size:16px; } .ref-head .x { float:none; flex:none; }
     .ref-body { flex:1; overflow:auto; padding:10px 14px 24px; }
@@ -668,7 +670,7 @@
       $('view-landing').classList.toggle('hidden', v!=='landing');
       $('view-projects').classList.toggle('hidden', v!=='projects');
       $('view-home').classList.toggle('hidden', v!=='home');
-      $('view-work').classList.toggle('hidden', v!=='mine' && v!=='all'); if(typeof wingTabs==='function') setTimeout(wingTabs,0);
+      $('view-work').classList.toggle('hidden', v!=='mine' && v!=='all'); document.body.classList.toggle('work-view', v==='mine'||v==='all'); if(typeof wingTabs==='function') setTimeout(wingTabs,0);
       $('btn-add-item').style.display=((v==='mine'||v==='all') && isWrite())?'block':'none';
       $('view-researchers').classList.toggle('hidden', v!=='researchers');
       if(v==='projects') renderProjects();
@@ -860,7 +862,7 @@
       $('who').innerHTML=esc(ME.name)+' <span class="role">'+esc(ME.role)+'</span> <span class="role">데모</span>';
       SCOPE='mine';
       ['view-landing','view-projects','view-home','view-researchers'].forEach(function(v){ $(v).classList.add('hidden'); });
-      $('view-work').classList.remove('hidden'); $('nav').style.display=''; $('modeBadge').classList.remove('hidden'); $('modeBadge').textContent=modeName()+' · '+CURRENT_PROJECT.name+' ('+CURRENT_PROJECT.phase+' 단계)';
+      $('view-work').classList.remove('hidden'); document.body.classList.add('work-view'); $('nav').style.display=''; $('modeBadge').classList.remove('hidden'); $('modeBadge').textContent=modeName()+' · '+CURRENT_PROJECT.name+' ('+CURRENT_PROJECT.phase+' 단계)';
       document.querySelectorAll('nav.tabs button').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-view')==='mine'); });
       ['f-assignee','f-week','f-v1','f-v2','f-proper','f-hate'].forEach(function(id){ $(id).style.display='none'; });
       $('btn-add-item').style.display='block';
@@ -1356,7 +1358,7 @@
       var head=(sec && secVal(sec,'색인표제어')) || String(it['신어 후보']||'');
       var pane=$('refPane'); if(!pane){ pane=document.createElement('div'); pane.id='refPane'; pane.className='ref-pane'; document.body.appendChild(pane); }
       pane.innerHTML='<div class="ref-head"><input id="ref-q" class="w-field" value="'+ea(head)+'" oninput="refRender()"><button class="x" onclick="closeRef()">×</button></div><div id="ref-body" class="ref-body"><span class="kbd">불러오는 중</span></div>';
-      pane.classList.add('open'); document.body.classList.add('ref-open'); document.body.classList.add('list-collapsed'); wingTabs(); refRender(); refLoad(refRender);
+      pane.classList.add('open'); document.body.classList.add('ref-open'); wingTabs(); refRender(); refLoad(refRender);
     }
     function closeRef(){ var p=$('refPane'); if(p) p.classList.remove('open'); document.body.classList.remove('ref-open'); wingTabs(); }
     // 빈 곳(입력 칸·버튼·링크·폼 밖) 클릭 시 패널 닫힘
