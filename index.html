@@ -140,16 +140,26 @@
     .part-sec.locked { background:var(--surface2); } .part-sec.locked .ps-state { background:var(--hold-bg); color:var(--hold); }
     .part-sec.locked .write-cols { opacity:.45; pointer-events:none; filter:grayscale(.6); }
     .part-sec .write-cols { margin:4px 0 0; }
-    .ref-pane { position:fixed; top:54px; right:-440px; width:420px; max-width:92vw; height:calc(100vh - 54px); background:var(--surface); border-left:1px solid var(--line); box-shadow:-8px 0 24px rgba(20,30,60,.12); z-index:120; transition:right .2s; display:flex; flex-direction:column; }
+    .wing { position:fixed; top:50%; transform:translateY(-50%); width:22px; height:64px; border:1px solid var(--line); background:var(--surface); color:var(--muted); font-size:11px; cursor:pointer; z-index:121; padding:0; box-shadow:0 2px 8px rgba(20,30,60,.12); }
+    .wing:hover { color:var(--brand); border-color:var(--brand); }
+    .wing-l { left:0; border-left:none; border-radius:0 8px 8px 0; }
+    .wing-r { right:0; border-right:none; border-radius:8px 0 0 8px; transition:right .2s; } body.ref-open .wing-r { right:420px; }
+    body.list-collapsed .work-wrap { grid-template-columns:1fr; } body.list-collapsed .list-col { display:none; }
+    .ref-pane { position:fixed; top:54px; right:-440px; width:420px; max-width:92vw; height:calc(100vh - 54px); background:var(--bg); border-left:1px solid var(--line); z-index:120; transition:right .2s; display:flex; flex-direction:column; }
     .ref-pane.open { right:0; }
     main { transition:padding-right .2s; } body.ref-open main { padding-right:438px; }
     body.ref-open .list-col { position:static; }
-    .ref-head { display:flex; gap:8px; align-items:center; padding:12px 14px; border-bottom:1px solid var(--line); } .ref-head .w-field { flex:1; } .ref-head .x { float:none; flex:none; }
+    .ref-head { display:flex; gap:8px; align-items:center; padding:12px 14px; background:var(--surface); border-bottom:1px solid var(--line); } .ref-head .w-field { flex:1; font-size:16px; } .ref-head .x { float:none; flex:none; }
     .ref-body { flex:1; overflow:auto; padding:10px 14px 24px; }
-    .ref-count { font-size:13px; color:var(--muted); margin:2px 0 8px; }
-    .ref-item { border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:10px; }
-    .ref-title { font-size:17px; font-weight:800; margin-bottom:6px; } .ref-meta { font-size:12px; font-weight:400; color:var(--muted); margin-left:8px; }
-    .ref-row { display:flex; gap:10px; font-size:14px; line-height:1.6; } .ref-row .k { color:var(--muted); min-width:84px; flex:none; } .ref-row .v { white-space:pre-wrap; }
+    .ref-count { font-size:13px; color:var(--muted); margin:2px 2px 8px; }
+    .ref-item { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin-bottom:10px; }
+    .ref-title { font-size:17px; font-weight:800; display:flex; align-items:center; gap:8px; margin-bottom:8px; } .ref-title mark { background:#fff2a8; color:inherit; padding:0 2px; border-radius:3px; }
+    .ref-year { margin-left:auto; font-size:12px; font-weight:600; color:var(--muted); background:var(--surface3); border-radius:8px; padding:2px 8px; }
+    .ref-grid { display:grid; grid-template-columns:1fr 1fr; gap:3px 12px; }
+    .ref-row { display:flex; gap:8px; font-size:14px; line-height:1.5; min-width:0; } .ref-row .k { color:var(--muted); flex:none; width:72px; } .ref-row .v { min-width:0; overflow-wrap:anywhere; }
+    .ref-row:nth-child(5), .ref-row:nth-child(6), .ref-row:nth-child(7), .ref-row:nth-child(8) { grid-column:1 / -1; }
+    .ref-def { margin-top:8px; padding-top:8px; border-top:1px dashed var(--line); font-size:14px; line-height:1.6; color:var(--ink); }
+    body.dark .ref-title mark { background:#5a4a12; }
     .ac { position:relative; }
     .ac-list { position:absolute; left:0; right:0; top:100%; z-index:20; background:var(--surface); border:1px solid var(--line); border-radius:8px; box-shadow:0 8px 24px rgba(20,30,60,.14); max-height:240px; overflow:auto; margin-top:3px; }
     .ac-item { padding:8px 12px; cursor:pointer; font-size:16px; }
@@ -552,6 +562,8 @@
       </div>
     </div>
   </div>
+  <button id="wingL" class="wing wing-l" onclick="toggleLeft()" title="항목 목록 접기/펴기" style="display:none">◀</button>
+  <button id="wingR" class="wing wing-r" onclick="toggleRight()" title="유사 사례 열기/닫기" style="display:none">◀</button>
   <div id="toast"></div>
 
   <script>
@@ -653,7 +665,7 @@
       $('view-landing').classList.toggle('hidden', v!=='landing');
       $('view-projects').classList.toggle('hidden', v!=='projects');
       $('view-home').classList.toggle('hidden', v!=='home');
-      $('view-work').classList.toggle('hidden', v!=='mine' && v!=='all');
+      $('view-work').classList.toggle('hidden', v!=='mine' && v!=='all'); if(typeof wingTabs==='function') setTimeout(wingTabs,0);
       $('btn-add-item').style.display=((v==='mine'||v==='all') && isWrite())?'block':'none';
       $('view-researchers').classList.toggle('hidden', v!=='researchers');
       if(v==='projects') renderProjects();
@@ -849,7 +861,7 @@
       document.querySelectorAll('nav.tabs button').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-view')==='mine'); });
       ['f-assignee','f-week','f-v1','f-v2','f-proper','f-hate'].forEach(function(id){ $(id).style.display='none'; });
       $('btn-add-item').style.display='block';
-      CUR=-1; renderList(); selectItem(parseInt(q.get('i')||'0',10)||0);
+      CUR=-1; renderList(); selectItem(parseInt(q.get('i')||'0',10)||0); wingTabs();
       if(q.get('confirm')) setTimeout(function(){ openWriteConfirm(parseInt(q.get('confirm'),10)||1); }, 50);
       if(q.get('ref')) setTimeout(openRef, 50);
     }
@@ -1341,19 +1353,30 @@
       var head=(sec && secVal(sec,'색인표제어')) || String(it['신어 후보']||'');
       var pane=$('refPane'); if(!pane){ pane=document.createElement('div'); pane.id='refPane'; pane.className='ref-pane'; document.body.appendChild(pane); }
       pane.innerHTML='<div class="ref-head"><input id="ref-q" class="w-field" value="'+ea(head)+'" oninput="refRender()"><button class="x" onclick="closeRef()">×</button></div><div id="ref-body" class="ref-body"><span class="kbd">불러오는 중</span></div>';
-      pane.classList.add('open'); document.body.classList.add('ref-open'); refLoad(refRender);
+      pane.classList.add('open'); document.body.classList.add('ref-open'); wingTabs(); refLoad(refRender);
     }
-    function closeRef(){ var p=$('refPane'); if(p) p.classList.remove('open'); document.body.classList.remove('ref-open'); }
+    function closeRef(){ var p=$('refPane'); if(p) p.classList.remove('open'); document.body.classList.remove('ref-open'); wingTabs(); }
+    // 빈 곳(입력 칸·버튼·링크·폼 밖) 클릭 시 패널 닫힘
+    document.addEventListener('click', function(e){ if(!document.body.classList.contains('ref-open')) return; var t=e.target;
+      if(t.closest('.ref-pane, .wing, input, textarea, button, select, a, label, .seg, .wf, .modal')) return; closeRef(); });
+    // 좌(항목 목록)·우(유사 사례) 날개 접기/펴기
+    function toggleLeft(){ document.body.classList.toggle('list-collapsed'); wingTabs(); }
+    function toggleRight(){ if(document.body.classList.contains('ref-open')) closeRef(); else openRef(); }
+    function wingTabs(){ var L=$('wingL'), R=$('wingR'); if(!L||!R) return; var work=!$('view-work').classList.contains('hidden');
+      L.style.display=work?'':'none'; R.style.display=(work && isWrite())?'':'none';
+      L.textContent=document.body.classList.contains('list-collapsed')?'▶':'◀'; R.textContent=document.body.classList.contains('ref-open')?'▶':'◀'; }
     function refRender(){
       if(!REF) return; var q=refKey_(($('ref-q')||{}).value||''), body=$('ref-body'); if(!body) return;
       var cI=refCol('색인표제어'), cH=refCol('등재표제어'), cY=refCol('수집 연도'), hits=[];
       if(q.length>=2){ REF.rows.forEach(function(r){ var sm=refSim_(q, refKey_(r[cI])); if(sm) hits.push([sm,r]); }); }
       hits.sort(function(x,y){ return y[0][0]-x[0][0] || String(x[1][cY]).localeCompare(String(y[1][cY])); });
       if(!hits.length){ body.innerHTML='<span class="kbd">-</span>'; return; }
-      var show=hits.slice(0,60), F=['단어/구','조어법','품사','일상어/전문어','등재표제어','원어','어종','어원','전문 분야','의미 범주','뜻풀이'];   // 집필 순서와 동일
-      body.innerHTML='<div class="ref-count">'+hits.length+'건'+(hits.length>60?' 중 60건':'')+'</div>'+show.map(function(h){ var r=h[1], sm=h[0];
+      var show=hits.slice(0,60), F=['단어/구','조어법','품사','일상어/전문어','등재표제어','원어','어종','어원','전문 분야','의미 범주'];   // 집필 순서와 동일, 뜻풀이는 아래 전체 폭
+      function mark(t, part){ t=String(t||''); if(!part) return esc(t); var i=t.indexOf(part); return i<0?esc(t):esc(t.slice(0,i))+'<mark>'+esc(part)+'</mark>'+esc(t.slice(i+part.length)); }
+      body.innerHTML='<div class="ref-count">'+hits.length+'건'+(hits.length>60?' 중 60건 표시':'')+'</div>'+show.map(function(h){ var r=h[1], sm=h[0], title=r[cI]||r[cH];
         var rows=F.map(function(f){ var v=String(r[refCol(f)]||''); if(!v) return ''; if(f==='의미 범주' && !/^〔/.test(v)) v='〔'+v+'〕'; return '<div class="ref-row"><span class="k">'+esc(f)+'</span><span class="v">'+esc(v)+'</span></div>'; }).join('');
-        return '<div class="ref-item"><div class="ref-title">'+esc(r[cI]||r[cH])+'<span class="ref-meta">'+esc(r[cY])+' · '+esc(sm[1])+' '+esc(sm[2])+'</span></div>'+rows+'</div>'; }).join('');
+        var def=String(r[refCol('뜻풀이')]||'');
+        return '<div class="ref-item"><div class="ref-title">'+mark(title, sm[2])+'<span class="ref-year">'+esc(r[cY])+'</span></div><div class="ref-grid">'+rows+'</div>'+(def?'<div class="ref-def">'+esc(def)+'</div>':'')+'</div>'; }).join('');
     }
     function segPick(btn){ var seg=btn.closest('.seg'), inp=seg.querySelector('.seg-val'); if(inp.disabled) return;
       var fr=seg.querySelector('.seg-free-inp');
