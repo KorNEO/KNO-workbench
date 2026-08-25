@@ -131,7 +131,7 @@
     .stage-sec.s1 { background:#fff5f5; border-left:4px solid #f0a3a3; }
     .stage-sec.s2 { background:#f4f8ff; border-left:4px solid #a3c0f0; }
     /* 집필 개편: 부(部) 탭·체인·양방향 하이라이트·LLM 복사·확인 창 */
-    .jtags { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:4px; }
+    .jtbl { width:100%; border-collapse:collapse; font-size:15px; } .jtbl th, .jtbl td { padding:8px 10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; white-space:nowrap; } .jtbl th { color:var(--muted); font-weight:600; font-size:13px; } .jtbl td.jmemo { white-space:normal; width:100%; }
     .part-sec { border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin-top:10px; }
     .part-sec .ps-head { font-weight:800; font-size:19px; color:var(--brand-d); display:flex; align-items:center; gap:10px; margin-bottom:6px; }
     .part-sec .ps-state { font-weight:600; font-size:13px; color:var(--muted); background:var(--surface2); padding:2px 9px; border-radius:8px; }
@@ -166,9 +166,11 @@
     .write-form.rail > .wf.stepped.half + .wf.stepped.half { border-top:1px solid var(--line); }
     .write-form.rail > .wf.stepped::before { content:''; position:absolute; left:12px; top:38px; bottom:-18px; width:2px; background:var(--line); }
     .write-form.rail > .wf.stepped:last-of-type::before, .write-form.rail > .wf.stepped.half + .wf.stepped.half::before { display:none; }
-    .wf .step { position:absolute; left:0; top:12px; width:26px; height:26px; border-radius:7px; background:var(--surface); color:var(--ink); border:2px solid var(--ink); font-size:13px; text-align:center; line-height:22px; font-weight:800; box-sizing:border-box; }
-    .wf.off .step { border-color:var(--line); color:var(--muted); background:var(--surface); }
-    body.dark .wf .step { border-color:#e7e9f1; color:#e7e9f1; }
+    .wf .step { position:absolute; left:0; top:12px; width:26px; height:26px; border-radius:7px; font-size:13px; text-align:center; line-height:26px; font-weight:800; box-sizing:border-box; }
+    .stage-sec.s1 .wf .step { background:#fbdada; color:#a12b2b; } .stage-sec.s1 .write-form.rail > .wf.stepped::before { background:#f3c4c4; } .stage-sec.s1 .write-form.rail > .wf.stepped { border-top-color:#f3d6d6; }
+    .stage-sec.s2 .wf .step { background:#d9e6fb; color:#1f4fa3; } .stage-sec.s2 .write-form.rail > .wf.stepped::before { background:#c3d5f3; } .stage-sec.s2 .write-form.rail > .wf.stepped { border-top-color:#d3e0f5; }
+    .wf.off .step { background:var(--surface3) !important; color:var(--muted) !important; }
+    body.dark .stage-sec.s1 .wf .step { background:#5c2626; color:#ffcaca; } body.dark .stage-sec.s2 .wf .step { background:#213a63; color:#c2d7ff; }
     .wf.off { opacity:.5; }
     .wf label .kbd { font-weight:400; margin-left:4px; }
     .w-field:disabled { background:var(--surface3); color:var(--muted); cursor:not-allowed; }
@@ -1342,17 +1344,14 @@
         return '<div class="row"><div class="k">'+esc(m[1])+'</div><div class="v">'+(val?esc(val):'<span class="kbd">-</span>')+'</div><button type="button" class="llm-copy" data-llm="'+i+'" onclick="llmCopy(this)"'+(val?'':' disabled')+'>복사하기</button></div>'; }).join('')
         + '<div class="llm-foot"><button type="button" class="llm-copy llm-all" onclick="llmCopyAll()">전체 복사하기</button></div></div>';
       // 판별 단계의 작업자 메모·검수자 메모
-      function jrow(st, who){
+      function jrow(st, role, who){
         var v=String(it[st+'차 판별']||'').trim(), pr=String(it[st+'차 고유명 여부']||'').trim(), ht=String(it[st+'차 혐오 표현 여부']||'').trim(), memo=String(it[st+'차 메모']||'').trim();
-        var tags=(v?'<span class="pill '+(v==='신어'?'v-sin':v==='비신어'?'v-bi':'v-hold')+'">'+esc(v)+'</span>':'')
-          + (pr?'<span class="pill '+(pr==='Y'?'v-hold':'미작업')+'">고유명 여부 '+esc(pr)+'</span>':'')
-          + (ht?'<span class="pill '+(ht==='Y'?'v-bi':'미작업')+'">혐오 표현 여부 '+esc(ht)+'</span>':'');
-        return '<div class="row"><div class="k">'+st+'차 판별 · '+who+'</div><div class="v"><div class="jtags">'+tags+'</div>'+(memo?esc(memo):'<span class="kbd">-</span>')+'</div></div>';
+        function c(x){ return x?esc(x):'<span class="kbd">-</span>'; }
+        return '<tr><td>'+st+'차</td><td>'+role+(who?' '+fmtName(who):'')+'</td><td>'+(v?'<span class="pill '+(v==='신어'?'v-sin':v==='비신어'?'v-bi':'v-hold')+'">'+esc(v)+'</span>':'<span class="kbd">-</span>')+'</td><td>'+c(pr)+'</td><td>'+c(ht)+'</td><td class="jmemo">'+c(memo)+'</td></tr>';
       }
       var hasJ=['1차 판별','2차 판별','1차 메모','2차 메모','1차 고유명 여부','2차 고유명 여부'].some(function(k){ return String(it[k]||'').trim(); });
-      if(hasJ) h+='<div class="llm-box"><h3>판별 메모</h3>'
-        + jrow(1, '작업자'+(it['판별 작업자']?' '+fmtName(it['판별 작업자']):''))
-        + jrow(2, '검수자'+(it['판별 검수자']?' '+fmtName(it['판별 검수자']):''))+'</div>';
+      if(hasJ) h+='<div class="llm-box"><h3>판별 메모</h3><table class="jtbl"><thead><tr><th>단계</th><th>담당</th><th>판별</th><th>고유명 여부</th><th>혐오 표현 여부</th><th>메모</th></tr></thead><tbody>'
+        + jrow(1, '작업자', it['판별 작업자']) + jrow(2, '검수자', it['판별 검수자']) + '</tbody></table></div>';
       // 형태부 → 의미부 세로 섹션. 프로젝트 단계에 따라 잠금.
       PARTS.forEach(function(part){
         var locked=(part==='의미부' && phase==='형태부'), ro=(part==='형태부' && phase==='의미부');
