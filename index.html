@@ -738,7 +738,7 @@
       uiConfirm('이 프로젝트를 삭제할까요? 되돌릴 수 없습니다.', function(){
       google.script.run.withSuccessHandler(function(){ renderProjects(); }).withFailureHandler(function(e){ toast('삭제 실패: '+e.message); }).deleteProject(TOKEN, modeKind(), id)
       });
-    }    }
+    }
     function openProject(id){
       var p=null; for(var i=0;i<PROJ_LIST.length;i++) if(PROJ_LIST[i].id===id){ p=PROJ_LIST[i]; break; }
       if(!p) return;
@@ -1765,7 +1765,7 @@
         .withFailureHandler(function(e){ toast('실패: '+e.message); })
         .deleteWriteItem(TOKEN, it['ID'])
       });
-    }    }
+    }
     function pick(stage,v){ SEL[stage]=v; document.querySelectorAll('.verdicts[data-stage="'+stage+'"] .vcard').forEach(function(c){ c.classList.toggle('on', c.getAttribute('data-v')===v); }); markDirty(); }
 
     function setSaveBadge(txt, dirty){
@@ -1923,7 +1923,7 @@
       google.script.run.withSuccessHandler(function(res){ $('agree-msg').textContent='완료: '+((res&&res.rows)||0).toLocaleString()+'행 ('+names.length+'명)'; loadProgress(); })
         .withFailureHandler(function(e){ $('agree-msg').textContent='실패: '+e.message; }).genAgree(TOKEN, pid, names)
       });
-    }    }
+    }
     function runReal(){
       var pid=CURRENT_PROJECT&&CURRENT_PROJECT.id; if(!pid){ toast('먼저 프로젝트를 여세요.'); return; }
       var pairs=[].slice.call(document.querySelectorAll('#team-body tr')).map(function(tr){ return [tr.querySelector('.t-w').value, tr.querySelector('.t-r').value]; }).filter(function(p){ return p[0]&&p[1]; });
@@ -1934,7 +1934,7 @@
       google.script.run.withSuccessHandler(function(res){ $('real-msg').textContent='완료: '+((res&&res.rows)||0).toLocaleString()+'행 / '+pairs.length+'팀 · '+weeks+'주'; loadProgress(); })
         .withFailureHandler(function(e){ $('real-msg').textContent='실패: '+e.message; }).genReal(TOKEN, pid, { pairs:pairs, weeks:weeks, perWeek:perWeek })
       });
-    }    }
+    }
 
     function loadResearchers(){
       $('researcher-list').innerHTML='<span class="kbd">불러오는 중…</span>';
@@ -1973,7 +1973,7 @@
         window.prompt((name||email)+' 임시 비밀번호가 발급됐습니다.\n아이디: '+res.id+'\n연구원에게 아래 임시 비밀번호를 전달하고, 로그인 후 [비밀번호 재설정]으로 변경하도록 안내하세요.\n(복사: Ctrl+C)', res.tempPw);
       }).withFailureHandler(function(e){ toast('초기화 실패: '+e.message); }).adminResetPassword(TOKEN, email)
       });
-    }    }
+    }
     function saveRoster(){
       var list=[].slice.call(document.querySelectorAll('#roster-body tr')).map(function(tr){
         return { name:tr.querySelector('.r-name').value.trim(), '소속':tr.querySelector('.r-aff').value.trim(), role:tr.querySelector('.r-role').value, email:tr.querySelector('.r-email').value.trim() };
