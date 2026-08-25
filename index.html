@@ -69,8 +69,9 @@
     .stat-line { display:flex; justify-content:space-between; align-items:center; padding:9px 2px; border-bottom:1px solid var(--line); }
     .stat-line:last-child { border-bottom:none; } .stat-line .lbl { color:var(--muted); } .stat-line .val { font-weight:800; font-size:16px; }
     .stat-line .val.go { color:var(--brand); cursor:pointer; text-decoration:underline; }
-    .work-wrap { display:grid; grid-template-columns:330px 1fr; gap:16px; align-items:start; }
-    .list-col { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:12px; max-height:calc(100vh - 100px); overflow:auto; position:sticky; top:72px; }
+    .work-wrap { display:grid; grid-template-columns:360px 1fr; gap:16px; align-items:start; }
+    .list-col { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:12px; height:calc(100vh - 100px); position:sticky; top:72px; display:flex; flex-direction:column; min-height:0; }
+    .list-scroll { flex:1 1 58%; min-height:0; overflow:auto; }
     .filters { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:10px; }
     .filters input, .filters select { height:34px; padding:6px 8px; border:1px solid var(--line); border-radius:8px; font-size:13px; line-height:1.2; box-sizing:border-box; vertical-align:middle; width:100%; min-width:0; }
     #f-q, #f-assignee { grid-column:1 / -1; }
@@ -140,31 +141,20 @@
     .part-sec.locked { background:var(--surface2); } .part-sec.locked .ps-state { background:var(--hold-bg); color:var(--hold); }
     .part-sec.locked .write-cols { opacity:.45; pointer-events:none; filter:grayscale(.6); }
     .part-sec .write-cols { margin:4px 0 0; }
-    /* 좌우 날개 탭: 세로 알약 모양. 작업 화면에서는 좌우 52px를 비워 두고 그 안에 놓아 본문을 덮지 않음 */
-    body.work-view main { padding-left:54px; padding-right:54px; transition:padding .2s; }
-    body.work-view.ref-open main { padding-right:434px; }
-    .wing { position:fixed; top:50%; transform:translateY(-50%); width:36px; padding:18px 0; border:1px solid rgba(63,81,181,.28); border-radius:999px; background:rgba(63,81,181,.10); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); color:var(--brand-d); font-size:13px; font-weight:700; letter-spacing:2px; writing-mode:vertical-rl; text-orientation:upright; cursor:pointer; z-index:121; box-shadow:0 2px 10px rgba(20,30,60,.08); transition:left .2s, right .2s, background .15s, color .15s; }
-    .wing:hover { background:rgba(63,81,181,.22); color:var(--brand-d); border-color:rgba(63,81,181,.5); }
-    body.dark .wing { background:rgba(139,151,247,.14); border-color:rgba(139,151,247,.35); color:#c2d7ff; } body.dark .wing:hover { background:rgba(139,151,247,.28); }
-    .wing-l { left:9px; }
-    .wing-r { right:9px; } body.ref-open .wing-r { right:389px; }
-    body.list-collapsed .work-wrap { grid-template-columns:1fr; } body.list-collapsed .list-col { display:none; }
-    .ref-pane { position:fixed; top:54px; right:-400px; width:380px; max-width:92vw; box-shadow:-6px 0 18px rgba(20,30,60,.08); height:calc(100vh - 54px); background:var(--bg); border-left:1px solid var(--line); z-index:120; transition:right .2s; display:flex; flex-direction:column; }
-    .ref-pane.open { right:0; }
-
-    body.ref-open .list-col { position:static; }
-    .ref-head { display:flex; gap:8px; align-items:center; padding:12px 14px; background:var(--surface); border-bottom:1px solid var(--line); } .ref-head .w-field { flex:1; font-size:16px; } .ref-head .x { float:none; flex:none; }
-    .ref-body { flex:1; overflow:auto; padding:10px 14px 24px; }
+    .ref-box { flex:1 1 42%; min-height:0; display:flex; flex-direction:column; margin-top:12px; padding-top:10px; border-top:1px solid var(--line); }
+    .ref-head { display:flex; align-items:center; gap:10px; margin-bottom:8px; } .ref-head .ref-sec { margin:0; flex:none; } .ref-head .w-field { flex:1; font-size:14px; padding:5px 9px; }
+    .ref-body { flex:1; min-height:0; overflow:auto; padding:0; }
+    .ref-sub { font-size:13px; font-weight:700; color:var(--muted); margin:6px 2px 6px; display:flex; align-items:center; gap:8px; } .ref-sub .ref-count { margin:0; font-weight:400; }
     .ref-count { font-size:13px; color:var(--muted); margin:2px 2px 8px; }
-    .ref-item { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin-bottom:10px; }
-    .ref-title { font-size:17px; font-weight:800; display:flex; align-items:center; gap:8px; margin-bottom:8px; } .ref-title mark { background:#fff2a8; color:inherit; padding:0 2px; border-radius:3px; }
+    .ref-item { background:var(--surface2); border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:8px; }
+    .ref-title { font-size:16px; font-weight:800; display:flex; align-items:center; gap:8px; margin-bottom:8px; } .ref-title mark { background:#fff2a8; color:inherit; padding:0 2px; border-radius:3px; }
     .ref-year { margin-left:auto; font-size:12px; font-weight:600; color:var(--muted); background:var(--surface3); border-radius:8px; padding:2px 8px; }
     .ref-grid { display:grid; grid-template-columns:1fr; gap:3px 12px; }
-    .ref-row { display:flex; gap:8px; font-size:14px; line-height:1.5; min-width:0; } .ref-row .k { color:var(--muted); flex:none; width:92px; white-space:nowrap; } .ref-row .v { min-width:0; overflow-wrap:anywhere; }
+    .ref-row { display:flex; gap:8px; font-size:13px; line-height:1.5; min-width:0; } .ref-row .k { color:var(--muted); flex:none; width:84px; white-space:nowrap; } .ref-row .v { min-width:0; overflow-wrap:anywhere; }
     .ref-row.full { grid-column:1 / -1; }
-    .ref-sec { font-size:15px; font-weight:800; color:var(--brand-d); margin:6px 2px 8px; display:flex; align-items:center; gap:8px; } .ref-sec .ref-count { margin:0; font-weight:400; }
+    .ref-sec { font-size:14px; font-weight:800; color:var(--brand-d); margin:4px 2px 6px; display:flex; align-items:center; gap:8px; } .ref-sec .ref-count { margin:0; font-weight:400; }
     .ref-empty { color:var(--muted); font-size:14px; margin:0 2px 14px; }
-    .ref-def { margin-top:8px; padding-top:8px; border-top:1px dashed var(--line); font-size:14px; line-height:1.6; color:var(--ink); }
+    .ref-def { margin-top:6px; padding-top:6px; border-top:1px dashed var(--line); font-size:13px; line-height:1.55; color:var(--ink); }
     body.dark .ref-title mark { background:#5a4a12; }
     .ac { position:relative; }
     .ac-list { position:absolute; left:0; right:0; top:100%; z-index:20; background:var(--surface); border:1px solid var(--line); border-radius:8px; box-shadow:0 8px 24px rgba(20,30,60,.14); max-height:240px; overflow:auto; margin-top:3px; }
@@ -488,7 +478,11 @@
             <select id="f-hate" onchange="applyResults()" style="display:none" title="혐오 표현 여부"></select>
           </div>
           <button id="btn-add-item" class="btn ghost" onclick="addNewWriteItem()" style="display:none;width:100%;margin-bottom:8px">+ 새 항목 추가</button>
-          <div id="list"></div>
+          <div id="list" class="list-scroll"></div>
+          <div id="ref-box" class="ref-box" style="display:none">
+            <div class="ref-head"><span class="ref-sec">집필 사례</span><input id="ref-q" class="w-field" oninput="refRender()"></div>
+            <div id="ref-body" class="ref-body"></div>
+          </div>
         </aside>
         <div class="detail-col" id="detail"><div class="placeholder">왼쪽에서 신어 후보 항목을 선택하세요.</div></div>
       </div>
@@ -568,8 +562,6 @@
       </div>
     </div>
   </div>
-  <button id="wingL" class="wing wing-l" onclick="toggleLeft()" style="display:none">목록 접기</button>
-  <button id="wingR" class="wing wing-r" onclick="toggleRight()" style="display:none">유사 항목 보기</button>
   <div id="toast"></div>
 
   <script>
@@ -671,7 +663,7 @@
       $('view-landing').classList.toggle('hidden', v!=='landing');
       $('view-projects').classList.toggle('hidden', v!=='projects');
       $('view-home').classList.toggle('hidden', v!=='home');
-      $('view-work').classList.toggle('hidden', v!=='mine' && v!=='all'); document.body.classList.toggle('work-view', v==='mine'||v==='all'); if(typeof wingTabs==='function') setTimeout(wingTabs,0);
+      $('view-work').classList.toggle('hidden', v!=='mine' && v!=='all');
       $('btn-add-item').style.display=((v==='mine'||v==='all') && isWrite())?'block':'none';
       $('view-researchers').classList.toggle('hidden', v!=='researchers');
       if(v==='projects') renderProjects();
@@ -863,13 +855,12 @@
       $('who').innerHTML=esc(ME.name)+' <span class="role">'+esc(ME.role)+'</span> <span class="role">데모</span>';
       SCOPE='mine';
       ['view-landing','view-projects','view-home','view-researchers'].forEach(function(v){ $(v).classList.add('hidden'); });
-      $('view-work').classList.remove('hidden'); document.body.classList.add('work-view'); $('nav').style.display=''; $('modeBadge').classList.remove('hidden'); $('modeBadge').textContent=modeName()+' · '+CURRENT_PROJECT.name+' ('+CURRENT_PROJECT.phase+' 단계)';
+      $('view-work').classList.remove('hidden'); $('nav').style.display=''; $('modeBadge').classList.remove('hidden'); $('modeBadge').textContent=modeName()+' · '+CURRENT_PROJECT.name+' ('+CURRENT_PROJECT.phase+' 단계)';
       document.querySelectorAll('nav.tabs button').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-view')==='mine'); });
       ['f-assignee','f-week','f-v1','f-v2','f-proper','f-hate'].forEach(function(id){ $(id).style.display='none'; });
       $('btn-add-item').style.display='block';
-      CUR=-1; renderList(); selectItem(parseInt(q.get('i')||'0',10)||0); wingTabs();
+      CUR=-1; renderList(); selectItem(parseInt(q.get('i')||'0',10)||0);
       if(q.get('confirm')) setTimeout(function(){ openWriteConfirm(parseInt(q.get('confirm'),10)||1); }, 50);
-      if(q.get('ref')) setTimeout(openRef, 50);
     }
     function showLogin(){ document.querySelector('header').style.display='none'; document.querySelector('main').style.display='none'; $('loginOverlay').classList.remove('hidden'); resetLoginForm(); }
     function resetLoginForm(){
@@ -1093,7 +1084,7 @@
     }
     function applyResults(){
       renderList();
-      if(CUR<0){ var shown=ITEMS.filter(itemPasses).length; $('detail').innerHTML='<div class="placeholder">'+(shown?'왼쪽에서 신어 후보 항목을 선택하세요.':'표시할 항목이 없습니다.')+'</div>'; }
+      if(CUR<0){ var shown=ITEMS.filter(itemPasses).length; $('detail').innerHTML='<div class="placeholder">'+(shown?'왼쪽에서 신어 후보 항목을 선택하세요.':'표시할 항목이 없습니다.')+'</div>'; var rb=$('ref-box'); if(rb) rb.style.display='none'; }
     }
     function renderList(){
       if(!ITEMS.length){ $('list').innerHTML='<p class="kbd">항목 없음</p>'; return; }
@@ -1353,24 +1344,14 @@
       if(n>=2) return [30+n,'접두',a.slice(0,n)];
       return null;
     }
-    function openRef(){
-      var it=ITEMS[CUR]; if(!it) return;
+    // 현재 항목 기준으로 유사 항목 갱신(집필 모드에서 항목을 고를 때마다)
+    function refUpdate(){
+      var it=ITEMS[CUR], box=$('ref-box'); if(!box) return; if(!it || !isWrite()){ box.style.display='none'; return; }
+      box.style.display='';
       var sec=document.querySelector('#detail .stage-sec[data-part="형태부"][data-stage="1"]');
-      var head=(sec && secVal(sec,'색인표제어')) || String(it['신어 후보']||'');
-      var pane=$('refPane'); if(!pane){ pane=document.createElement('div'); pane.id='refPane'; pane.className='ref-pane'; document.body.appendChild(pane); }
-      pane.innerHTML='<div class="ref-head"><input id="ref-q" class="w-field" value="'+ea(head)+'" oninput="refRender()"><button class="x" onclick="closeRef()">×</button></div><div id="ref-body" class="ref-body"><span class="kbd">불러오는 중</span></div>';
-      pane.classList.add('open'); document.body.classList.add('ref-open'); wingTabs(); refRender(); refLoad(refRender);
+      $('ref-q').value=(sec && secVal(sec,'색인표제어')) || String(it['신어 후보']||'');
+      refRender(); refLoad(refRender);
     }
-    function closeRef(){ var p=$('refPane'); if(p) p.classList.remove('open'); document.body.classList.remove('ref-open'); wingTabs(); }
-    // 빈 곳(입력 칸·버튼·링크·폼 밖) 클릭 시 패널 닫힘
-    document.addEventListener('click', function(e){ if(!document.body.classList.contains('ref-open')) return; var t=e.target;
-      if(t.closest('.ref-pane, .wing, input, textarea, button, select, a, label, .seg, .wf, .modal')) return; closeRef(); });
-    // 좌(항목 목록)·우(유사 사례) 날개 접기/펴기
-    function toggleLeft(){ document.body.classList.toggle('list-collapsed'); wingTabs(); }
-    function toggleRight(){ if(document.body.classList.contains('ref-open')) closeRef(); else openRef(); }
-    function wingTabs(){ var L=$('wingL'), R=$('wingR'); if(!L||!R) return; var work=!$('view-work').classList.contains('hidden');
-      L.style.display=work?'':'none'; R.style.display=(work && isWrite())?'':'none';
-      L.textContent=document.body.classList.contains('list-collapsed')?'목록 보기':'목록 접기'; R.textContent=document.body.classList.contains('ref-open')?'유사 항목 접기':'유사 항목 보기'; }
     // 카드 공통: 집필 순서대로. rec={title,year,vals{필드:값},def}
     var REF_F=[['단어/구',0],['조어법',0],['품사',0],['일상어/전문어',0],['등재표제어',1],['원어',1],['어종',0],['어원',1],['전문 분야',0],['의미 범주',0]];   // [이름, 전체폭]
     function refCard_(rec, part){
@@ -1388,13 +1369,13 @@
         var vals={}; ['단어/구','조어법','품사','일상어/전문어','등재표제어','원어','어원','전문 분야'].forEach(function(f){ vals[f]=fv(x,f); }); vals['어종']=fv(x,'어종 표시'); vals['의미 범주']=fv(x,'의미 영역');
         cur.push([sm,{title:t, year:'', vals:vals, def:fv(x,'뜻풀이')}]); });
       cur.sort(function(x,y){ return y[0][0]-x[0][0]; });
-      html+='<div class="ref-sec">유사 사례(2025)<span class="ref-count">'+cur.length+'건</span></div>'+(cur.length?cur.slice(0,40).map(function(h){ return refCard_(h[1], h[0][2]); }).join(''):'<div class="ref-empty">-</div>');
+      html+='<div class="ref-sub">2025<span class="ref-count">'+cur.length+'건</span></div>'+(cur.length?cur.slice(0,40).map(function(h){ return refCard_(h[1], h[0][2]); }).join(''):'<div class="ref-empty">-</div>');
       // 2) 유사 사례(2020-2024): KNO_DATASET
       var hits=[];
       if(REF && q.length>=2){ var cI=refCol('색인표제어'), cH=refCol('등재표제어'), cY=refCol('수집 연도');
         REF.rows.forEach(function(r){ var sm=refSim_(q, refKey_(r[cI])); if(sm) hits.push([sm,r]); });
         hits.sort(function(x,y){ return y[0][0]-x[0][0] || String(x[1][cY]).localeCompare(String(y[1][cY])); }); }
-      html+='<div class="ref-sec">유사 사례(2020-2024)<span class="ref-count">'+(REF?hits.length+'건'+(hits.length>60?' 중 60건':''):'불러오는 중')+'</span></div>';
+      html+='<div class="ref-sub">2020-2024<span class="ref-count">'+(REF?hits.length+'건'+(hits.length>60?' 중 60건':''):'불러오는 중')+'</span></div>';
       html+=hits.length?hits.slice(0,60).map(function(h){ var r=h[1], vals={}; REF.cols.forEach(function(c,i){ vals[c]=r[i]; });
         return refCard_({title:r[cI]||r[cH], year:r[cY], vals:vals, def:r[refCol('뜻풀이')]}, h[0][2]); }).join(''):'<div class="ref-empty">-</div>';
       body.innerHTML=html;
@@ -1545,7 +1526,7 @@
       $('detail').innerHTML=h;
       document.querySelectorAll('#detail .stage-sec[data-part="형태부"]').forEach(function(sec){ chainApply(sec, sec.getAttribute('data-chain')==='1'); });
       refreshLlmBtns();
-      if(document.body.classList.contains('ref-open')){ var rq=$('ref-q'); if(rq){ var sec1=document.querySelector('#detail .stage-sec[data-part="형태부"][data-stage="1"]'); rq.value=(sec1 && secVal(sec1,'색인표제어')) || String(it['신어 후보']||''); refRender(); } }
+      refUpdate();
     }
     // 단계 폼: 1차(작업자)·2차(검수자). 2차는 1차 값 복사 + 변경분 하이라이트. 1차는 2차가 고친 필드를 역표시.
     // 프로젝트 단계별 활성 부: 형태부 단계=형태부만, 의미부 단계=형태부+의미부(한 번에 저장)
