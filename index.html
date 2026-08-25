@@ -106,7 +106,7 @@
     /* 집필(M5) */
     .llm-box { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin:14px 0 0; }
     .llm-box h3 { margin:0 0 10px; font-size:19px; font-weight:800; color:var(--brand-d); }
-    .llm-box .row { display:flex; gap:16px; padding:9px 0; font-size:15px; align-items:flex-start; border-top:1px solid var(--line); } .llm-box .row:first-of-type { border-top:none; } .llm-box .row .pill { margin-right:6px; vertical-align:1px; } .llm-box .k { color:var(--muted); min-width:110px; font-weight:600; white-space:nowrap; } .llm-box .v { color:var(--ink); flex:1; white-space:pre-wrap; }
+    .llm-box .row { display:flex; gap:16px; padding:9px 0; font-size:15px; align-items:flex-start; border-top:1px solid var(--line); } .llm-box .row:first-of-type { border-top:none; } .llm-box .row .pill { margin-right:6px; vertical-align:1px; } .llm-box .k { color:var(--ink); min-width:110px; font-weight:700; white-space:nowrap; } .llm-box .v { color:var(--ink); flex:1; white-space:pre-wrap; }
     .diff-box { border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin:10px 0 0; }
     .diff-box h3 { margin:0 0 6px; font-size:19px; font-weight:800; color:var(--brand-d); }
     .drow { display:flex; gap:10px; padding:6px 0; border-top:1px solid var(--line); font-size:15px; } .drow:first-of-type { border-top:none; }
@@ -1324,7 +1324,7 @@
       var phase=projPhase();
       var newItem=String(it['ID']||'').indexOf('::new-')>=0;
       var h='<div class="cand-label">신어 집필</div><div class="cand-term">'+esc(it['신어 후보'])+'</div>'
-        + '<div class="cand-meta">출처 <b>'+srcLabel(it['출처'])+'</b> &nbsp;·&nbsp; 출현 시점 <b>'+(it['추출 시기']?ym(it['추출 시기']):'-')+'</b> &nbsp;·&nbsp; '+fmtName(it['작업자']||'?')+' - '+fmtName(it['검수자']||'?')
+        + '<div class="cand-meta">출처 <b>'+srcLabel(it['출처']).replace('〉·〈','〉, 〈')+'</b> &nbsp;·&nbsp; 출현 시점 <b>'+(it['추출 시기']?ym(it['추출 시기']):'-')+'</b> &nbsp;·&nbsp; '+fmtName(it['작업자']||'?')+' - '+fmtName(it['검수자']||'?')
         + (it['형태부 주차']?' &nbsp;·&nbsp; 형태부 '+esc(it['형태부 주차'])+'주차':'')+(it['의미부 주차']?' / 의미부 '+esc(it['의미부 주차'])+'주차':'')
         + (newItem ? ' &nbsp; <button class="btn ghost del-item" onclick="deleteWriteItem()">새 항목 삭제</button>' : '')
         + '</div>';
