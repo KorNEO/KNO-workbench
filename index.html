@@ -140,6 +140,14 @@
     .part-sec.locked { background:var(--surface2); } .part-sec.locked .ps-state { background:var(--hold-bg); color:var(--hold); }
     .part-sec.locked .write-cols { opacity:.45; pointer-events:none; filter:grayscale(.6); }
     .part-sec .write-cols { margin:4px 0 0; }
+    .ref-pane { position:fixed; top:54px; right:-480px; width:460px; max-width:92vw; height:calc(100vh - 54px); background:var(--surface); border-left:1px solid var(--line); box-shadow:-8px 0 24px rgba(20,30,60,.12); z-index:120; transition:right .2s; display:flex; flex-direction:column; }
+    .ref-pane.open { right:0; }
+    .ref-head { display:flex; gap:8px; align-items:center; padding:12px 14px; border-bottom:1px solid var(--line); } .ref-head .w-field { flex:1; } .ref-head .x { float:none; flex:none; }
+    .ref-body { flex:1; overflow:auto; padding:10px 14px 24px; }
+    .ref-count { font-size:13px; color:var(--muted); margin:2px 0 8px; }
+    .ref-item { border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:10px; }
+    .ref-title { font-size:17px; font-weight:800; margin-bottom:6px; } .ref-meta { font-size:12px; font-weight:400; color:var(--muted); margin-left:8px; }
+    .ref-row { display:flex; gap:10px; font-size:14px; line-height:1.6; } .ref-row .k { color:var(--muted); min-width:84px; flex:none; } .ref-row .v { white-space:pre-wrap; }
     .ac { position:relative; }
     .ac-list { position:absolute; left:0; right:0; top:100%; z-index:20; background:var(--surface); border:1px solid var(--line); border-radius:8px; box-shadow:0 8px 24px rgba(20,30,60,.14); max-height:240px; overflow:auto; margin-top:3px; }
     .ac-item { padding:8px 12px; cursor:pointer; font-size:16px; }
@@ -841,6 +849,7 @@
       $('btn-add-item').style.display='block';
       CUR=-1; renderList(); selectItem(parseInt(q.get('i')||'0',10)||0);
       if(q.get('confirm')) setTimeout(function(){ openWriteConfirm(parseInt(q.get('confirm'),10)||1); }, 50);
+      if(q.get('ref')) setTimeout(openRef, 50);
     }
     function showLogin(){ document.querySelector('header').style.display='none'; document.querySelector('main').style.display='none'; $('loginOverlay').classList.remove('hidden'); resetLoginForm(); }
     function resetLoginForm(){
@@ -1308,6 +1317,42 @@
       var tail=v.length-(el.selectionEnd||0); el.value=n;
       try{ var pos=Math.max(0,n.length-tail); el.setSelectionRange(pos,pos); }catch(e){}
     }
+    // ── 유사 사례 패널: KNO_DATASET 2020-2024(kno_dataset.json, 1,785행) 중 접두·접미(2자 이상) 공유·포함 관계 항목 ──
+    var REF=null, REF_LOADING=false;
+    function refLoad(cb){ if(REF){ cb(); return; } if(REF_LOADING) return; REF_LOADING=true;
+      fetch('kno_dataset.json?v=1').then(function(r){ return r.json(); }).then(function(d){ REF=d; REF_LOADING=false; cb(); }).catch(function(){ REF_LOADING=false; toast('유사 사례 자료를 불러오지 못했습니다.'); }); }
+    function refCol(name){ return REF.cols.indexOf(name); }
+    function refKey_(w){ return String(w||'').replace(/[^가-힣A-Za-z0-9]/g,''); }
+    // 유사도: 포함(짧은 쪽 길이) > 공통 접미 > 공통 접두, 2자 이상만. 반환 [점수, 종류, 공유 문자열]
+    function refSim_(a, b){
+      if(!a||!b||a===b) return null;
+      if(a.indexOf(b)>=0 || b.indexOf(a)>=0){ var sh=a.length<b.length?a:b; return [100+sh.length,'포함',sh]; }
+      var n=0, L=Math.min(a.length,b.length); while(n<L && a[a.length-1-n]===b[b.length-1-n]) n++;
+      if(n>=2) return [50+n,'접미',a.slice(a.length-n)];
+      n=0; while(n<L && a[n]===b[n]) n++;
+      if(n>=2) return [30+n,'접두',a.slice(0,n)];
+      return null;
+    }
+    function openRef(){
+      var it=ITEMS[CUR]; if(!it) return;
+      var sec=document.querySelector('#detail .stage-sec[data-part="형태부"][data-stage="1"]');
+      var head=(sec && secVal(sec,'색인표제어')) || String(it['신어 후보']||'');
+      var pane=$('refPane'); if(!pane){ pane=document.createElement('div'); pane.id='refPane'; pane.className='ref-pane'; document.body.appendChild(pane); }
+      pane.innerHTML='<div class="ref-head"><input id="ref-q" class="w-field" value="'+ea(head)+'" oninput="refRender()"><button class="x" onclick="closeRef()">×</button></div><div id="ref-body" class="ref-body"><span class="kbd">불러오는 중</span></div>';
+      pane.classList.add('open'); refLoad(refRender);
+    }
+    function closeRef(){ var p=$('refPane'); if(p) p.classList.remove('open'); }
+    function refRender(){
+      if(!REF) return; var q=refKey_(($('ref-q')||{}).value||''), body=$('ref-body'); if(!body) return;
+      var cI=refCol('색인표제어'), cH=refCol('등재표제어'), cY=refCol('수집 연도'), hits=[];
+      if(q.length>=2){ REF.rows.forEach(function(r){ var sm=refSim_(q, refKey_(r[cI])); if(sm) hits.push([sm,r]); }); }
+      hits.sort(function(x,y){ return y[0][0]-x[0][0] || String(x[1][cY]).localeCompare(String(y[1][cY])); });
+      if(!hits.length){ body.innerHTML='<span class="kbd">-</span>'; return; }
+      var show=hits.slice(0,60), F=['원어','어종','어원','단어/구','조어법','품사','일상어/전문어','전문 분야','의미 범주','뜻풀이'];
+      body.innerHTML='<div class="ref-count">'+hits.length+'건'+(hits.length>60?' 중 60건':'')+'</div>'+show.map(function(h){ var r=h[1], sm=h[0];
+        var rows=F.map(function(f){ var v=String(r[refCol(f)]||''); if(!v) return ''; if(f==='의미 범주' && !/^〔/.test(v)) v='〔'+v+'〕'; return '<div class="ref-row"><span class="k">'+esc(f)+'</span><span class="v">'+esc(v)+'</span></div>'; }).join('');
+        return '<div class="ref-item"><div class="ref-title">'+esc(r[cH]||r[cI])+'<span class="ref-meta">'+esc(r[cY])+' · '+esc(sm[1])+' '+esc(sm[2])+'</span></div>'+rows+'</div>'; }).join('');
+    }
     function segPick(btn){ var seg=btn.closest('.seg'), inp=seg.querySelector('.seg-val'); if(inp.disabled) return;
       var fr=seg.querySelector('.seg-free-inp');
       if(btn.getAttribute('data-free')){ inp.value=fr?fr.value.trim():''; if(fr){ fr.parentNode.style.display=''; fr.focus(); } }
@@ -1494,7 +1539,8 @@
       var memoF = part==='형태부' ? (stage===1?'집필 메모(형태부)':'검수 메모(형태부)') : (stage===1?'집필 메모(의미부)':'검수 메모(의미부)');
       if(part==='형태부'){
         var ls=[]; if(String(it['용례 URL']||'').trim()) ls.push(link(it['용례 URL'],'기사문 링크')); if(String(it['검색 URL']||'').trim()) ls.push(link(it['검색 URL'],'〈네이버 뉴스〉 검색 화면 링크'));
-        h+=fld('','색인표제어',inp('색인표제어')+(ls.length?'<div class="cand-links">'+ls.join('<span class="sep">·</span>')+'</div>':''),'','색인표제어')
+        ls.push('<a href="#" onclick="openRef();return false;">유사 사례(2020-2024)</a>');
+        h+=fld('','색인표제어',inp('색인표제어')+'<div class="cand-links">'+ls.join('<span class="sep">·</span>')+'</div>','','색인표제어')
           +fld(1,'단어/구',seg('단어/구',['단어','구']),'','단어/구')
           +fld(2,'조어법',seg('조어법',WF_TYPES),'','조어법')
           +fld(3,'품사',seg('품사',POS_BTNS,true),'','품사')
