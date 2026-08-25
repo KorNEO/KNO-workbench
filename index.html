@@ -183,6 +183,7 @@
     .llm-inline .k { color:var(--brand-d); font-weight:700; white-space:nowrap; font-size:13px; padding-top:2px; } .llm-inline .v { flex:1; white-space:pre-wrap; }
     body.dark .llm-inline { background:var(--surface2); border-color:var(--line); }
     .part-lock { background:var(--hold-bg); color:var(--hold); border-radius:8px; padding:8px 12px; font-size:13px; margin-bottom:10px; }
+    .w-field[data-f="X년 Y월 신어"][readonly] { background:var(--surface2); cursor:default; }
     .w-field[data-f="색인표제어"], .w-field[data-f="색인표제어"]:disabled { font-size:19px; font-weight:700; color:var(--ink); background:var(--surface2); cursor:default; }
     .wf.off .w-field[data-f="색인표제어"] { color:var(--ink); }
     .write-form.rail > .wf { padding-left:42px; position:relative; }
@@ -1546,6 +1547,7 @@
       var who=stage===1?'작업자 '+fmtName(it['작업자']||'?'):'검수자 '+fmtName(it['검수자']||'?');
       var h='<div class="stage-sec s'+stage+'" data-part="'+part+'" data-stage="'+stage+'" data-chain="'+(chain?1:0)+'"><div class="ss-head">'+(stage===1?'1차 작업':'2차 검수')+' <span class="ss-who">'+who+'</span></div><div class="write-form rail">';
       function pv(f){   // 표시값: 해당 단계 값 → (2차면 1차 복사) → 프리필
+        if(f==='X년 Y월 신어'){ var mm=String(it['추출 시기']||'').match(/(\d{4})\.?(\d{2})/); if(mm) return '【'+mm[1]+'년 '+parseInt(mm[2],10)+'월 신어】'; }   // 최초 출현 시점에서 자동 생성
         var v=wv(it,stage,f); if(v.trim()) return v;
         if(stage===2){ v=wv(it,1,f); if(v.trim()) return v; }
         if(f==='X년 Y월 신어'){ var m=String(it['추출 시기']||'').match(/(\d{4})\.?(\d{2})/); return m ? '【'+m[1]+'년 '+parseInt(m[2],10)+'월 신어】' : '【    년   월 신어】'; }
@@ -1590,11 +1592,11 @@
           +fld(10,'의미 영역',ac('의미 영역','um'),'','의미 영역')
           +fld('','형태부 메모',ta(memoF,2));
       } else {
-        h+=fld(1,'뜻풀이',ta('뜻풀이',2)+(ed?'<div class="fld-tools"><button type="button" class="llm-copy" onclick="appendHateNote(this)">혐오 표현 문구 복사하기</button></div>':''),'','뜻풀이')
-          +fld(2,'용례',ta('용례',2),'','용례')
-          +fld(3,'참고 용례',ta('참고 용례',2)+(ed?symBar():''),'','참고 용례')
-          +fld(4,'참고 용례 URL',inp('참고 용례 URL'),'','참고 용례 URL',true)
-          +fld(5,'X년 Y월 신어',inp('X년 Y월 신어'),'','X년 Y월 신어',true)
+        h+=fld(11,'뜻풀이',ta('뜻풀이',2)+(ed?'<div class="fld-tools"><button type="button" class="llm-copy" onclick="appendHateNote(this)">혐오 표현 문구 복사하기</button></div>':''),'','뜻풀이')
+          +fld(12,'용례',ta('용례',2),'','용례')
+          +fld(13,'참고 용례',ta('참고 용례',2)+(ed?symBar():''),'','참고 용례')
+          +fld(14,'참고 용례 URL',inp('참고 용례 URL'),'','참고 용례 URL',true)
+          +fld(15,'X년 Y월 신어',inp('X년 Y월 신어').replace('<input ','<input readonly '),'','X년 Y월 신어',true)
           +fld('','의미부 메모',ta(memoF,2));
       }
       h+='</div>';
