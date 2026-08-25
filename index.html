@@ -1383,7 +1383,7 @@
     }
     function refTogTxt(){ var b=$('ref-toggle'); if(b) b.classList.toggle('off', document.body.classList.contains('ref-collapsed')); }
     function toggleRef(){ var c=document.body.classList.toggle('ref-collapsed'); lsSet('kno_ref_collapsed', c?'1':'0'); refTogTxt(); }
-    if(lsGet('kno_ref_collapsed','0')==='1'){ document.body.classList.add('ref-collapsed'); }
+    if(lsGet('kno_ref_collapsed','1')==='1'){ document.body.classList.add('ref-collapsed'); }   // 기본은 접힘
     // 현재 항목 기준으로 집필 사례 갱신(집필 모드에서 항목을 고를 때마다)
     function refUpdate(){
       var it=ITEMS[CUR], box=$('ref-box'), bc=$('ref-btn-col'); if(!box) return; if(!it || !isWrite()){ box.style.display='none'; bc.style.display='none'; document.body.classList.remove('write-work'); return; }
