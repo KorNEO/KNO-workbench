@@ -1332,7 +1332,7 @@
       var hate=String(it['2차 혐오 표현 여부']||'').trim(), proper=String(it['2차 고유명 여부']||'').trim(), vd=String(it['2차 판별']||'').trim();
       h+='<div class="ref-badges">'+(proper?'<span class="pill '+(proper==='Y'?'v-hold':'미작업')+'">고유명 여부 '+esc(proper)+'</span>':'')
         + (hate?'<span class="pill '+(hate==='Y'?'v-bi':'미작업')+'">혐오 표현 여부 '+esc(hate)+'</span>':'')
-        + '<span class="pill s1">형태부 '+esc(it['형태부 상태']||'미작업')+'</span><span class="pill s2">의미부 '+esc(it['의미부 상태']||'미작업')+'</span></div>';
+        + '</div>';
       // LLM 생성 결과 — 값마다 복사하기(1차 작업 필드로). 대상 필드가 비활성이면 버튼도 비활성
       h+='<div class="llm-box"><h3>LLM 생성 결과</h3>'+LLM_MAP.map(function(m,i){ var val=String(it[m[0]]||'').trim();
         return '<div class="row"><div class="k">'+esc(m[1])+'</div><div class="v">'+(val?esc(val):'<span class="kbd">-</span>')+'</div><button type="button" class="llm-copy" data-llm="'+i+'" onclick="llmCopy(this)"'+(val?'':' disabled')+'>복사하기</button></div>'; }).join('')
