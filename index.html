@@ -374,21 +374,21 @@
     <div class="brand" onclick="showView('landing')">KNO <b>Workbench</b></div>
     <span class="modebadge hidden" id="modeBadge" onclick="if(SCOPE!=='projects')showView('projects')" style="cursor:pointer" title="프로젝트 목록으로"></span>
     <nav class="tabs" id="nav">
-      <button data-view="projects">📁 프로젝트</button>
+      <button data-view="projects">프로젝트</button>
       <button data-view="home" class="active">홈</button>
       <button data-view="mine">내 작업</button>
       <button data-view="all" id="tab-all">전체 작업</button>
-      <button data-view="researchers" id="tab-researchers" class="hidden">⚙ 설정</button>
+      <button data-view="researchers" id="tab-researchers" class="hidden"> 설정</button>
     </nav>
     <div class="spacer"></div>
     <span class="who" id="who"></span>
     <div class="hdr-ctl">
       <button class="hbtn" onclick="setFont(-1)" title="글씨 작게">A−</button>
       <button class="hbtn" onclick="setFont(1)" title="글씨 크게">A+</button>
-      <button class="hbtn" id="darkBtn" onclick="toggleDark()" title="다크 모드">🌙</button>
+      <button class="hbtn" id="darkBtn" onclick="toggleDark()" title="다크 모드">다크</button>
     </div>
-    <button class="guide-btn" id="guideBtn">📖 신어 판별 지침</button>
-    <button class="guide-btn" id="guideBtnWrite">✍️ 신어 집필 지침</button>
+    <button class="guide-btn" id="guideBtn">신어 판별 지침</button>
+    <button class="guide-btn" id="guideBtnWrite">신어 집필 지침</button>
     <button class="guide-btn" onclick="logout()">로그아웃</button>
   </header>
 
@@ -402,16 +402,16 @@
         <div class="login-warn hidden" id="login-warn">등록되지 않은 계정입니다. 관리자에게 연구원 명단 등록을 요청하세요.</div>
         <div class="modes">
           <div class="mode-card active" onclick="enterMode('agree')">
-            <div class="mc-ico">🤝</div><div class="mc-t">연구자 일치도 작업</div>
+            <div class="mc-t">연구자 일치도 작업</div>
           </div>
           <div class="mode-card active" onclick="enterMode('real')">
-            <div class="mc-ico">🧭</div><div class="mc-t">신어 판별 작업</div>
+            <div class="mc-t">신어 판별 작업</div>
           </div>
           <div class="mode-card active" onclick="enterMode('write')">
-            <div class="mc-ico">✍️</div><div class="mc-t">신어 집필 작업</div>
+            <div class="mc-t">신어 집필 작업</div>
           </div>
           <div class="mode-card active" onclick="enterMode('write_test')">
-            <div class="mc-ico">✍️</div><div class="mc-t">신어 집필 작업<br>(테스트)</div>
+            <div class="mc-t">신어 집필 작업<br>(테스트)</div>
           </div>
         </div>
         <div class="card" style="margin:26px 0 0;text-align:left" id="presence-card">
@@ -427,7 +427,7 @@
     <!-- 홈 -->
     <section id="view-home" class="home-wrap hidden">
       <div class="card" id="phase-card" style="display:none"><h2>집필 단계</h2><div id="phase-body"></div></div>
-      <div class="card" id="assign-card" style="display:none"><h2>🗂 작업 배분</h2><div id="assign-body"><span class="kbd">불러오는 중…</span></div></div>
+      <div class="card" id="assign-card" style="display:none"><h2>작업 배분</h2><div id="assign-body"><span class="kbd">불러오는 중…</span></div></div>
       <div class="card"><h2 id="home-title">전체 진행률</h2><div id="overall"></div></div>
       <div class="card"><h2 id="second-title">나의 작업</h2><div id="second-body"></div></div>
     </section>
@@ -435,7 +435,7 @@
     <!-- 설정(관리자) -->
     <section id="view-researchers" class="home-wrap hidden">
       <div class="card">
-        <h2>⚙ 설정 · 연구원</h2>
+        <h2> 설정 · 연구원</h2>
         <div id="researcher-list"></div>
       </div>
     </section>
@@ -464,8 +464,8 @@
               <option value="미작업">미작업</option>
               <option value="1차완료">1차 작업 완료</option>
               <option value="2차완료">2차 검수 완료</option>
-              <option value="_no1" class="opt-incomplete">⚠ 1차 미완료</option>
-              <option value="_no2" class="opt-incomplete">⚠ 2차 미완료</option>
+              <option value="_no1" class="opt-incomplete"> 1차 미완료</option>
+              <option value="_no2" class="opt-incomplete"> 2차 미완료</option>
             </select>
             <select id="f-v1" onchange="applyResults()" style="display:none" title="1차 작업 결과">
               <option value="">1차 작업 결과</option>
@@ -514,7 +514,7 @@
       <div class="pf"><label>등록일</label><input id="proj-reg" type="date"></div>
       <div class="pf"><label>마감일</label><input id="proj-due" type="date"></div>
       <div class="pf"><label>신어 후보 목록 파일</label>
-        <div style="margin-bottom:8px"><button class="rbtn link" onclick="downloadTemplate()">⬇ 파일 양식 다운로드</button></div>
+        <div style="margin-bottom:8px"><button class="rbtn link" onclick="downloadTemplate()"> 파일 양식 다운로드</button></div>
         <input id="proj-file" type="file" accept=".csv" style="display:none" onchange="onProjFile()">
         <div class="filepick" id="proj-drop" onclick="$('proj-file').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="onProjDrop(event)"><span class="fp-btn">파일 선택</span><span class="fp-name" id="proj-fname">선택된 파일 없음</span><span class="fp-hint">Drag &amp; Drop</span></div>
       </div>
@@ -680,7 +680,7 @@
       else if(v==='researchers') loadResearchers();
     }
     var CURRENT_PROJECT = null, PROJ_LIST = [];
-    function modeName(){ return MODE==='agree' ? '🤝 연구자 일치도 작업' : MODE==='write' ? '✍️ 신어 집필 작업' : MODE==='write_test' ? '✍️ 신어 집필 작업(테스트)' : '🧭 신어 판별 작업'; }
+    function modeName(){ return MODE==='agree' ? '연구자 일치도 작업' : MODE==='write' ? '신어 집필 작업' : MODE==='write_test' ? '신어 집필 작업(테스트)' : '신어 판별 작업'; }
     function enterMode(mode){ MODE=mode; CURRENT_PROJECT=null; showView('projects'); }
 
     /* 프로젝트 목록 / 새 프로젝트(CSV 업로드) */
@@ -692,9 +692,9 @@
         $('proj-list').innerHTML = PROJ_LIST.length ? PROJ_LIST.map(function(p){
           return '<div class="proj-card" onclick="openProject(\''+esc(p.id)+'\')">'
             + (ME.isManager
-                ? '<button class="proj-bak" onclick="event.stopPropagation();backupProject(\''+esc(p.id)+'\')" title="저장">📥</button>'
+                ? '<button class="proj-bak" onclick="event.stopPropagation();backupProject(\''+esc(p.id)+'\')" title="저장"></button>'
                   + '<button class="proj-del" onclick="event.stopPropagation();deleteProject(\''+esc(p.id)+'\')" title="삭제">×</button>'
-                  + '<button class="proj-edit" onclick="event.stopPropagation();openEditProject(\''+esc(p.id)+'\')" title="수정">✎</button>'
+                  + '<button class="proj-edit" onclick="event.stopPropagation();openEditProject(\''+esc(p.id)+'\')" title="수정"></button>'
                 : '')
             + '<div class="pc-name">'+esc(p.name)+'</div>'
             + '<div class="pc-meta">등록 <b>'+esc(p.registered||'-')+'</b> · 마감 <b>'+esc(p.due||'-')+'</b></div>'
@@ -825,7 +825,7 @@
       document.body.style.zoom='';
       var dark=lsGet('kno_dark','0')==='1';
       document.body.classList.toggle('dark',dark);
-      var db=$('darkBtn'); if(db) db.textContent=dark?'☀':'🌙';
+      var db=$('darkBtn'); if(db) db.textContent=dark?'밝게':'다크';
     }
     function setFont(d){ var fs=(parseInt(lsGet('kno_fs','0'),10)||0)+d; fs=Math.max(-1,Math.min(6,fs)); lsSet('kno_fs',fs); applyPrefs(); }
     function toggleDark(){ lsSet('kno_dark', lsGet('kno_dark','0')==='1'?'0':'1'); applyPrefs(); }
@@ -998,8 +998,8 @@
             var inc1=(o.total||0)-(d1||0), inc2=(o.total||0)-(d2||0);
             if(inc1||inc2){
               tableHtml+='<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">';
-              if(inc1) tableHtml+='<button class="btn ghost" onclick="goIncomplete(\'_no1\')" style="font-size:13px">⚠ 1차 미완료 '+inc1+'건 보기</button>';
-              if(inc2) tableHtml+='<button class="btn ghost" onclick="goIncomplete(\'_no2\')" style="font-size:13px">⚠ 2차 미완료 '+inc2+'건 보기</button>';
+              if(inc1) tableHtml+='<button class="btn ghost" onclick="goIncomplete(\'_no1\')" style="font-size:13px"> 1차 미완료 '+inc1+'건 보기</button>';
+              if(inc2) tableHtml+='<button class="btn ghost" onclick="goIncomplete(\'_no2\')" style="font-size:13px"> 2차 미완료 '+inc2+'건 보기</button>';
               tableHtml+='</div>';
             }
           }
@@ -1218,7 +1218,7 @@
         h += '<div class="stages two">'+panels+'</div>';
       }
 
-      h += '<div class="example"><h3>📑 말뭉치 용례</h3><div class="ex-box">'+highlight(it['용례'], it['신어 후보'])+'</div>'
+      h += '<div class="example"><h3>말뭉치 용례</h3><div class="ex-box">'+highlight(it['용례'], it['신어 후보'])+'</div>'
         + '<div class="ex-foot"><span>작성일 '+ymd(it['용례 일자'])+'</span><span>'+link(it['용례 URL'],'기사문 링크')+'</span><span>'+link(it['검색 URL'],'〈네이버 뉴스〉 검색 화면 링크')+'</span></div></div>';
       h += '<details class="llm-detail"><summary>LLM 판단 근거 자세히</summary><div class="row"><div class="k">LLM 판단 기준</div><div class="v">'+esc(it['LLM 판단 기준']||'-')+'</div></div><div class="row"><div class="k">LLM 판단 근거</div><div class="v">'+esc(it['LLM 판단 근거']||'-')+'</div></div></details>';
       $('detail').innerHTML=h;
@@ -1892,8 +1892,8 @@
       r=r||{};
       var role=r.role||'', opts=ROLE_OPTS.slice(); if(role && opts.indexOf(role)<0) opts.unshift(role);
       var rsel='<select class="r-role">'+opts.map(function(o){ return '<option'+(o===role?' selected':'')+'>'+esc(o)+'</option>'; }).join('')+'</select>';
-      var link=r.link ? '<button class="rbtn link" onclick="copyPersonalLink(\''+esc(r.link)+'\')">🔗 링크</button>' : '<span class="kbd">저장 후</span>';
-      var acct=r.id ? '<button class="rbtn link" onclick="adminResetPw(\''+esc(r.email||'')+'\',\''+esc(r.name||'')+'\')">🔑 비밀번호 초기화</button>' : '<span class="kbd">미등록</span>';
+      var link=r.link ? '<button class="rbtn link" onclick="copyPersonalLink(\''+esc(r.link)+'\')"> 링크</button>' : '<span class="kbd">저장 후</span>';
+      var acct=r.id ? '<button class="rbtn link" onclick="adminResetPw(\''+esc(r.email||'')+'\',\''+esc(r.name||'')+'\')"> 비밀번호 초기화</button>' : '<span class="kbd">미등록</span>';
       return '<tr>'
         +'<td><input class="r-name" value="'+esc(r.name||'')+'" style="width:80px"></td>'
         +'<td><input class="r-aff" value="'+esc(r['소속']||'')+'" style="width:110px"></td>'
@@ -1906,7 +1906,7 @@
     function renderRoster(list){
       var rows=(list||[]).map(rosterRow).join('');
       $('researcher-list').innerHTML =
-        '<div style="margin-bottom:12px"><button class="btn reject" style="padding:7px 14px" onclick="copyCommonLink()">🔗 공통 링크 복사</button></div>'
+        '<div style="margin-bottom:12px"><button class="btn reject" style="padding:7px 14px" onclick="copyCommonLink()"> 공통 링크 복사</button></div>'
         + '<div style="overflow-x:auto"><table class="grp" id="roster-tbl"><thead><tr><th>이름</th><th>소속</th><th>역할</th><th>이메일</th><th>개인 링크</th><th>계정</th><th></th></tr></thead>'
         + '<tbody id="roster-body">'+rows+'</tbody></table></div>'
         + '<div style="margin-top:12px"><button class="btn reject" onclick="addResearcher()">+ 연구원 추가</button> '
@@ -1937,9 +1937,9 @@
     $('guideBtnWrite').addEventListener('click', function(){ openGuide('write'); });
     function openGuide(which){
       CUR_GUIDE=which;
-      $('guideTitle').textContent = which==='write' ? '✍️ 신어 집필 지침' : '📖 신어 판별 지침';
+      $('guideTitle').textContent = which==='write' ? ' 신어 집필 지침' : ' 신어 판별 지침';
       $('guideUpload').innerHTML = ME.isManager
-        ? '<input id="guide-file" type="file" accept=".md,.markdown,.txt" style="display:none" onchange="uploadGuide()"><button class="rbtn link" onclick="$(\'guide-file\').click()">⬆ MD 파일 업로드</button> <span class="asg-msg" id="guide-msg"></span>'
+        ? '<input id="guide-file" type="file" accept=".md,.markdown,.txt" style="display:none" onchange="uploadGuide()"><button class="rbtn link" onclick="$(\'guide-file\').click()"> MD 파일 업로드</button> <span class="asg-msg" id="guide-msg"></span>'
         : '';
       $('guideBody').innerHTML='<span class="kbd">불러오는 중…</span>';
       $('guideModal').classList.remove('hidden');
