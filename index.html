@@ -140,8 +140,10 @@
     .part-sec.locked { background:var(--surface2); } .part-sec.locked .ps-state { background:var(--hold-bg); color:var(--hold); }
     .part-sec.locked .write-cols { opacity:.45; pointer-events:none; filter:grayscale(.6); }
     .part-sec .write-cols { margin:4px 0 0; }
-    .ref-pane { position:fixed; top:54px; right:-480px; width:460px; max-width:92vw; height:calc(100vh - 54px); background:var(--surface); border-left:1px solid var(--line); box-shadow:-8px 0 24px rgba(20,30,60,.12); z-index:120; transition:right .2s; display:flex; flex-direction:column; }
+    .ref-pane { position:fixed; top:54px; right:-440px; width:420px; max-width:92vw; height:calc(100vh - 54px); background:var(--surface); border-left:1px solid var(--line); box-shadow:-8px 0 24px rgba(20,30,60,.12); z-index:120; transition:right .2s; display:flex; flex-direction:column; }
     .ref-pane.open { right:0; }
+    main { transition:padding-right .2s; } body.ref-open main { padding-right:438px; }
+    body.ref-open .list-col { position:static; }
     .ref-head { display:flex; gap:8px; align-items:center; padding:12px 14px; border-bottom:1px solid var(--line); } .ref-head .w-field { flex:1; } .ref-head .x { float:none; flex:none; }
     .ref-body { flex:1; overflow:auto; padding:10px 14px 24px; }
     .ref-count { font-size:13px; color:var(--muted); margin:2px 0 8px; }
@@ -1339,9 +1341,9 @@
       var head=(sec && secVal(sec,'색인표제어')) || String(it['신어 후보']||'');
       var pane=$('refPane'); if(!pane){ pane=document.createElement('div'); pane.id='refPane'; pane.className='ref-pane'; document.body.appendChild(pane); }
       pane.innerHTML='<div class="ref-head"><input id="ref-q" class="w-field" value="'+ea(head)+'" oninput="refRender()"><button class="x" onclick="closeRef()">×</button></div><div id="ref-body" class="ref-body"><span class="kbd">불러오는 중</span></div>';
-      pane.classList.add('open'); refLoad(refRender);
+      pane.classList.add('open'); document.body.classList.add('ref-open'); refLoad(refRender);
     }
-    function closeRef(){ var p=$('refPane'); if(p) p.classList.remove('open'); }
+    function closeRef(){ var p=$('refPane'); if(p) p.classList.remove('open'); document.body.classList.remove('ref-open'); }
     function refRender(){
       if(!REF) return; var q=refKey_(($('ref-q')||{}).value||''), body=$('ref-body'); if(!body) return;
       var cI=refCol('색인표제어'), cH=refCol('등재표제어'), cY=refCol('수집 연도'), hits=[];
