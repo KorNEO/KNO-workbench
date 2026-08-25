@@ -898,6 +898,7 @@
       $('btn-add-item').style.display='block';
       CUR=-1; renderList(); selectItem(parseInt(q.get('i')||'0',10)||0);
       if(q.get('confirm')) setTimeout(function(){ openWriteConfirm(parseInt(q.get('confirm'),10)||1); }, 50);
+      if(q.get('ui')) setTimeout(function(){ uiConfirm('의미부 단계로 전환할까요?', function(){}); }, 50);
     }
     function showLogin(){ document.querySelector('header').style.display='none'; document.querySelector('main').style.display='none'; $('loginOverlay').classList.remove('hidden'); resetLoginForm(); }
     function resetLoginForm(){
