@@ -211,7 +211,7 @@
     .memo-wrap textarea:focus { outline:none; border-color:var(--brand); box-shadow:0 0 0 3px rgba(63,81,181,.12); }
     .actions { display:flex; gap:10px; align-items:center; margin-top:10px; flex-wrap:wrap; }
     .btn { padding:10px 20px; border-radius:10px; border:none; cursor:pointer; font-size:14px; font-weight:700; }
-    .btn.save { background:var(--brand); color:#fff; } .btn.save:hover { background:var(--brand-d); }
+    .btn.save { background:var(--brand); color:#fff; } .btn.save:hover:not(:disabled) { background:var(--brand-d); } .btn:disabled { opacity:.4; cursor:not-allowed; }
     .btn.confirm-first { background:var(--sineo); color:#fff; margin-left:6px; } .btn.confirm-first:hover { filter:brightness(.92); }
     .btn.reject { background:var(--surface); color:var(--reject); border:1.5px solid #cfd4dd; } .btn.reject:hover { background:var(--reject-bg); }
     .kbd { font-size:11px; color:var(--muted); } .kbd b { background:var(--surface3); border-radius:4px; padding:1px 5px; font-family:monospace; }
@@ -1402,7 +1402,7 @@
         + (it['형태부 주차']?' &nbsp;·&nbsp; 형태부 '+esc(it['형태부 주차'])+'주차':'')+(it['의미부 주차']?' / 의미부 '+esc(it['의미부 주차'])+'주차':'')
         + (newItem ? ' &nbsp; <button class="btn ghost del-item" onclick="deleteWriteItem()">새 항목 삭제</button>' : '')
         + '</div>'
-        + '<div class="cand-links">'+link(it['용례 URL'],'기사문 링크')+'<span class="sep">·</span>'+link(it['검색 URL'],'〈네이버 뉴스〉 검색 화면 링크')+'</div>';
+        + (function(){ var ls=[]; if(String(it['용례 URL']||'').trim()) ls.push(link(it['용례 URL'],'기사문 링크')); if(String(it['검색 URL']||'').trim()) ls.push(link(it['검색 URL'],'〈네이버 뉴스〉 검색 화면 링크')); return ls.length?'<div class="cand-links">'+ls.join('<span class="sep">·</span>')+'</div>':''; })();
 
       // LLM 생성 결과 — 값마다 복사하기(1차 작업 필드로). 대상 필드가 비활성이면 버튼도 비활성
       h+='<div class="llm-box"><h3>LLM 생성 결과</h3>'+LLM_MAP.map(function(m,i){ var val=String(it[m[0]]||'').trim();
