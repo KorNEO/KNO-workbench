@@ -148,7 +148,7 @@
     /* 집필 사례: 맨 오른쪽 고정 버튼 칸 + 그 왼쪽에서 열리는 패널 */
     .ref-btn-col { position:fixed; right:14px; top:calc(50% - 32px); z-index:60; transition:right .2s; }   /* transform 없이 배치(글자 번짐 방지) */ body.write-work:not(.ref-collapsed) .ref-btn-col { right:394px; }
     body.write-work:not(.ref-collapsed) main { padding-right:434px; }
-    .ref-toggle { border:none; border-radius:10px 0 0 10px; background:var(--brand); color:#fff; font-weight:800; font-size:0; width:22px; height:64px; padding:0; cursor:pointer; box-shadow:-3px 0 10px rgba(20,30,60,.10); transition:background .12s; position:relative; }
+    .ref-toggle { border:none; border-radius:10px 0 0 10px; background:var(--brand); color:#fff; font-weight:700; font-size:0; width:22px; height:64px; padding:0; cursor:pointer; box-shadow:-3px 0 10px rgba(20,30,60,.10); transition:background .12s; position:relative; }
     .ref-toggle::after { content:''; position:absolute; left:9px; top:16px; width:4px; height:32px; border-radius:2px; background:rgba(255,255,255,.85); }
     .ref-toggle.off { font-size:14px; line-height:1.3; width:84px; height:auto; padding:14px 10px 14px 12px; border-radius:12px; box-shadow:0 2px 10px rgba(20,30,60,.12); white-space:nowrap; text-align:center; -webkit-font-smoothing:antialiased; }
     .ref-toggle.off::after { display:none; }
@@ -163,7 +163,7 @@
     .ref-empty { color:var(--muted); font-size:14px; margin:0 2px 14px; }
     .ref-item { background:#f6f8ff; border:1px solid #e0e6ff; border-radius:10px; padding:10px 12px 8px; margin-bottom:10px; }
     body.dark .ref-item { background:var(--surface2); border-color:var(--line); }
-    .ref-title { font-size:18px; font-weight:800; display:flex; align-items:center; gap:8px; margin-bottom:6px; } .ref-title mark { background:#fff2a8; color:inherit; padding:0; margin:0; border-radius:2px; }   /* 색인표제어 그대로, 공유 부분만 색 */
+    .ref-title { font-size:18px; font-weight:700; display:flex; align-items:center; gap:8px; margin-bottom:6px; } .ref-title mark { background:#fff2a8; color:inherit; padding:0; margin:0; border-radius:2px; }   /* 색인표제어 그대로, 공유 부분만 색 */
     .ref-year { margin-left:auto; font-size:12px; font-weight:600; color:var(--muted); background:var(--surface3); border-radius:8px; padding:2px 8px; }
     .ref-tbl { width:100%; border-collapse:collapse; font-size:15px; }
     .ref-tbl th, .ref-tbl td { padding:5px 6px; border-top:1px solid #e0e6ff; text-align:left; vertical-align:top; line-height:1.5; }
