@@ -1524,6 +1524,7 @@
       $('detail').innerHTML=h;
       document.querySelectorAll('#detail .stage-sec[data-part="형태부"]').forEach(function(sec){ chainApply(sec, sec.getAttribute('data-chain')==='1'); });
       refreshLlmBtns();
+      if(document.body.classList.contains('ref-open')){ var rq=$('ref-q'); if(rq){ var sec1=document.querySelector('#detail .stage-sec[data-part="형태부"][data-stage="1"]'); rq.value=(sec1 && secVal(sec1,'색인표제어')) || String(it['신어 후보']||''); refRender(); } }
     }
     // 단계 폼: 1차(작업자)·2차(검수자). 2차는 1차 값 복사 + 변경분 하이라이트. 1차는 2차가 고친 필드를 역표시.
     // 프로젝트 단계별 활성 부: 형태부 단계=형태부만, 의미부 단계=형태부+의미부(한 번에 저장)
@@ -1564,8 +1565,7 @@
       var memoF = part==='형태부' ? (stage===1?'집필 메모(형태부)':'검수 메모(형태부)') : (stage===1?'집필 메모(의미부)':'검수 메모(의미부)');
       if(part==='형태부'){
         var ls=[]; if(String(it['용례 URL']||'').trim()) ls.push(link(it['용례 URL'],'기사문 링크')); if(String(it['검색 URL']||'').trim()) ls.push(link(it['검색 URL'],'〈네이버 뉴스〉 검색 화면 링크'));
-        ls.push('<a href="#" onclick="openRef();return false;">유사 사례(2020-2024)</a>');
-        h+=fld('','색인표제어',inp('색인표제어')+'<div class="cand-links">'+ls.join('<span class="sep">·</span>')+'</div>','','색인표제어')
+        h+=fld('','색인표제어',inp('색인표제어')+(ls.length?'<div class="cand-links">'+ls.join('<span class="sep">·</span>')+'</div>':''),'','색인표제어')
           +fld(1,'단어/구',seg('단어/구',['단어','구']),'','단어/구')
           +fld(2,'조어법',seg('조어법',WF_TYPES),'','조어법')
           +fld(3,'품사',seg('품사',POS_BTNS,true),'','품사')
