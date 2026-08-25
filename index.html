@@ -140,10 +140,11 @@
     .part-sec.locked { background:var(--surface2); } .part-sec.locked .ps-state { background:var(--hold-bg); color:var(--hold); }
     .part-sec.locked .write-cols { opacity:.45; pointer-events:none; filter:grayscale(.6); }
     .part-sec .write-cols { margin:4px 0 0; }
-    .wing { position:fixed; top:50%; transform:translateY(-50%); width:22px; height:64px; border:1px solid var(--line); background:var(--surface); color:var(--muted); font-size:11px; cursor:pointer; z-index:121; padding:0; box-shadow:0 2px 8px rgba(20,30,60,.12); }
-    .wing:hover { color:var(--brand); border-color:var(--brand); }
-    .wing-l { left:0; border-left:none; border-radius:0 8px 8px 0; }
-    .wing-r { right:0; border-right:none; border-radius:8px 0 0 8px; transition:right .2s; } body.ref-open .wing-r { right:460px; }
+    /* 좌우 날개 탭: 세로 알약 모양, 날개(목록/유사 항목 패널)와 같이 움직임 */
+    .wing { position:fixed; top:50%; transform:translateY(-50%); width:38px; padding:16px 0; border:none; border-radius:999px; background:var(--brand); color:#fff; font-size:14px; font-weight:800; letter-spacing:1px; writing-mode:vertical-rl; text-orientation:upright; cursor:pointer; z-index:121; box-shadow:0 4px 14px rgba(63,81,181,.35); transition:left .2s, right .2s, background .12s; }
+    .wing:hover { background:var(--brand-d); }
+    .wing-l { left:352px; } body.list-collapsed .wing-l { left:8px; }
+    .wing-r { right:8px; } body.ref-open .wing-r { right:468px; }
     body.list-collapsed .work-wrap { grid-template-columns:1fr; } body.list-collapsed .list-col { display:none; }
     .ref-pane { position:fixed; top:54px; right:-480px; width:460px; max-width:92vw; height:calc(100vh - 54px); background:var(--bg); border-left:1px solid var(--line); z-index:120; transition:right .2s; display:flex; flex-direction:column; }
     .ref-pane.open { right:0; }
@@ -564,8 +565,8 @@
       </div>
     </div>
   </div>
-  <button id="wingL" class="wing wing-l" onclick="toggleLeft()" title="항목 목록 접기/펴기" style="display:none">◀</button>
-  <button id="wingR" class="wing wing-r" onclick="toggleRight()" title="유사 사례 열기/닫기" style="display:none">◀</button>
+  <button id="wingL" class="wing wing-l" onclick="toggleLeft()" style="display:none">목록 접기</button>
+  <button id="wingR" class="wing wing-r" onclick="toggleRight()" style="display:none">유사 항목 보기</button>
   <div id="toast"></div>
 
   <script>
@@ -1366,7 +1367,7 @@
     function toggleRight(){ if(document.body.classList.contains('ref-open')) closeRef(); else openRef(); }
     function wingTabs(){ var L=$('wingL'), R=$('wingR'); if(!L||!R) return; var work=!$('view-work').classList.contains('hidden');
       L.style.display=work?'':'none'; R.style.display=(work && isWrite())?'':'none';
-      L.textContent=document.body.classList.contains('list-collapsed')?'▶':'◀'; R.textContent=document.body.classList.contains('ref-open')?'▶':'◀'; }
+      L.textContent=document.body.classList.contains('list-collapsed')?'목록 보기':'목록 접기'; R.textContent=document.body.classList.contains('ref-open')?'유사 항목 접기':'유사 항목 보기'; }
     // 카드 공통: 집필 순서대로. rec={title,year,vals{필드:값},def}
     var REF_F=[['단어/구',0],['조어법',0],['품사',0],['일상어/전문어',0],['등재표제어',1],['원어',1],['어종',0],['어원',1],['전문 분야',0],['의미 범주',0]];   // [이름, 전체폭]
     function refCard_(rec, part){
