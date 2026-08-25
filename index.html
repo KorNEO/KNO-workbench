@@ -281,6 +281,7 @@
     .mode-card .mc-badge { display:inline-block; font-size:11px; background:var(--hold-bg); color:var(--hold); padding:2px 8px; border-radius:8px; margin-top:10px; }
     .modal { position:fixed; inset:0; background:rgba(20,24,40,.45); display:flex; align-items:center; justify-content:center; z-index:100; }
     .modal-box { background:var(--surface); width:min(680px,92vw); max-height:84vh; overflow:auto; border-radius:14px; padding:24px 28px; box-shadow:0 12px 40px rgba(0,0,0,.3); }
+    .cf-msg { font-size:16px; line-height:1.7; color:var(--ink); white-space:pre-wrap; }
     .modal-box .x { float:right; border:none; background:var(--surface3); border-radius:8px; width:30px; height:30px; cursor:pointer; font-size:16px; }
     .guide-md h1 { font-size:20px; margin:18px 0 8px; } .guide-md h1:first-child { margin-top:0; }
     .guide-md h2 { font-size:17px; margin:22px 0 8px; padding-bottom:5px; border-bottom:1px solid var(--line); }
@@ -632,6 +633,15 @@
 
     function $(id){ return document.getElementById(id); }
     function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    // 확인 모달(브라우저 confirm 대체, 화면 디자인과 통일). uiConfirm(문구, 확인 시 실행)
+    function uiConfirm(msg, onOk){
+      var box=$('uiConfirm'); if(!box){ box=document.createElement('div'); box.id='uiConfirm'; box.className='modal'; document.body.appendChild(box); }
+      box.innerHTML='<div class="modal-box" style="width:min(440px,92vw)"><div class="cf-msg">'+esc(msg).replace(/\n/g,'<br>')+'</div>'
+        + '<div class="actions" style="margin-top:16px"><button class="btn save" id="uiConfirmOk">확인</button><button class="btn reject" onclick="$(\'uiConfirm\').classList.add(\'hidden\')">취소</button></div></div>';
+      box.classList.remove('hidden');
+      $('uiConfirmOk').onclick=function(){ box.classList.add('hidden'); onOk(); };
+      $('uiConfirmOk').focus();
+    }
     function toast(m){ var t=$('toast'); t.textContent=m; t.style.display='block'; clearTimeout(t._t); t._t=setTimeout(function(){t.style.display='none';},2400); }
     // 진단: 잡히지 않은 오류를 화면에 노출(F12 없이 원인 파악). 길게 보이게 5초.
     function _diagToast(m){ var t=$('toast'); if(!t) return; t.textContent=m; t.style.display='block'; clearTimeout(t._t); t._t=setTimeout(function(){t.style.display='none';},6000); }
@@ -725,9 +735,10 @@
       google.script.run.withSuccessHandler(function(csv){ dlCsv(csv, nm+'_백업.csv'); }).withFailureHandler(function(e){ toast('백업 실패: '+e.message); }).exportProject(TOKEN, modeKind(), id);
     }
     function deleteProject(id){
-      if(!confirm('이 프로젝트를 삭제할까요? 되돌릴 수 없습니다.')) return;
-      google.script.run.withSuccessHandler(function(){ renderProjects(); }).withFailureHandler(function(e){ toast('삭제 실패: '+e.message); }).deleteProject(TOKEN, modeKind(), id);
-    }
+      uiConfirm('이 프로젝트를 삭제할까요? 되돌릴 수 없습니다.', function(){
+      google.script.run.withSuccessHandler(function(){ renderProjects(); }).withFailureHandler(function(e){ toast('삭제 실패: '+e.message); }).deleteProject(TOKEN, modeKind(), id)
+      });
+    }    }
     function openProject(id){
       var p=null; for(var i=0;i<PROJ_LIST.length;i++) if(PROJ_LIST[i].id===id){ p=PROJ_LIST[i]; break; }
       if(!p) return;
@@ -948,21 +959,21 @@
       function p(x){ return t? (x/t*100):0; }
       return '<div class="bar"><span class="seg-first" style="width:'+p(first)+'%"></span><span class="seg-done" style="width:'+p(done)+'%"></span></div>';
     }
-    function renderPhaseCtl(){   // 집필 프로젝트 단계(형태부/의미부) 전환 — 관리자 전용
+    function renderPhaseCtl(){   // 집필 프로젝트 단계(형태부/의미부) 전환 — 관리자 전용. 현재 단계가 선택된 버튼
       var card=$('phase-card'); if(!card) return;
       if(!isWrite() || !ME.isManager || !CURRENT_PROJECT){ card.style.display='none'; return; }
-      var ph=projPhase(), nxt=(ph==='형태부')?'의미부':'형태부';
+      var ph=projPhase();
       card.style.display='';
-      $('phase-body').innerHTML='<div class="stat-line"><span class="lbl">현재 단계</span><span class="val">'+esc(ph)+'</span></div>'
-        + '<div class="actions" style="margin-top:12px"><button class="btn save" onclick="setPhase(\''+nxt+'\')">'+(ph==='형태부'?'의미부 단계로 전환':'형태부 단계로 되돌리기')+'</button><span class="asg-msg" id="phase-msg"></span></div>';
+      $('phase-body').innerHTML='<div class="seg">'+['형태부','의미부'].map(function(x){ return '<button type="button" class="seg-btn'+(x===ph?' on':'')+'" onclick="setPhase(\''+x+'\')">'+x+'</button>'; }).join('')+'</div><span class="asg-msg" id="phase-msg"></span>';
     }
     function setPhase(nxt){
-      var pid=CURRENT_PROJECT&&CURRENT_PROJECT.id; if(!pid) return;
-      if(!confirm('["'+CURRENT_PROJECT.name+'"] 단계를 '+projPhase()+' → '+nxt+'(으)로 전환할까요?')) return;
-      $('phase-msg').textContent='전환 중…';
-      google.script.run.withSuccessHandler(function(){ CURRENT_PROJECT.phase=nxt; $('modeBadge').textContent=modeName()+' · '+CURRENT_PROJECT.name; renderPhaseCtl(); toast(nxt+' 단계로 전환했습니다.'); })
-        .withFailureHandler(function(e){ $('phase-msg').textContent='실패: '+e.message; })
-        .setProjectPhase(TOKEN, pid, nxt);
+      var pid=CURRENT_PROJECT&&CURRENT_PROJECT.id; if(!pid || nxt===projPhase()) return;
+      uiConfirm(nxt+' 단계로 전환할까요?', function(){
+        $('phase-msg').textContent='전환 중';
+        google.script.run.withSuccessHandler(function(){ CURRENT_PROJECT.phase=nxt; $('modeBadge').textContent=modeName()+' · '+CURRENT_PROJECT.name; renderPhaseCtl(); toast(nxt+' 단계로 전환했습니다.'); })
+          .withFailureHandler(function(e){ $('phase-msg').textContent='실패: '+e.message; })
+          .setProjectPhase(TOKEN, pid, nxt);
+      });
     }
     function loadProgress(){
       renderPhaseCtl();
@@ -1748,12 +1759,13 @@
     function deleteWriteItem(){
       var it=ITEMS[CUR]; if(!it) return;
       if(String(it['ID']||'').indexOf('::new-')<0){ toast('배분된 항목은 삭제할 수 없습니다.'); return; }
-      if(!confirm('새 항목 "'+it['신어 후보']+'"을(를) 삭제할까요?')) return;
+      uiConfirm('새 항목 "'+it['신어 후보']+'"을(를) 삭제할까요?', function(){
       function done(){ ITEMS.splice(CUR,1); CUR=-1; renderList(); $('detail').innerHTML='<div class="placeholder">왼쪽에서 신어 후보 항목을 선택하세요.</div>'; }
       google.script.run.withSuccessHandler(function(){ done(); toast('삭제했습니다.'); })
         .withFailureHandler(function(e){ toast('실패: '+e.message); })
-        .deleteWriteItem(TOKEN, it['ID']);
-    }
+        .deleteWriteItem(TOKEN, it['ID'])
+      });
+    }    }
     function pick(stage,v){ SEL[stage]=v; document.querySelectorAll('.verdicts[data-stage="'+stage+'"] .vcard').forEach(function(c){ c.classList.toggle('on', c.getAttribute('data-v')===v); }); markDirty(); }
 
     function setSaveBadge(txt, dirty){
@@ -1906,21 +1918,23 @@
       var pid=CURRENT_PROJECT&&CURRENT_PROJECT.id; if(!pid){ toast('먼저 프로젝트를 여세요.'); return; }
       var names=[].slice.call(document.querySelectorAll('.agree-ck:checked')).map(function(c){return c.value;});
       if(!names.length){ toast('참여자를 선택하세요.'); return; }
-      if(!confirm('["'+CURRENT_PROJECT.name+'"] 일치도를 이 '+names.length+'명으로 다시 배분할까요?\n기존 일치도 판별 데이터는 사라집니다.')) return;
+      uiConfirm('["'+CURRENT_PROJECT.name+'"] 일치도를 이 '+names.length+'명으로 다시 배분할까요?\n기존 일치도 판별 데이터는 사라집니다.', function(){
       $('agree-msg').textContent='배분 중…';
       google.script.run.withSuccessHandler(function(res){ $('agree-msg').textContent='완료: '+((res&&res.rows)||0).toLocaleString()+'행 ('+names.length+'명)'; loadProgress(); })
-        .withFailureHandler(function(e){ $('agree-msg').textContent='실패: '+e.message; }).genAgree(TOKEN, pid, names);
-    }
+        .withFailureHandler(function(e){ $('agree-msg').textContent='실패: '+e.message; }).genAgree(TOKEN, pid, names)
+      });
+    }    }
     function runReal(){
       var pid=CURRENT_PROJECT&&CURRENT_PROJECT.id; if(!pid){ toast('먼저 프로젝트를 여세요.'); return; }
       var pairs=[].slice.call(document.querySelectorAll('#team-body tr')).map(function(tr){ return [tr.querySelector('.t-w').value, tr.querySelector('.t-r').value]; }).filter(function(p){ return p[0]&&p[1]; });
       if(!pairs.length){ toast('팀을 하나 이상 지정하세요.'); return; }
       var weeks=parseInt($('asg-weeks').value,10)||4, perWeek=parseInt($('asg-perweek').value,10)||0;
-      if(!confirm('["'+CURRENT_PROJECT.name+'"] '+pairs.length+'개 팀 · '+weeks+'주로 균등 배분할까요?\n기존 '+(isWrite()?'신어 집필':'신어 판별')+' 데이터는 사라집니다.')) return;
+      uiConfirm('["'+CURRENT_PROJECT.name+'"] '+pairs.length+'개 팀 · '+weeks+'주로 균등 배분할까요?\n기존 '+(isWrite()?'신어 집필':'신어 판별')+' 데이터는 사라집니다.', function(){
       $('real-msg').textContent='배분 중…';
       google.script.run.withSuccessHandler(function(res){ $('real-msg').textContent='완료: '+((res&&res.rows)||0).toLocaleString()+'행 / '+pairs.length+'팀 · '+weeks+'주'; loadProgress(); })
-        .withFailureHandler(function(e){ $('real-msg').textContent='실패: '+e.message; }).genReal(TOKEN, pid, { pairs:pairs, weeks:weeks, perWeek:perWeek });
-    }
+        .withFailureHandler(function(e){ $('real-msg').textContent='실패: '+e.message; }).genReal(TOKEN, pid, { pairs:pairs, weeks:weeks, perWeek:perWeek })
+      });
+    }    }
 
     function loadResearchers(){
       $('researcher-list').innerHTML='<span class="kbd">불러오는 중…</span>';
@@ -1954,11 +1968,12 @@
     function addResearcher(){ var tb=$('roster-body'); if(!tb) return; var t=document.createElement('tbody'); t.innerHTML=rosterRow({}); tb.appendChild(t.firstChild); }
     function adminResetPw(email, name){
       if(!email){ toast('저장되지 않은 연구원입니다.'); return; }
-      if(!confirm((name||email)+' 연구원의 비밀번호를 초기화할까요?\n임시 비밀번호가 발급됩니다.')) return;
+      uiConfirm((name||email)+' 연구원의 비밀번호를 초기화할까요?\n임시 비밀번호가 발급됩니다.', function(){
       google.script.run.withSuccessHandler(function(res){
         window.prompt((name||email)+' 임시 비밀번호가 발급됐습니다.\n아이디: '+res.id+'\n연구원에게 아래 임시 비밀번호를 전달하고, 로그인 후 [비밀번호 재설정]으로 변경하도록 안내하세요.\n(복사: Ctrl+C)', res.tempPw);
-      }).withFailureHandler(function(e){ toast('초기화 실패: '+e.message); }).adminResetPassword(TOKEN, email);
-    }
+      }).withFailureHandler(function(e){ toast('초기화 실패: '+e.message); }).adminResetPassword(TOKEN, email)
+      });
+    }    }
     function saveRoster(){
       var list=[].slice.call(document.querySelectorAll('#roster-body tr')).map(function(tr){
         return { name:tr.querySelector('.r-name').value.trim(), '소속':tr.querySelector('.r-aff').value.trim(), role:tr.querySelector('.r-role').value, email:tr.querySelector('.r-email').value.trim() };
