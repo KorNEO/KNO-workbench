@@ -143,6 +143,7 @@
     .ac { position:relative; }
     .ac-list { position:absolute; left:0; right:0; top:100%; z-index:20; background:var(--surface); border:1px solid var(--line); border-radius:8px; box-shadow:0 8px 24px rgba(20,30,60,.14); max-height:240px; overflow:auto; margin-top:3px; }
     .ac-item { padding:8px 12px; cursor:pointer; font-size:15px; }
+    .ac-group { padding:6px 12px 2px; font-size:12px; font-weight:700; color:var(--muted); background:var(--surface2); position:sticky; top:0; }
     .ac-item.on, .ac-item:hover { background:#eef1ff; color:var(--brand-d); }
     body.dark .ac-item.on, body.dark .ac-item:hover { background:#213a63; }
     .seg { display:flex; gap:6px; flex-wrap:wrap; border-radius:10px; }
@@ -1194,6 +1195,12 @@
     }
     // ── 집필(M5) ──
     var FIELD_67=['교육','문학','민속','언어','역사','철학','인문 일반','경영','경제','군사','매체','법률','복지','심리','정치','행정','사회 일반','동물','물리','생명','수학','식물','지구','지리','천문','천연자원','해양','화학','환경','자연 일반','공업','광업','농업','서비스업','수산업','임업','산업 일반','수의','식품','약학','의학','한의','보건 일반','건설','교통','기계','재료','전기ㆍ전자','정보ㆍ통신','공학 일반','체육','연기','영상','무용','음악','미술','복식','공예','예체능 일반','가톨릭','기독교','불교','종교 일반','인명','지명','책명','고유명 일반'];
+    // 전문 분야 대분류(지침 §5.1): 중분류 → 대분류
+    var FIELD_67_GROUP=(function(){ var g={ '인문':['교육','문학','민속','언어','역사','철학','인문 일반'], '사회':['경영','경제','군사','매체','법률','복지','심리','정치','행정','사회 일반'],
+      '자연':['동물','물리','생명','수학','식물','지구','지리','천문','천연자원','해양','화학','환경','자연 일반'], '산업':['공업','광업','농업','서비스업','수산업','임업','산업 일반'],
+      '보건':['수의','식품','약학','의학','한의','보건 일반'], '공학':['건설','교통','기계','재료','전기ㆍ전자','정보ㆍ통신','공학 일반'],
+      '예체능':['체육','연기','영상','무용','음악','미술','복식','공예','예체능 일반'], '종교':['가톨릭','기독교','불교','종교 일반'], '명칭':['인명','지명','책명','고유명 일반'] };
+      var m={}; Object.keys(g).forEach(function(k){ g[k].forEach(function(x){ m[x]=k; }); }); return m; })();
     var FIELD_15=['인간','삶','식생활','의생활','주생활','사회생활','경제생활','교육','종교','문화','정치와 행정','자연','동식물','개념','보건ㆍ의학'];
     var POS_BTNS=['「명」','「부」','「동」','「형」','「감」'];   // 버튼 선택(그 외는 직접 입력)
     var POS_LIST=['명','부','동','형','감','대','수','관','의명','보동','보형','관ㆍ명','수ㆍ관','명ㆍ부','감ㆍ명','대ㆍ부','대ㆍ감','동ㆍ형','관ㆍ감','부ㆍ감','수ㆍ관ㆍ명','대ㆍ관'];   // 대표 음절 표기
@@ -1256,9 +1263,13 @@
     var AC_DEF={ jm:{list:FIELD_67, l:'『', r:'』'}, um:{list:FIELD_15, l:'〔', r:'〕'}, pos:{list:POS_REST, l:'「', r:'」'} };
     function acPlain(v){ return String(v||'').replace(/[^가-힣ㄱ-ㅎㅏ-ㅣA-Za-z0-9]/g,''); }
     function acOpen(inp){ if(inp.disabled) return; var d=AC_DEF[inp.getAttribute('data-ac')], box=inp.nextElementSibling, q=acPlain(inp.value);
-      var items=d.list.filter(function(x){ return !q || acPlain(x).indexOf(q)>=0; });
+      var grp=(inp.getAttribute('data-ac')==='jm') ? FIELD_67_GROUP : null;
+      var items=d.list.filter(function(x){ return !q || acPlain(x).indexOf(q)>=0 || (grp && acPlain(grp[x]||'').indexOf(q)>=0); });
       if(!items.length){ box.style.display='none'; return; }
-      box.innerHTML=items.map(function(x,i){ return '<div class="ac-item'+(i===0?' on':'')+'" data-v="'+ea(x)+'" onmousedown="acPick(this)">'+esc(d.l+x+d.r)+'</div>'; }).join(''); box.style.display='';
+      var html='', lastG=null;
+      items.forEach(function(x,i){ if(grp && grp[x]!==lastG){ lastG=grp[x]; html+='<div class="ac-group">'+esc(lastG)+'</div>'; }
+        html+='<div class="ac-item'+(i===0?' on':'')+'" data-v="'+ea(x)+'" onmousedown="acPick(this)">'+esc(d.l+x+d.r)+'</div>'; });
+      box.innerHTML=html; box.style.display='';
     }
     function acBlur(inp){ setTimeout(function(){ var b=inp.nextElementSibling; if(b) b.style.display='none'; acEnforce(inp); }, 150); }
     // 목록 값만 허용: 정확히 일치하면 그대로, 아니면 첫 후보로 맞추고, 후보가 없으면 비움
