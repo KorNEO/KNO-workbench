@@ -49,7 +49,8 @@
   - 각 부의 `fields`를 `{stage}차 {field}` 컬럼에 기록(부별 화이트리스트만)
   - 서버 측 점검(§4) 실패 → throw(저장 차단)
   - `{phase} 상태`·`{phase} {stage}차 일시` 갱신, 변경로그
-- `setProjectPhase(token, projectId, phase)` — 관리자 전용. `getProjects` 응답에 `phase` 포함
+- `setProjectPhase(token, projectId, phase)` — 관리자 전용, 형태부↔의미부 양방향(되돌리기 허용). `getProjects` 응답에 `phase` 포함. 프론트: 홈 화면 "집필 단계" 카드(관리자)에서 전환
+- `getProgress`(집필): 형태부/의미부 각각의 1차·2차 완료 수를 반환(전환 시점 판단용)
 - `addWriteItem`/`deleteWriteItem`/`getItems(full)`는 컬럼 확장만
 
 ## 3. 프론트 화면 (index.html `renderWriteDetail`)

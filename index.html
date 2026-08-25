@@ -396,6 +396,7 @@
 
     <!-- 홈 -->
     <section id="view-home" class="home-wrap hidden">
+      <div class="card" id="phase-card" style="display:none"><h2>집필 단계</h2><div id="phase-body"></div></div>
       <div class="card" id="assign-card" style="display:none"><h2>🗂 작업 배분</h2><div id="assign-body"><span class="kbd">불러오는 중…</span></div></div>
       <div class="card"><h2 id="home-title">전체 진행률</h2><div id="overall"></div></div>
       <div class="card"><h2 id="second-title">나의 작업</h2><div id="second-body"></div></div>
@@ -888,7 +889,24 @@
       function p(x){ return t? (x/t*100):0; }
       return '<div class="bar"><span class="seg-first" style="width:'+p(first)+'%"></span><span class="seg-done" style="width:'+p(done)+'%"></span></div>';
     }
+    function renderPhaseCtl(){   // 집필 프로젝트 단계(형태부/의미부) 전환 — 관리자 전용
+      var card=$('phase-card'); if(!card) return;
+      if(MODE!=='write' || !ME.isManager || !CURRENT_PROJECT){ card.style.display='none'; return; }
+      var ph=projPhase(), nxt=(ph==='형태부')?'의미부':'형태부';
+      card.style.display='';
+      $('phase-body').innerHTML='<div class="stat-line"><span class="lbl">현재 단계</span><span class="val">'+esc(ph)+'</span></div>'
+        + '<div class="actions" style="margin-top:12px"><button class="btn save" onclick="setPhase(\''+nxt+'\')">'+(ph==='형태부'?'의미부 단계로 전환':'형태부 단계로 되돌리기')+'</button><span class="asg-msg" id="phase-msg"></span></div>';
+    }
+    function setPhase(nxt){
+      var pid=CURRENT_PROJECT&&CURRENT_PROJECT.id; if(!pid) return;
+      if(!confirm('["'+CURRENT_PROJECT.name+'"] 단계를 '+projPhase()+' → '+nxt+'(으)로 전환할까요?')) return;
+      $('phase-msg').textContent='전환 중…';
+      google.script.run.withSuccessHandler(function(){ CURRENT_PROJECT.phase=nxt; $('modeBadge').textContent=modeName()+' · '+CURRENT_PROJECT.name; renderPhaseCtl(); toast(nxt+' 단계로 전환했습니다.'); })
+        .withFailureHandler(function(e){ $('phase-msg').textContent='실패: '+e.message; })
+        .setProjectPhase(TOKEN, pid, nxt);
+    }
     function loadProgress(){
+      renderPhaseCtl();
       $('home-title').textContent = (MODE==='agree'?'연구자 일치도':MODE==='write'?'신어 집필':'신어 판별')+' — 전체 진행률';
       $('overall').innerHTML='<span class="kbd">불러오는 중…</span>'; $('second-body').innerHTML='';
       google.script.run.withSuccessHandler(function(p){
