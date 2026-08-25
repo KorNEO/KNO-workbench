@@ -262,13 +262,22 @@
     .gsi svg { width:20px; height:20px; display:block; }
     .login-current { margin-top:10px; color:var(--muted); font-size:13px; } .login-current b { color:var(--ink); }
     .login-warn { color:var(--bisineo); background:var(--bisineo-bg); border-radius:10px; padding:10px 14px; margin:14px auto 0; max-width:460px; }
-    .modes { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:16px; margin-top:30px; }
-    @media(max-width:900px){ .modes { grid-template-columns:1fr 1fr; } }
-    .mode-card { background:var(--surface); border:1.5px solid var(--line); border-radius:16px; padding:28px 16px; cursor:pointer; transition:.12s; }
+    .mode-group { margin-top:26px; text-align:left; }
+    .mg-label { font-size:13px; font-weight:700; color:var(--muted); letter-spacing:.5px; margin:0 0 10px 4px; }
+    .modes { display:grid; gap:14px; }
+    .modes.main { grid-template-columns:1fr 1fr; }
+    .modes.sub { grid-template-columns:1fr 1fr; }
+    .mode-card { background:var(--surface); border:1.5px solid var(--line); border-radius:16px; padding:22px 22px; cursor:pointer; transition:.12s; display:flex; align-items:center; gap:14px; }
+    .mode-card.primary { padding:30px 26px; border-color:#c6d0f5; background:linear-gradient(180deg,#fbfbff,#f2f4ff); }
     .mode-card.active:hover { border-color:var(--brand); transform:translateY(-2px); box-shadow:0 8px 22px rgba(63,81,181,.16); }
     .mode-card.disabled { opacity:.55; cursor:not-allowed; }
-    .mode-card .mc-ico { font-size:34px; } .mode-card .mc-t { font-size:18px; font-weight:800; margin-top:8px; }
+    .mc-num { flex:none; width:40px; height:40px; border-radius:12px; background:var(--brand); color:#fff; font-weight:700; font-size:18px; display:flex; align-items:center; justify-content:center; }
+    .mode-card .mc-t { font-size:18px; font-weight:700; }
+    .mode-card.primary .mc-t { font-size:22px; }
+    .modes.sub .mode-card .mc-t { font-size:16px; color:#3a4160; }
     .mode-card .mc-sub { color:var(--muted); font-size:12px; margin-top:4px; }
+    @media(max-width:700px){ .modes.main, .modes.sub { grid-template-columns:1fr; } }
+    body.dark .mode-card.primary { background:linear-gradient(180deg,#232a40,#1e2438); border-color:#3a4670; } body.dark .modes.sub .mode-card .mc-t { color:#c9cfe3; }
     .mode-card .mc-badge { display:inline-block; font-size:11px; background:var(--hold-bg); color:var(--hold); padding:2px 8px; border-radius:8px; margin-top:10px; }
     .modal { position:fixed; inset:0; background:rgba(20,24,40,.45); display:flex; align-items:center; justify-content:center; z-index:100; }
     .modal-box { background:var(--surface); width:min(680px,92vw); max-height:84vh; overflow:auto; border-radius:14px; padding:24px 28px; box-shadow:0 12px 40px rgba(0,0,0,.3); }
@@ -408,18 +417,18 @@
         <div class="sub">신어 판별 및 집필 워크벤치</div>
         <div class="login-current" id="login-current"></div>
         <div class="login-warn hidden" id="login-warn">등록되지 않은 계정입니다. 관리자에게 연구원 명단 등록을 요청하세요.</div>
-        <div class="modes">
-          <div class="mode-card active" onclick="enterMode('agree')">
-            <div class="mc-t">연구자 일치도 작업</div>
+        <div class="mode-group">
+          <div class="mg-label">작업</div>
+          <div class="modes main">
+            <div class="mode-card active primary" onclick="enterMode('real')"><div class="mc-num">1</div><div class="mc-t">신어 판별 작업</div></div>
+            <div class="mode-card active primary" onclick="enterMode('write')"><div class="mc-num">2</div><div class="mc-t">신어 집필 작업</div></div>
           </div>
-          <div class="mode-card active" onclick="enterMode('real')">
-            <div class="mc-t">신어 판별 작업</div>
-          </div>
-          <div class="mode-card active" onclick="enterMode('write')">
-            <div class="mc-t">신어 집필 작업</div>
-          </div>
-          <div class="mode-card active" onclick="enterMode('write_test')">
-            <div class="mc-t">신어 집필 작업<br>(테스트)</div>
+        </div>
+        <div class="mode-group">
+          <div class="mg-label">임시 작업</div>
+          <div class="modes sub">
+            <div class="mode-card active" onclick="enterMode('agree')"><div class="mc-t">연구자 일치도 작업</div></div>
+            <div class="mode-card active" onclick="enterMode('write_test')"><div class="mc-t">신어 집필 작업(테스트)</div></div>
           </div>
         </div>
         <div class="card" style="margin:26px 0 0;text-align:left" id="presence-card">
