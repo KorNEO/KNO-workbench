@@ -131,7 +131,7 @@
     .stage-sec.s1 { background:#fff5f5; border-left:4px solid #f0a3a3; }
     .stage-sec.s2 { background:#f4f8ff; border-left:4px solid #a3c0f0; }
     /* 집필 개편: 부(部) 탭·체인·양방향 하이라이트·LLM 복사·확인 창 */
-    .ref-badges { display:flex; gap:6px; flex-wrap:wrap; margin:0 0 6px; }
+    .jtags { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:4px; }
     .part-sec { border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin-top:10px; }
     .part-sec .ps-head { font-weight:800; font-size:19px; color:var(--brand-d); display:flex; align-items:center; gap:10px; margin-bottom:6px; }
     .part-sec .ps-state { font-weight:600; font-size:13px; color:var(--muted); background:var(--surface2); padding:2px 9px; border-radius:8px; }
@@ -798,11 +798,11 @@
       var base={ '__full':true, '작업자':'이준','검수자':'송현주','형태부 주차':'1','의미부 주차':'4','출처':'NN','작업 구분':'집필','2차 판별':'신어' };
       function mk(o){ var it={}; for(var k in base) it[k]=base[k]; for(var k2 in o) it[k2]=o[k2]; return it; }
       ITEMS=[
-        mk({ 'ID':'demo::1','신어 후보':'가족돌봄학생','추출 시기':'202411','2차 고유명 여부':'N','2차 혐오 표현 여부':'N','1차 판별':'신어','판별 작업자':'이준','판별 검수자':'송현주','1차 메모':'','2차 메모':'같은 기사에 출현하는 동의어입니다. 신어 지위 확인 부탁드립니다.','형태부 상태':'미작업','의미부 상태':'미작업',
+        mk({ 'ID':'demo::1','신어 후보':'가족돌봄학생','추출 시기':'202411','2차 고유명 여부':'N','2차 혐오 표현 여부':'N','1차 판별':'신어','1차 고유명 여부':'N','1차 혐오 표현 여부':'N','판별 작업자':'이준','판별 검수자':'송현주','1차 메모':'','2차 메모':'같은 기사에 출현하는 동의어입니다. 신어 지위 확인 부탁드립니다.','형태부 상태':'미작업','의미부 상태':'미작업',
              'LLM 색인표제어':'가족돌봄학생','LLM 조어법':'합성','LLM 품사':'「명사」','LLM 일상어/전문어':'전문어','LLM 전문 분야':'『복지』','LLM 의미 범주':'〔사회생활〕',
              'LLM 뜻풀이':'아픈 가족을 돌보는 책임을 지고 있는 학생.','LLM 용례':'¶가족돌봄학생은 학업과 간병을 병행하느라 어려움을 겪는다.',
              '용례':'최지영(가명·15) 양도 “아픈 가족이 있다 보니 내가 돌봐야 한다”며 가족돌봄학생의 어려움을 털어놓았다.','용례 일자':'2024-11-27 08:57:00','용례 URL':'https://n.news.naver.com/','검색 URL':'https://search.naver.com/' }),
-        mk({ 'ID':'demo::2','신어 후보':'가발킹','추출 시기':'202411','출처':'공통','2차 고유명 여부':'Y','2차 혐오 표현 여부':'Y','1차 판별':'비신어','판별 작업자':'이준','판별 검수자':'송현주','1차 메모':'','2차 메모':'가발킹 자체가 고유명은 아님. 다만 한동훈 대표를 지시하므로 고유명으로 체크.','형태부 상태':'2차완료','의미부 상태':'미작업',
+        mk({ 'ID':'demo::2','신어 후보':'가발킹','추출 시기':'202411','출처':'공통','2차 고유명 여부':'Y','2차 혐오 표현 여부':'Y','1차 판별':'비신어','1차 고유명 여부':'Y','1차 혐오 표현 여부':'Y','판별 작업자':'이준','판별 검수자':'송현주','1차 메모':'','2차 메모':'가발킹 자체가 고유명은 아님. 다만 한동훈 대표를 지시하므로 고유명으로 체크.','형태부 상태':'2차완료','의미부 상태':'미작업',
              'LLM 색인표제어':'가발킹','LLM 조어법':'합성','LLM 품사':'「명사」','LLM 일상어/전문어':'일상어','LLM 전문 분야':'','LLM 의미 범주':'〔인간〕','LLM 뜻풀이':'가발을 쓴 것으로 의심되는 사람을 조롱하여 이르는 말.','LLM 용례':'¶누리꾼들은 그를 가발킹이라고 불렀다.',
              '1차 단어/구':'단어','1차 조어법':'합성','1차 품사':'「명사」','1차 일상어/전문어':'일상어','1차 등재표제어':'가발-킹','1차 색인표제어':'가발킹','1차 원어':'(가발<영>king)','1차 어종 표시':'고+영','1차 의미 영역':'〔인간〕','1차 집필 메모(형태부)':'가발이 고유어인지 확인 필요',
              '2차 단어/구':'단어','2차 조어법':'합성','2차 품사':'「명사」','2차 일상어/전문어':'일상어','2차 등재표제어':'가발-킹','2차 색인표제어':'가발킹','2차 원어':'(假髮<영>king)','2차 어종 표시':'한+영','2차 의미 영역':'〔인간〕','2차 검수 메모(형태부)':'가발(假髮)은 한자어. 원어·어종 수정.',
@@ -1336,21 +1336,23 @@
         + (it['형태부 주차']?' &nbsp;·&nbsp; 형태부 '+esc(it['형태부 주차'])+'주차':'')+(it['의미부 주차']?' / 의미부 '+esc(it['의미부 주차'])+'주차':'')
         + (newItem ? ' &nbsp; <button class="btn ghost del-item" onclick="deleteWriteItem()">새 항목 삭제</button>' : '')
         + '</div>';
-      // 판별 참조 배지
-      var hate=String(it['2차 혐오 표현 여부']||'').trim(), proper=String(it['2차 고유명 여부']||'').trim(), vd=String(it['2차 판별']||'').trim();
-      h+='<div class="ref-badges">'+(proper?'<span class="pill '+(proper==='Y'?'v-hold':'미작업')+'">고유명 여부 '+esc(proper)+'</span>':'')
-        + (hate?'<span class="pill '+(hate==='Y'?'v-bi':'미작업')+'">혐오 표현 여부 '+esc(hate)+'</span>':'')
-        + '</div>';
+
       // LLM 생성 결과 — 값마다 복사하기(1차 작업 필드로). 대상 필드가 비활성이면 버튼도 비활성
       h+='<div class="llm-box"><h3>LLM 생성 결과</h3>'+LLM_MAP.map(function(m,i){ var val=String(it[m[0]]||'').trim();
         return '<div class="row"><div class="k">'+esc(m[1])+'</div><div class="v">'+(val?esc(val):'<span class="kbd">-</span>')+'</div><button type="button" class="llm-copy" data-llm="'+i+'" onclick="llmCopy(this)"'+(val?'':' disabled')+'>복사하기</button></div>'; }).join('')
         + '<div class="llm-foot"><button type="button" class="llm-copy llm-all" onclick="llmCopyAll()">전체 복사하기</button></div></div>';
       // 판별 단계의 작업자 메모·검수자 메모
-      var jm1=String(it['1차 메모']||'').trim(), jm2=String(it['2차 메모']||'').trim(), jv1=String(it['1차 판별']||'').trim(), jv2=String(it['2차 판별']||'').trim();
-      function vpill(v){ return v ? '<span class="pill '+(v==='신어'?'v-sin':v==='비신어'?'v-bi':'v-hold')+'">'+esc(v)+'</span> ' : ''; }
-      if(jm1||jm2||jv1||jv2) h+='<div class="llm-box"><h3>판별 메모</h3>'
-        + '<div class="row"><div class="k">1차 판별 · 작업자'+(it['판별 작업자']?' '+fmtName(it['판별 작업자']):'')+'</div><div class="v">'+vpill(jv1)+(jm1?esc(jm1):'<span class="kbd">-</span>')+'</div></div>'
-        + '<div class="row"><div class="k">2차 판별 · 검수자'+(it['판별 검수자']?' '+fmtName(it['판별 검수자']):'')+'</div><div class="v">'+vpill(jv2)+(jm2?esc(jm2):'<span class="kbd">-</span>')+'</div></div></div>';
+      function jrow(st, who){
+        var v=String(it[st+'차 판별']||'').trim(), pr=String(it[st+'차 고유명 여부']||'').trim(), ht=String(it[st+'차 혐오 표현 여부']||'').trim(), memo=String(it[st+'차 메모']||'').trim();
+        var tags=(v?'<span class="pill '+(v==='신어'?'v-sin':v==='비신어'?'v-bi':'v-hold')+'">'+esc(v)+'</span>':'')
+          + (pr?'<span class="pill '+(pr==='Y'?'v-hold':'미작업')+'">고유명 여부 '+esc(pr)+'</span>':'')
+          + (ht?'<span class="pill '+(ht==='Y'?'v-bi':'미작업')+'">혐오 표현 여부 '+esc(ht)+'</span>':'');
+        return '<div class="row"><div class="k">'+st+'차 판별 · '+who+'</div><div class="v"><div class="jtags">'+tags+'</div>'+(memo?esc(memo):'<span class="kbd">-</span>')+'</div></div>';
+      }
+      var hasJ=['1차 판별','2차 판별','1차 메모','2차 메모','1차 고유명 여부','2차 고유명 여부'].some(function(k){ return String(it[k]||'').trim(); });
+      if(hasJ) h+='<div class="llm-box"><h3>판별 메모</h3>'
+        + jrow(1, '작업자'+(it['판별 작업자']?' '+fmtName(it['판별 작업자']):''))
+        + jrow(2, '검수자'+(it['판별 검수자']?' '+fmtName(it['판별 검수자']):''))+'</div>';
       // 형태부 → 의미부 세로 섹션. 프로젝트 단계에 따라 잠금.
       PARTS.forEach(function(part){
         var locked=(part==='의미부' && phase==='형태부'), ro=(part==='형태부' && phase==='의미부');
