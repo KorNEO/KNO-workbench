@@ -153,7 +153,7 @@
     .seg-btn:disabled { opacity:.45; cursor:default; }
     .seg .seg-free-wrap { flex-basis:100%; display:block; }
     .seg.changed { outline:2px solid #6f9bf0; outline-offset:3px; }
-    .seg.rev-diff { outline:2px solid #e0921a; outline-offset:3px; }
+    .seg.rev-diff { outline:1px solid #e0921a; outline-offset:3px; border-radius:10px; }
     .help-wrap { position:relative; display:inline-flex; }
     .help { display:inline-flex; align-items:center; justify-content:center; width:13px; height:13px; border-radius:50%; border:1px solid var(--muted); color:var(--muted); font-size:9px; font-weight:700; cursor:pointer; line-height:1; opacity:.7; }
     .help:hover { border-color:var(--brand); color:var(--brand); }
@@ -178,7 +178,7 @@
     .wf.off { opacity:.5; }
     .wf label .kbd { font-weight:400; margin-left:4px; }
     .w-field:disabled { background:var(--surface3); color:var(--muted); cursor:not-allowed; }
-    .w-field.rev-diff { border:2px solid #e0921a; }
+    .w-field.rev-diff { border-color:#e0921a; background:#fffaf0; }
     .diff-tag { display:inline-block; font-size:12px; font-weight:800; color:#fff; background:#e0921a; border-radius:6px; padding:1px 7px; margin-left:4px; line-height:18px; }
     .rev-note { font-size:14px; color:#8a5a00; background:#fff7e0; border-radius:6px; padding:3px 8px; margin-top:2px; }
     .chk-native { display:flex; align-items:center; gap:6px; font-size:16px; margin-bottom:4px; cursor:pointer; } .chk-native input { margin:0; }
@@ -1477,7 +1477,7 @@
       }
       function isDiff(f){ var v1=wv(it,1,f), v2=wv(it,2,f); return !!(v2.trim() && v2!==v1) && f.indexOf('메모')<0; }
       function revNote(f){ return [isDiff(f)?' rev-diff':'','']; }   // 저장된 1차·2차가 다른 칸: 양쪽 모두 강조
-      function diffTag(f){ return isDiff(f)?'<span class="diff-tag">불일치</span>':''; }
+      function diffTag(f){ return ''; }
       function cls(f){ return 'w-field'+(stage===2?' w2':'')+revNote(f)[0]; }
       function inp(f,ph){ return '<input class="'+cls(f)+'"'+attrs(f)+' value="'+ea(pv(f))+'"'+(ph?' placeholder="'+ea(ph)+'"':'')+'>'+revNote(f)[1]; }
       function ta(f,rows){ return '<textarea class="'+cls(f)+'"'+attrs(f)+' rows="'+(rows||2)+'">'+esc(pv(f))+'</textarea>'+revNote(f)[1]; }
