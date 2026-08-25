@@ -69,7 +69,7 @@
     .stat-line { display:flex; justify-content:space-between; align-items:center; padding:9px 2px; border-bottom:1px solid var(--line); }
     .stat-line:last-child { border-bottom:none; } .stat-line .lbl { color:var(--muted); } .stat-line .val { font-weight:800; font-size:16px; }
     .stat-line .val.go { color:var(--brand); cursor:pointer; text-decoration:underline; }
-    .work-wrap { display:grid; grid-template-columns:250px minmax(0,1fr) auto; gap:14px; align-items:start; }
+    .work-wrap { display:grid; grid-template-columns:290px minmax(0,1fr) auto; gap:14px; align-items:start; }
     @media(max-width:1500px){ .ref-col { width:380px !important; } body.ref-collapsed .ref-col { width:40px !important; } }
     .list-col { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:10px; max-height:calc(100vh - 100px); overflow:auto; position:sticky; top:72px; }
     .filters { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:10px; }
@@ -91,7 +91,7 @@
     .item.sel { border-color:var(--brand); background:#eef1ff; box-shadow:0 0 0 2px rgba(63,81,181,.12); }
     .item .cand { font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:space-between; gap:8px; } .item .cand .nm { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .item .meta { color:var(--muted); font-size:12px; margin-top:2px; }
     .pill { font-size:11px; padding:1px 8px; border-radius:10px; font-weight:600; white-space:nowrap; flex:none; }
-    .pills2 { display:flex; flex-direction:column; gap:2px; align-items:flex-end; flex:none; } .pills2 .pill { font-size:10px; padding:1px 6px; }
+    .pills2 { display:flex; flex-direction:column; gap:2px; align-items:flex-end; flex:none; } .pills2 .pill { font-size:11px; padding:1px 7px; }
     .pill.미작업 { background:#eef0f3; color:#6b7280; }
     .pill.s1 { background:#e7ebff; color:#3f51b5; } .pill.s2 { background:var(--sineo-bg); color:var(--sineo); } .pill.sr { background:var(--hold-bg); color:var(--hold); }
     /* 판별 결과 색상: 신어(초록)·비신어(빨강)·판단 보류(주황)·불일치(보라) */
