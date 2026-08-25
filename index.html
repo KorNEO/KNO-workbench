@@ -1558,8 +1558,8 @@
         return (parts.length>1?'<tr><th colspan="2" class="cf-part">'+esc(part)+'</th></tr>':'')
           + Object.keys(vals).filter(function(k){ return !(k==='고유어' && vals[k]!=='Y'); }).map(function(k){ var v=tplBlank(k,vals[k])?'':vals[k]; return '<tr><th>'+esc(k)+'</th><td>'+(v?esc(v).replace(/\n/g,'<br>'):'<span class="kbd">-</span>')+'</td></tr>'; }).join(''); }).join('');
       var box=$('wconfirm'); if(!box){ box=document.createElement('div'); box.id='wconfirm'; box.className='modal'; box.addEventListener('click', function(e){ if(e.target===box) closeWriteConfirm(); }); document.body.appendChild(box); }
-      box.innerHTML='<div class="modal-box"><button class="x" onclick="closeWriteConfirm()">×</button><h2 style="margin-top:0">'+esc(parts.join(', '))+' '+stage+'차 저장 전 확인: '+esc(it['신어 후보'])+'</h2>'
-        + (errs.length ? '<div class="vfy-err"><b>점검 오류 '+errs.length+'건. 저장할 수 없습니다.</b><ul style="margin:6px 0 0 18px">'+errs.map(function(e){ return '<li>'+esc(e)+'</li>'; }).join('')+'</ul></div>' : '<div class="vfy-ok">점검 통과. 아래 내용으로 저장합니다.</div>')
+      box.innerHTML='<div class="modal-box"><button class="x" onclick="closeWriteConfirm()">×</button><h2 style="margin-top:0">'+esc(it['신어 후보'])+'</h2>'
+        + (errs.length ? '<div class="vfy-err"><ul style="margin:0 0 0 18px">'+errs.map(function(e){ return '<li>'+esc(e)+'</li>'; }).join('')+'</ul></div>' : '')
         + '<table class="cf-tbl">'+rows+'</table>'
         + '<div class="actions" style="margin-top:14px"><button class="btn save" onclick="saveWriteForm('+stage+')"'+(errs.length?' disabled':'')+'>저장</button><button class="btn reject" onclick="closeWriteConfirm()">수정</button></div></div>';
       box.classList.remove('hidden');
