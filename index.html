@@ -1389,7 +1389,7 @@
       var rows=REF_F.map(function(f){ var v=String(rec.vals[f[0]]||'').trim(); if(!v) return ''; if(f[0]==='의미 범주' && !/^〔/.test(v)) v='〔'+v+'〕';
         return '<tr><th>'+esc(f[0])+'</th><td>'+esc(v)+'</td></tr>'; }).join('');
       if(rec.def) rows+='<tr><th>뜻풀이</th><td>'+esc(rec.def)+'</td></tr>';
-      return '<div class="ref-item"><div class="ref-title">'+mark(rec.title)+(rec.year?'<span class="ref-year">'+esc(rec.year)+'</span>':'')+'</div><table class="ref-tbl">'+rows+'</table></div>';
+      return '<div class="ref-item"><div class="ref-title"><span class="ref-name">'+mark(rec.title)+'</span>'+(rec.year?'<span class="ref-year">'+esc(rec.year)+'</span>':'')+'</div><table class="ref-tbl">'+rows+'</table></div>';
     }
     function refRender(){
       var q=refKey_(($('ref-q')||{}).value||''), body=$('ref-body'); if(!body) return;
