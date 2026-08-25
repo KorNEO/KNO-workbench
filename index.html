@@ -1350,10 +1350,10 @@
       if(q.length>=2){ REF.rows.forEach(function(r){ var sm=refSim_(q, refKey_(r[cI])); if(sm) hits.push([sm,r]); }); }
       hits.sort(function(x,y){ return y[0][0]-x[0][0] || String(x[1][cY]).localeCompare(String(y[1][cY])); });
       if(!hits.length){ body.innerHTML='<span class="kbd">-</span>'; return; }
-      var show=hits.slice(0,60), F=['원어','어종','어원','단어/구','조어법','품사','일상어/전문어','전문 분야','의미 범주','뜻풀이'];
+      var show=hits.slice(0,60), F=['단어/구','조어법','품사','일상어/전문어','등재표제어','원어','어종','어원','전문 분야','의미 범주','뜻풀이'];   // 집필 순서와 동일
       body.innerHTML='<div class="ref-count">'+hits.length+'건'+(hits.length>60?' 중 60건':'')+'</div>'+show.map(function(h){ var r=h[1], sm=h[0];
         var rows=F.map(function(f){ var v=String(r[refCol(f)]||''); if(!v) return ''; if(f==='의미 범주' && !/^〔/.test(v)) v='〔'+v+'〕'; return '<div class="ref-row"><span class="k">'+esc(f)+'</span><span class="v">'+esc(v)+'</span></div>'; }).join('');
-        return '<div class="ref-item"><div class="ref-title">'+esc(r[cH]||r[cI])+'<span class="ref-meta">'+esc(r[cY])+' · '+esc(sm[1])+' '+esc(sm[2])+'</span></div>'+rows+'</div>'; }).join('');
+        return '<div class="ref-item"><div class="ref-title">'+esc(r[cI]||r[cH])+'<span class="ref-meta">'+esc(r[cY])+' · '+esc(sm[1])+' '+esc(sm[2])+'</span></div>'+rows+'</div>'; }).join('');
     }
     function segPick(btn){ var seg=btn.closest('.seg'), inp=seg.querySelector('.seg-val'); if(inp.disabled) return;
       var fr=seg.querySelector('.seg-free-inp');
