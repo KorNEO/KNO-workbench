@@ -1593,12 +1593,12 @@
     function addNewWriteItem(){
       var box=$('waddModal'); if(!box){ box=document.createElement('div'); box.id='waddModal'; box.className='modal'; box.addEventListener('click', function(e){ if(e.target===box) box.classList.add('hidden'); }); document.body.appendChild(box); }
       box.innerHTML='<div class="modal-box" style="width:min(460px,92vw)"><button class="x" onclick="$(\'waddModal\').classList.add(\'hidden\')">×</button><h2 style="margin-top:0">새 항목 추가</h2>'
-        + '<div class="pf"><label>색인표제어를 입력해 주세요.</label><input id="wadd-cand" class="w-field" onkeydown="if(event.key===\'Enter\')submitNewWriteItem()"></div>'
+        + '<div class="pf"><label>색인표제어</label><input id="wadd-cand" class="w-field" onkeydown="if(event.key===\'Enter\')submitNewWriteItem()"></div>'
         + '<div class="actions" style="margin-top:12px"><button class="btn save" onclick="submitNewWriteItem()">추가</button><button class="btn reject" onclick="$(\'waddModal\').classList.add(\'hidden\')">취소</button></div></div>';
       box.classList.remove('hidden'); setTimeout(function(){ $('wadd-cand').focus(); }, 0);
     }
     function submitNewWriteItem(){
-      var cand=String(($('wadd-cand')||{}).value||'').trim(); if(!cand){ toast('색인표제어를 입력해 주세요.'); return; }
+      var cand=String(($('wadd-cand')||{}).value||'').trim(); if(!cand) return;
       $('waddModal').classList.add('hidden');
       function addLocal(id){ var it={'__full':true,'ID':id,'신어 후보':cand,'작업자':(ME.isManager?'':ME.name)||'','검수자':'','형태부 상태':'미작업','의미부 상태':'미작업'}; ITEMS.unshift(it); CUR=0; renderList(); renderWriteDetail(it); }
       var pid=CURRENT_PROJECT&&CURRENT_PROJECT.id; if(!pid){ toast('먼저 프로젝트를 여세요.'); return; }
