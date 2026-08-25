@@ -29,22 +29,45 @@ var LOG_HEADERS = ['일시', 'ID', '신어 후보', '단계', '행위자', '판�
 var FAILLOG_HEADERS = ['일시', '행위자', '기능', 'ID', '판별', '메모', '에러', '토큰'];
 var SAVE_FNS = { saveFirst: '1차', saveSecond: '2차', saveWrite: '집필' };
 
-// 집필(M5) 항목 스키마 — 판별과 별개
-var HEADERS_WRITE = [
-  'ID', '신어 후보', '작업자', '검수자', '배정 주차', '상태', '작업 구분', '1차 일시', '2차 일시',
-  '최초출현일', '추출 시기', 'GPT 의미 범주', 'GPT 정의문', 'GPT 설명문', 'GPT 용례',
-  '색인표제어', '등재표제어', '원어', '어종 표시', '어원', '단어/구', '품사', '일상어/전문어', '전문 분야', '의미 영역',
-  '뜻풀이', '용례', '용례 출처', '용례 URL', '수정 용례', 'X년 Y월 신어',
-  '집필 메모(형태부)', '집필 메모(의미부)',
-  '1차 뜻풀이', '2차 뜻풀이', '검수 메모(형태부)', '검수 메모(의미부)'
-];
-// 집필자/검토자가 입력하는 필드(검토자는 전수 수정 가능)
-var WRITE_FIELDS = ['색인표제어', '등재표제어', '원어', '어종 표시', '어원', '단어/구', '품사', '일상어/전문어', '전문 분야', '의미 영역', '뜻풀이', '용례', '용례 출처', '용례 URL', '수정 용례', 'X년 Y월 신어', '집필 메모(형태부)', '집필 메모(의미부)', '검수 메모(형태부)', '검수 메모(의미부)'];
-function headersFor_(kind) { return kind === '집필' ? HEADERS_WRITE : HEADERS; }
+// 집필(M5) 항목 스키마 — 판별과 별개. 입력 필드는 1차/2차 쌍으로 저장('1차 조어법'/'2차 조어법' …), 부(형태부/의미부)별 상태·일시.
+var WRITE_KINDS = ['집필', '집필 테스트'];
+function isWriteKind_(k) { return WRITE_KINDS.indexOf(String(k || '').trim()) >= 0; }
+var WRITE_PARTS = ['형태부', '의미부'];
+var WRITE_PART_FIELDS = {
+  '형태부': ['색인표제어', '단어/구', '조어법', '품사', '일상어/전문어', '전문 분야', '등재표제어', '고유어', '원어', '어종 표시', '어원', '의미 영역', '집필 메모(형태부)', '검수 메모(형태부)'],
+  '의미부': ['뜻풀이', '용례', '참고 용례', '참고 용례 URL', 'X년 Y월 신어', '집필 메모(의미부)', '검수 메모(의미부)']
+};
+var WRITE_LLM = ['LLM 색인표제어', 'LLM 조어법', 'LLM 품사', 'LLM 일상어/전문어', 'LLM 전문 분야', 'LLM 의미 범주', 'LLM 뜻풀이', 'LLM 용례'];   // 컬럼명 잠정(M5 출력 확정 시 맞춤)
+var WRITE_REF = ['출처', '추출 시기', '판별 작업자', '판별 검수자', '1차 판별', '1차 메모', '1차 고유명 여부', '1차 혐오 표현 여부', '2차 판별', '2차 메모', '2차 고유명 여부', '2차 혐오 표현 여부', '용례', '용례 일자', '용례 URL', '검색 URL'];   // 판별 참조
+var WRITE_META = ['ID', '신어 후보', '작업자', '검수자', '형태부 주차', '의미부 주차', '형태부 상태', '의미부 상태', '작업 구분', '형태부 1차 일시', '형태부 2차 일시', '의미부 1차 일시', '의미부 2차 일시'];
+// 단계별 저장 컬럼: 집필 메모는 1차만, 검수 메모는 2차만
+function writeStageCols_(part, stage) {
+  return WRITE_PART_FIELDS[part].filter(function (f) { return !(stage === 1 && f.indexOf('검수 메모') === 0) && !(stage === 2 && f.indexOf('집필 메모') === 0); })
+    .map(function (f) { return stage + '차 ' + f; });
+}
+var HEADERS_WRITE = (function () {
+  var h = WRITE_META.concat(WRITE_REF, WRITE_LLM);
+  [1, 2].forEach(function (st) { WRITE_PARTS.forEach(function (pt) { h = h.concat(writeStageCols_(pt, st)); }); });
+  return h;
+})();
+// 집필 테스트: 이 명단은 작업자·검수자 양쪽 편집 가능
+var WRITE_TEST_BOTH = ['관리자', '안진산', '이수진', '백미경'];
+function canEditWrite_(me, kind, worker, reviewer, stage) {
+  if (me.isManager) return true;
+  if (kind === '집필 테스트' && WRITE_TEST_BOTH.indexOf(me.name) >= 0) return true;
+  return stage === 1 ? (!!me.name && me.name === String(worker || '').trim()) : (!!me.name && me.name === String(reviewer || '').trim());
+}
+function headersFor_(kind) { return isWriteKind_(kind) ? HEADERS_WRITE : HEADERS; }
+// 시트에 없는 헤더를 끝에 추가(기존 프로젝트 호환) 후 최신 인덱스 반환
+function ensureCols_(sh, headers) {
+  var idx = headerIndex_(sh), missing = headers.filter(function (h) { return !(h in idx); });
+  if (missing.length) { sh.getRange(1, sh.getLastColumn() + 1, 1, missing.length).setValues([missing]); styleHeader_(sh, sh.getLastColumn()); idx = headerIndex_(sh); }
+  return idx;
+}
 
 // 연구원 스키마: 구글계정1 이름2 역할3 초대일시4 응답상태5 수락일시6 token7 개인링크8 아이디9 비번해시10 소속11 성별12
 var USER_HDR = ['구글 계정', '이름', '역할', '초대 일시', '응답 상태', '수락 일시', '토큰', '개인 링크', '아이디', '비밀번호 해시', '소속', '성별'];
-var PROJ_HEADERS = ['프로젝트 ID', '이름', '유형', '등록일', '마감일', '상태', '파일 ID'];   // 등록일·마감일 = 관리자 설정, file_id = 프로젝트 전용 스프레드시트 ID
+var PROJ_HEADERS = ['프로젝트 ID', '이름', '유형', '등록일', '마감일', '상태', '파일 ID', '단계'];   // 등록일·마감일 = 관리자 설정, file_id = 프로젝트 전용 스프레드시트 ID, 단계 = 집필(형태부/의미부)
 var DRIVE_ROOT = 'KNO 워크벤치';   // 최상위 드라이브 폴더(하위: 프로젝트/·원본 업로드/, 작업유형별)
 var PRES_TTL = 100;
 var WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxGQ25QDvzAdXOCdYWXihv3Lkdj6zVXyq5M0KiGjccGJTRbiY1XRMvRjCHKrmlFdWLZ/exec';   // doPost API 엔드포인트(프론트가 fetch)
@@ -62,7 +85,7 @@ function doGet(e) {   // /exec 접근 시 Pages 프론트로 리다이렉트
 var API = {
   getBootstrap: getBootstrap, ping: ping, getPresence: getPresence,
   getGuide: getGuide, setGuide: setGuide,
-  getProjects: getProjects, createProject: createProject, updateProject: updateProject, deleteProject: deleteProject, exportProject: exportProject, getTemplate: getTemplate,
+  getProjects: getProjects, createProject: createProject, updateProject: updateProject, deleteProject: deleteProject, exportProject: exportProject, getTemplate: getTemplate, setProjectPhase: setProjectPhase,
   getResearchers: getResearchers, saveResearchers: saveResearchers,
   getAssignees: getAssignees, genAgree: genAgree, genReal: genReal,
   getProgress: getProgress, getItems: getItems, getItem: getItem,
@@ -312,6 +335,7 @@ function projRegSheet_() {
       sh.getRange(1, 1, 1, PROJ_HEADERS.length).setValues([PROJ_HEADERS]); styleHeader_(sh, PROJ_HEADERS.length);   // 빈 시트: 헤더만 재설정
     }
   }
+  if (h.indexOf('단계') < 0) { sh.getRange(1, sh.getLastColumn() + 1).setValue('단계'); styleHeader_(sh, sh.getLastColumn()); }   // 집필 단계 열 자동 추가
   return sh;
 }
 function fmtDate_(v) {   // Date/문자열 → 'YYYY.MM.DD'
@@ -319,7 +343,7 @@ function fmtDate_(v) {   // Date/문자열 → 'YYYY.MM.DD'
   var s = String(v || '').trim(), m = s.match(/(\d{4})[-.](\d{1,2})[-.](\d{1,2})/);
   return m ? m[1] + '.' + ('0' + m[2]).slice(-2) + '.' + ('0' + m[3]).slice(-2) : s;
 }
-function kindLabel_(kind) { return kind === '일치도' ? '연구자 일치도 작업' : kind === '집필' ? '신어 집필 작업' : '신어 판별 작업'; }
+function kindLabel_(kind) { return kind === '일치도' ? '연구자 일치도 작업' : kind === '집필' ? '신어 집필 작업' : kind === '집필 테스트' ? '신어 집필 작업(테스트)' : '신어 판별 작업'; }
 function folder_(pathArr) {   // 중첩 폴더 get-or-create
   var f = DriveApp.getRootFolder();
   for (var i = 0; i < pathArr.length; i++) { var it = f.getFoldersByName(pathArr[i]); f = it.hasNext() ? it.next() : f.createFolder(pathArr[i]); }
@@ -331,7 +355,8 @@ function projList_(kind) {
   for (var i = 0; i < rows.length; i++) {
     var r = rows[i]; if (kind && String(r[idx['유형']]).trim() !== kind) continue;
     out.push({ id: String(r[idx['프로젝트 ID']]).trim(), name: String(r[idx['이름']]).trim(), type: String(r[idx['유형']]).trim(),
-      registered: fmtDate_(r[idx['등록일']]), due: fmtDate_(r[idx['마감일']]), status: String(r[idx['상태']]).trim(), fileId: String(r[idx['파일 ID']] || '').trim(), _row: i + 2 });
+      registered: fmtDate_(r[idx['등록일']]), due: fmtDate_(r[idx['마감일']]), status: String(r[idx['상태']]).trim(), fileId: String(r[idx['파일 ID']] || '').trim(),
+      phase: (idx['단계'] != null && String(r[idx['단계']] || '').trim()) || '형태부', _row: i + 2 });
   }
   return out;
 }
@@ -346,13 +371,23 @@ function projSetStatus_(projectId, status) { var p = projById_(projectId); if (!
 
 function getProjects(token, kind) {
   me_(token);
-  return projList_(kind).map(function (p) { return { id: p.id, name: p.name, type: p.type, registered: p.registered, due: p.due, status: p.status, items: projItemsCount_(p) }; });
+  return projList_(kind).map(function (p) { return { id: p.id, name: p.name, type: p.type, registered: p.registered, due: p.due, status: p.status, phase: p.phase, items: projItemsCount_(p) }; });
+}
+// 집필 프로젝트 단계 전환(관리자): 형태부 ↔ 의미부(되돌리기 허용)
+function setProjectPhase(token, projectId, phase) {
+  assertManager_(me_(token));
+  if (WRITE_PARTS.indexOf(phase) < 0) throw new Error('단계 값 오류: ' + phase);
+  var p = projById_(projectId); if (!p) throw new Error('프로젝트 없음');
+  if (!isWriteKind_(p.type)) throw new Error('집필 프로젝트가 아닙니다.');
+  var reg = projRegSheet_(), idx = headerIndex_(reg);
+  reg.getRange(p._row, idx['단계'] + 1).setValue(phase);
+  return { ok: true, phase: phase };
 }
 function createProject(token, kind, name, csvText, regDate, dueDate) {
   assertManager_(me_(token));
   name = String(name || '').trim() || '새 프로젝트';
   var H = headersFor_(kind);
-  var pid = (kind === '일치도' ? 'ag' : kind === '집필' ? 'wr' : 'rl') + '-' + Date.now().toString(36);
+  var pid = (kind === '일치도' ? 'ag' : kind === '집필' ? 'wr' : kind === '집필 테스트' ? 'wt' : 'rl') + '-' + Date.now().toString(36);
   try { folder_([DRIVE_ROOT, '원본 업로드', kindLabel_(kind)]).createFile(Utilities.newBlob(String(csvText || ''), 'text/csv', name + '.csv')); } catch (e) {}   // 원본 보관(재현성)
   var pss = SpreadsheetApp.create(name), fileId = pss.getId();   // 프로젝트 전용 스프레드시트
   try { var file = DriveApp.getFileById(fileId); folder_([DRIVE_ROOT, '프로젝트', kindLabel_(kind)]).addFile(file); DriveApp.getRootFolder().removeFile(file); } catch (e) {}
@@ -361,7 +396,11 @@ function createProject(token, kind, name, csvText, regDate, dueDate) {
   var t = Utilities.parseCsv(String(csvText || '').replace(/^﻿/, ''));
   var hdr = (t[0] || []).map(function (h) { return String(h).replace(/^﻿/, '').trim(); });
   var col = {}; hdr.forEach(function (h, i) { if (H.indexOf(h) >= 0) col[h] = i; });
-  var CLEAR = ['작업자', '검수자', '배정 주차', '1차 판별', '1차 메모', '1차 일시', '1차 고유명 여부', '1차 혐오 표현 여부', '2차 판별', '2차 메모', '2차 일시', '2차 고유명 여부', '2차 혐오 표현 여부'];   // 배정·판별 추적만 초기화(집필 내용·1차/2차 뜻풀이·메모는 보존)
+  var CLEAR = ['작업자', '검수자', '배정 주차', '1차 판별', '1차 메모', '1차 일시', '1차 고유명 여부', '1차 혐오 표현 여부', '2차 판별', '2차 메모', '2차 일시', '2차 고유명 여부', '2차 혐오 표현 여부'];   // 판별: 배정·판별 추적 초기화
+  if (isWriteKind_(kind)) {   // 집필: 판별 참조(1차/2차 판별·메모·고유명·혐오)와 CSV의 작업자·검수자·주차는 유지, 집필 입력·상태·일시만 초기화
+    CLEAR = ['형태부 상태', '의미부 상태', '형태부 1차 일시', '형태부 2차 일시', '의미부 1차 일시', '의미부 2차 일시'];
+    [1, 2].forEach(function (st) { WRITE_PARTS.forEach(function (pt) { CLEAR = CLEAR.concat(writeStageCols_(pt, st)); }); });
+  }
   var out = [];
   for (var r = 1; r < t.length; r++) {
     var row = t[r]; if (!row || row.join('') === '') continue;
@@ -371,7 +410,7 @@ function createProject(token, kind, name, csvText, regDate, dueDate) {
       var key = H[c], ci = col[key], v = (ci != null && row[ci] != null) ? row[ci] : '';
       if (key === 'ID') v = pid + '::' + (v || r);
       else if (key === '작업 구분') v = kind;
-      else if (key === '상태') v = STATUS.NONE;
+      else if (key === '상태' || key === '형태부 상태' || key === '의미부 상태') v = STATUS.NONE;
       else if (CLEAR.indexOf(key) >= 0) v = '';
       o.push(v);
     }
@@ -380,7 +419,9 @@ function createProject(token, kind, name, csvText, regDate, dueDate) {
   if (out.length) sh.getRange(2, 1, out.length, H.length).setValues(out);
   styleHeader_(sh, H.length);
   var reg = fmtDate_(regDate) || Utilities.formatDate(new Date(), TZ, 'yyyy.MM.dd');   // 미지정 시 오늘
-  projRegSheet_().appendRow([pid, name, kind, reg, fmtDate_(dueDate), '미배분', fileId]);
+  var regSh = projRegSheet_(), ridx = headerIndex_(regSh), rrow = [];
+  PROJ_HEADERS.forEach(function (h) { rrow[ridx[h]] = ({ '프로젝트 ID': pid, '이름': name, '유형': kind, '등록일': reg, '마감일': fmtDate_(dueDate), '상태': '미배분', '파일 ID': fileId, '단계': isWriteKind_(kind) ? '형태부' : '' })[h]; });
+  regSh.appendRow(rrow);
   return { id: pid, name: name, items: out.length };
 }
 function updateProject(token, kind, id, name, regDate, dueDate) {
@@ -410,6 +451,7 @@ function exportProject(token, kind, id) {
 }
 function getTemplate(token, kind) {
   me_(token);
+  if (isWriteKind_(kind)) return ['ID', '신어 후보', '작업자', '검수자', '형태부 주차', '의미부 주차'].concat(WRITE_REF, WRITE_LLM).join(',');
   return '작업 구분,작업자,검수자,배정 주차,상태,1차 판별,1차 메모,1차 일시,1차 고유명 여부,1차 혐오 표현 여부,2차 판별,2차 메모,2차 일시,2차 고유명 여부,2차 혐오 표현 여부,ID,신어 후보,출처,추출 시기,LLM 판단 결과,LLM 판단 기준,LLM 판단 근거,용례,용례 일자,용례 URL,검색 URL';
 }
 
@@ -439,6 +481,7 @@ function researcherOrder_() {
 }
 function getProgress(token, kind, projectId) {
   me_(token);
+  if (isWriteKind_(kind)) return getProgressWrite_(projectId);
   var sh = projItemSheet_(projectId), idx = sh ? headerIndex_(sh) : {}, n = sh ? sh.getLastRow() - 1 : 0;
   var overall = { total: 0, 미작업: 0, '1차완료': 0, '2차완료': 0, done1: 0, done2: 0, weeks: {} }, groups = {};
   if (sh && n > 0) {
@@ -467,6 +510,33 @@ function getProgress(token, kind, projectId) {
   return { overall: overall, groups: arr, weeks: weekList };
 }
 
+// 집필 진행률: 형태부/의미부 각각 1차·2차 완료 수. done1/done2는 현재 단계의 부 기준(기존 화면 호환).
+function getProgressWrite_(projectId) {
+  var p = projById_(projectId), phase = (p && p.phase) || '형태부';
+  var sh = projItemSheet_(projectId), idx = sh ? headerIndex_(sh) : {}, n = sh ? sh.getLastRow() - 1 : 0;
+  function mk() { return { total: 0, 미작업: 0, '1차완료': 0, '2차완료': 0, done1: 0, done2: 0, weeks: {}, parts: { '형태부': { done1: 0, done2: 0 }, '의미부': { done1: 0, done2: 0 } } }; }
+  var overall = mk(), groups = {};
+  if (sh && n > 0) {
+    var data = sh.getRange(2, 1, n, sh.getLastColumn()).getValues();
+    function g(r, k) { return idx[k] != null ? String(data[r][idx[k]] || '').trim() : ''; }
+    for (var r = 0; r < data.length; r++) {
+      var w = g(r, '작업자'), rv = g(r, '검수자'), key = (w || '?') + ' / ' + (rv || '?');
+      if (!groups[key]) { groups[key] = mk(); groups[key].label = key; groups[key].worker = w; groups[key].reviewer = rv; }
+      [overall, groups[key]].forEach(function (o) {
+        o.total++;
+        WRITE_PARTS.forEach(function (pt) { var st = g(r, pt + ' 상태'); if (st === STATUS.FIRST || st === STATUS.SECOND) o.parts[pt].done1++; if (st === STATUS.SECOND) o.parts[pt].done2++; });
+        var cur = g(r, phase + ' 상태') || STATUS.NONE; if (o[cur] !== undefined) o[cur]++;
+        o.done1 = o.parts[phase].done1; o.done2 = o.parts[phase].done2;
+        var wk = g(r, phase + ' 주차'); if (wk) o.weeks[wk] = (o.weeks[wk] || 0) + 1;
+      });
+    }
+  }
+  var order = researcherOrder_(), arr = Object.keys(groups).map(function (k) { return groups[k]; });
+  arr.sort(function (a, b) { var ia = order[a.worker], ib = order[b.worker]; ia = (ia == null ? 9999 : ia); ib = (ib == null ? 9999 : ib); return ia !== ib ? ia - ib : a.label.localeCompare(b.label, 'ko'); });
+  var weekList = Object.keys(overall.weeks).sort(function (a, b) { return (parseInt(a, 10) || 0) - (parseInt(b, 10) || 0); });
+  return { overall: overall, groups: arr, weeks: weekList, phase: phase };
+}
+
 // ── 항목 조회 ──────────────────────────────────────────
 // 일치도 작업자→행범위 인덱스(genAgree가 작업자별 연속 정렬). 재배분 시 무효화.
 function agreeIndex_(sh) {
@@ -483,6 +553,7 @@ function agreeIndex_(sh) {
   return map;
 }
 var LIST_FIELDS = ['ID', '신어 후보', '출처', '추출 시기', '작업 구분', '작업자', '검수자', '배정 주차', '상태', '1차 판별', '2차 판별', '1차 고유명 여부', '1차 혐오 표현 여부', '2차 고유명 여부', '2차 혐오 표현 여부'];
+var LIST_FIELDS_WRITE = ['ID', '신어 후보', '출처', '추출 시기', '작업 구분', '작업자', '검수자', '형태부 주차', '의미부 주차', '형태부 상태', '의미부 상태'];
 function getItems(token, opts) {
   var me = me_(token); opts = opts || {};
   if (opts.kind === '일치도') opts.onlyMine = true;
@@ -496,20 +567,24 @@ function getItems(token, opts) {
         if (numRows < 1 || startRow > n + 1) { startRow = 2; numRows = n; } }
     } catch (e) { startRow = 2; numRows = n; }
   }
+  var isW = isWriteKind_(opts.kind), LF = isW ? LIST_FIELDS_WRITE : LIST_FIELDS, phase = '형태부';
+  if (isW) { var pj = projById_(opts.projectId); phase = (pj && pj.phase) || '형태부'; }
+  var stKey = isW ? phase + ' 상태' : '상태', wkKey = isW ? phase + ' 주차' : '배정 주차';
+  var seeAll = me.isManager || (opts.kind === '집필 테스트' && WRITE_TEST_BOTH.indexOf(me.name) >= 0);
   var full = !!opts.full, blkCols = lastCol;
-  if (!full) { var maxc = 0; for (var li = 0; li < LIST_FIELDS.length; li++) { var ci = idx[LIST_FIELDS[li]]; if (ci != null && ci > maxc) maxc = ci; } blkCols = Math.min(maxc + 1, lastCol); }
+  if (!full) { var maxc = 0; for (var li = 0; li < LF.length; li++) { var ci = idx[LF[li]]; if (ci != null && ci > maxc) maxc = ci; } blkCols = Math.min(maxc + 1, lastCol); }
   var BLK = sh.getRange(startRow, 1, numRows, blkCols).getValues();
   function g(r, key) { var c = idx[key]; if (c == null || c >= blkCols) return ''; return String(BLK[r][c] || '').trim(); }
   var qy = opts.q ? String(opts.q).toLowerCase() : '', out = [];
   for (var r = 0; r < numRows; r++) {
-    var k = g(r, '작업 구분'), w = g(r, '작업자'), rv = g(r, '검수자'), st = g(r, '상태'), wk = g(r, '배정 주차');
+    var k = g(r, '작업 구분'), w = g(r, '작업자'), rv = g(r, '검수자'), st = g(r, stKey), wk = g(r, wkKey);
     if (opts.kind && k !== opts.kind) continue;
     if (opts.worker && w !== opts.worker) continue;
     if (opts.week && wk !== String(opts.week)) continue;
-    if (opts.status && st !== opts.status) continue;
-    if (opts.onlyMine && !me.isManager && me.name !== w && me.name !== rv) continue;
+    if (opts.status && (st || STATUS.NONE) !== opts.status) continue;
+    if (opts.onlyMine && !seeAll && me.name !== w && me.name !== rv) continue;
     if (qy && g(r, '신어 후보').toLowerCase().indexOf(qy) === -1) continue;
-    var obj = {}, fields = full ? Object.keys(idx) : LIST_FIELDS;   // full=시트 실제 컬럼(판별·집필 공용)
+    var obj = {}, fields = full ? Object.keys(idx) : LF;   // full=시트 실제 컬럼(판별·집필 공용)
     for (var h = 0; h < fields.length; h++) obj[fields[h]] = g(r, fields[h]);
     out.push(obj);
   }
@@ -571,8 +646,9 @@ function genReal(token, projectId, cfg) {
   if (!pairs.length) throw new Error('팀을 지정하세요.');
   var p = projById_(projectId); if (!p) throw new Error('프로젝트 없음');
   var sh = projItemSheet_(projectId); if (!sh) throw new Error('시트 없음');
-  var idx = ensureCheckCols_(sh), lastCol = sh.getLastColumn(), n = sh.getLastRow() - 1, C = {};
-  HEADERS.forEach(function (h) { C[h] = idx[h]; });
+  var isW = isWriteKind_(p.type);
+  var idx = isW ? ensureCols_(sh, HEADERS_WRITE) : ensureCheckCols_(sh), lastCol = sh.getLastColumn(), n = sh.getLastRow() - 1, C = {};
+  headersFor_(p.type).forEach(function (h) { C[h] = idx[h]; });
   var base = {};
   if (n > 0) { var data = sh.getRange(2, 1, n, lastCol).getValues();
     for (var r = 0; r < data.length; r++) { var b = String(data[r][C['ID']]).trim().split('#')[0]; if (!base[b]) base[b] = data[r].slice(); } }
@@ -586,7 +662,8 @@ function genReal(token, projectId, cfg) {
       for (var bi = 0; bi < take; bi++) { var rr = block[bp + bi];
         rr[C['ID']] = String(rr[C['ID']]).split('#')[0];
         rr[C['작업 구분']] = p.type; rr[C['작업자']] = pairs[pi][0]; rr[C['검수자']] = pairs[pi][1];
-        rr[C['배정 주차']] = String(wk + 1); rr[C['상태']] = STATUS.NONE; }
+        if (isW) { rr[C['형태부 주차']] = String(wk + 1); rr[C['의미부 주차']] = String(wk + 1 + weeks); rr[C['형태부 상태']] = STATUS.NONE; rr[C['의미부 상태']] = STATUS.NONE; }
+        else { rr[C['배정 주차']] = String(wk + 1); rr[C['상태']] = STATUS.NONE; } }
       bp += take; }
   }
   if (sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, lastCol).clearContent();
@@ -657,53 +734,104 @@ function saveSecond(token, payload) {
     return { ok: true };
   } finally { lock.releaseLock(); }
 }
-// 집필 저장: payload={row_id, stage(1|2), fields:{컬럼:값}, op_id}. 검토자(2차)는 전 필드 수정 가능.
+// ── 집필 저장 점검(프론트와 동일 규칙, 전부 오류=저장 차단). 어깨 번호 동형어 점검은 목록이 필요해 프론트에서만 수행. ──
+var W_FIELD_67 = ['교육','문학','민속','언어','역사','철학','인문 일반','경영','경제','군사','매체','법률','복지','심리','정치','행정','사회 일반','동물','물리','생명','수학','식물','지구','지리','천문','천연자원','해양','화학','환경','자연 일반','공업','광업','농업','서비스업','수산업','임업','산업 일반','수의','식품','약학','의학','한의','보건 일반','건설','교통','기계','재료','전기ㆍ전자','정보ㆍ통신','공학 일반','체육','연기','영상','무용','음악','미술','복식','공예','예체능 일반','가톨릭','기독교','불교','종교 일반','인명','지명','책명','고유명 일반'];
+var W_FIELD_15 = ['인간','삶','식생활','의생활','주생활','사회생활','경제생활','교육','종교','문화','정치와 행정','자연','동식물','개념','보건ㆍ의학'];
+var W_POS = ['명사','대명사','수사','동사','형용사','관형사','부사','감탄사','의존 명사','보조 동사','보조 형용사','관ㆍ명','수ㆍ관','명ㆍ부','감ㆍ명','대ㆍ부','대ㆍ감','동ㆍ형','관ㆍ감','부ㆍ감','수ㆍ관ㆍ명','대ㆍ관'];
+var W_LANG = ['고','한','그','네','노','독','라','러','루','말','몽','베','불','산','세','와','스','아','영','에','이','인','일','중','체','타','터','페','포','폴','프','헝','히','힌'];
+var HATE_NOTE = '차별 및 비하하는 의미가 포함되어 있으므로 사용에 주의가 필요하다.';
+var W_TPL = { '원어': '()', '어원': '【】', '용례': '¶', '참고 용례': '¶' };
+function wBlank_(f, v) { v = String(v == null ? '' : v).trim(); return !v || v === (W_TPL[f] || ' '); }
+function validateWrite_(part, v, hateY) {
+  var E = []; function has(s, ch) { return String(s || '').indexOf(ch) >= 0; } function S(k) { return String(v[k] == null ? '' : v[k]).trim(); }
+  if (part === '형태부') {
+    var wg = S('단어/구'), wf = S('조어법'), pos = S('품사'), reg = S('일상어/전문어'), fld = S('전문 분야'), head = S('등재표제어'), native = S('고유어') === 'Y';
+    var orig = wBlank_('원어', v['원어']) ? '' : S('원어'), et = S('어종 표시'), ety = wBlank_('어원', v['어원']) ? '' : S('어원'), sem = S('의미 영역');
+    if (!wg) E.push('단어/구를 선택하세요.'); if (wg === '단어' && !wf) E.push('조어법을 선택하세요.'); if (!reg) E.push('일상어/전문어를 선택하세요.'); if (!head) E.push('등재표제어를 입력하세요.');
+    if (head) {
+      if (/[^가-힣ㄱ-ㅎㅏ-ㅣ\-\^ㆍ\s0-9]/.test(head)) E.push('등재표제어: 한글, -, ^, ㆍ(가운뎃점), 공백, 번호 외 문자가 있습니다(로마자 금지).');
+      if (has(head, '^') && /\s/.test(head)) E.push('등재표제어: ^과 공백은 함께 쓸 수 없습니다.');
+      if (wg === '단어' && (/\s/.test(head) || has(head, '^'))) E.push('등재표제어: 단어인데 공백/^이 있습니다.');
+      if (wg === '구' && has(head, '-')) E.push('등재표제어: 구인데 -이 있습니다(-는 단어 내부 분석에만).');
+      if ((head.match(/-/g) || []).length >= 2) E.push('등재표제어: -는 한 표제어에 하나만 허용됩니다.');
+      if ((wf === '혼성' || wf === '축약') && has(head, '-')) E.push('등재표제어: 조어법이 ' + wf + '이면 붙임표를 쓰지 않습니다.');
+    }
+    if (wg === '구' && reg === '일상어') { if (head && !/\s/.test(head)) E.push('일반어 구: 등재표제어에 공백이 있어야 합니다.'); if (pos !== '「구」') E.push('일반어 구: 품사는 「구」여야 합니다.'); if (fld) E.push('일반어 구: 전문 분야를 줄 수 없습니다(「구」와 『』 동시 불가).'); }
+    if (wg === '구' && reg === '전문어') { if (head && !has(head, '^')) E.push('전문어 구: 등재표제어에 ^이 있어야 합니다.'); if (pos) E.push('전문어 구: 품사를 표시하지 않습니다.'); if (!fld) E.push('전문어 구: 전문 분야가 필요합니다.'); }
+    if (wg === '단어') { if (!pos || pos === '「구」') E.push('단어: 품사(9품사)를 입력하세요.'); if (reg === '전문어' && !fld) E.push('전문어: 전문 분야가 필요합니다.'); if (reg === '일상어' && fld) E.push('일상어: 전문 분야를 줄 수 없습니다.'); }
+    if (pos && pos !== '「구」') { var pm = pos.match(/^「(.+)」$/); if (!pm || W_POS.indexOf(pm[1]) < 0) E.push('품사: 「」 안에 허용 품사만 쓸 수 있습니다.'); }
+    if (fld) { var fm = fld.match(/^『(.+)』$/); if (!fm || W_FIELD_67.indexOf(fm[1]) < 0) E.push('전문 분야: 『』 안에 67 중분류만 쓸 수 있습니다.'); }
+    if (sem) { var sm = sem.match(/^〔(.+)〕$/); if (!sm || W_FIELD_15.indexOf(sm[1]) < 0) E.push('의미 영역: 〔〕 안에 15 범주만 쓸 수 있습니다.'); }
+    if (wf === '차용') { if (has(orig, '▼')) E.push('차용: 원어에 ▼(한국식 조어)를 쓸 수 없습니다.'); if (!ety) E.push('차용: 어원란에 내부 결합 관계를 밝혀야 합니다.'); }
+    if (orig && !/^\(.+\)$/.test(orig)) E.push('원어: ( ) 안에 씁니다.');
+    if (orig && /[^가-힣ㄱ-ㅎㅏ-ㅣ一-鿿㐀-䶿A-Za-z←▼▽<>\[\]()\/\s0-9]/.test(orig)) E.push('원어: 한글·한자·로마자·←▼▽·<언어명>·[ ] 외 문자가 있습니다(^·-·+ 금지).');
+    if (native) { if (orig) E.push('고유어: 원어를 비워야 합니다.'); if (ety) E.push('고유어: 어원을 비워야 합니다.'); if (et && /[^고+_^()\s]/.test(et)) E.push('고유어: 어종에 고 외 토큰이 있습니다.'); }
+    else if (!orig) E.push('원어를 입력하세요(고유어면 고유어 체크).');
+    if (et) {
+      et.replace(/[+_^()\s]/g, '|').split('|').filter(function (x) { return x; }).forEach(function (t) { if (W_LANG.indexOf(t) < 0) E.push('어종 표시: 허용되지 않는 토큰 "' + t + '"'); });
+      var seqH = (head || '').replace(/\d+$/, '').replace(/[^-\s^]/g, '').replace(/-/g, '+').replace(/\s/g, '_'), seqE = et.replace(/[^+_^]/g, '');
+      if (head && seqH !== seqE) E.push('어종 표시: 기호 열(' + (seqE || '없음') + ')이 등재표제어의 분절(' + (seqH || '없음') + ')과 다릅니다.');
+      (et.match(/\([^()]*\)/g) || []).forEach(function (g) { var tt = g.replace(/[()+_^\s]/g, '|').split('|').filter(function (x) { return x; }); if (tt.length && tt.every(function (x) { return x === tt[0]; })) E.push('어종 표시: 같은 어종끼리는 괄호로 묶지 않습니다 ' + g); });
+    } else if (head) E.push('어종 표시를 입력하세요.');
+  } else {
+    var def = S('뜻풀이'), ex = wBlank_('용례', v['용례']) ? '' : S('용례'), xy = S('X년 Y월 신어');
+    if (!def) E.push('뜻풀이를 입력하세요.');
+    if (xy && !/^【\d{4}년 \d{1,2}월 신어】$/.test(xy)) E.push('X년 Y월 신어: 【OOOO년 OO월 신어】 형식이어야 합니다.');
+    function romanOut(t) { return /[A-Za-z]/.test(String(t || '').replace(/\([^)]*\)/g, '')); }
+    if (romanOut(def)) E.push('뜻풀이: 괄호 밖에 로마자가 단독으로 드러날 수 없습니다.');
+    if (romanOut(ex)) E.push('용례: 괄호 밖에 로마자가 단독으로 드러날 수 없습니다.');
+    if (hateY && def.indexOf(HATE_NOTE) < 0) E.push('혐오 표현 항목: 뜻풀이 끝에 주의 문구가 있어야 합니다.');
+  }
+  return E;
+}
+// 집필 저장: payload={row_id, phase('형태부'|'의미부'), stage(1|2), fields:{형태부:{…}, 의미부:{…}}, op_id}
+//  - 프로젝트 단계와 payload.phase 일치 필수. 형태부 단계에서는 형태부만, 의미부 단계에서는 형태부+의미부를 한 번에 저장.
+//  - 각 부의 값은 '{stage}차 {필드}' 컬럼에 기록. 상태·일시는 현재 단계의 부만 갱신.
 function saveWrite(token, payload) {
   var me = me_(token);
   var lock = LockService.getDocumentLock(); lock.waitLock(20000);
   try {
     if (opSeen_(payload.op_id)) return { ok: true, dup: true };
-    var sh = projSheetOfRow_(payload.row_id); if (!sh) throw new Error('프로젝트 없음');
-    var idx = headerIndex_(sh), rownum = findRow_(sh, idx, payload.row_id);
+    var pid = String(payload.row_id || '').split('::')[0], p = projById_(pid);
+    if (!p || !isWriteKind_(p.type)) throw new Error('집필 프로젝트가 아닙니다.');
+    var phase = String(payload.phase || '').trim();
+    if (phase !== p.phase) throw new Error('프로젝트 단계가 ' + p.phase + '(으)로 바뀌었습니다. 화면을 새로고침하세요.');
+    var parts = phase === '형태부' ? ['형태부'] : WRITE_PARTS;
+    var sh = projItemSheet_(pid); if (!sh) throw new Error('프로젝트 없음');
+    var idx = ensureCols_(sh, HEADERS_WRITE), rownum = findRow_(sh, idx, payload.row_id);
     if (rownum < 0) throw new Error('행 없음: ' + payload.row_id);
     var stage = (parseInt(payload.stage, 10) === 2) ? 2 : 1;
-    assertCanEditStage_(me, sh.getRange(rownum, idx['작업자'] + 1).getValue(), sh.getRange(rownum, idx['검수자'] + 1).getValue(), stage);
-    var cand = String(sh.getRange(rownum, idx['신어 후보'] + 1).getValue());
-    var prev = String(sh.getRange(rownum, idx['상태'] + 1).getValue()).trim();
-    var fields = payload.fields || {};
-    for (var k = 0; k < WRITE_FIELDS.length; k++) { var f = WRITE_FIELDS[k]; if (f in idx && f in fields) setCell_(sh, rownum, idx, f, fields[f] == null ? '' : fields[f]); }
-    var def = fields['뜻풀이'] == null ? '' : fields['뜻풀이'], ns;
-    if (stage === 1) {
-      if ('1차 뜻풀이' in idx) setCell_(sh, rownum, idx, '1차 뜻풀이', def);
-      if ('1차 일시' in idx) setCell_(sh, rownum, idx, '1차 일시', now_());
-      ns = ('2차 뜻풀이' in idx && String(sh.getRange(rownum, idx['2차 뜻풀이'] + 1).getValue()).trim()) ? STATUS.SECOND : STATUS.FIRST;
-    } else {
-      if ('2차 뜻풀이' in idx) setCell_(sh, rownum, idx, '2차 뜻풀이', def);
-      if ('2차 일시' in idx) setCell_(sh, rownum, idx, '2차 일시', now_());
-      ns = STATUS.SECOND;
-    }
-    if ('상태' in idx) setCell_(sh, rownum, idx, '상태', ns);
-    appendLog_(me, payload.row_id, cand, stage === 1 ? '집필1차' : '집필2차', String(def).slice(0, 40), '', prev, ns);
+    var row = sh.getRange(rownum, 1, 1, sh.getLastColumn()).getValues()[0];
+    function cur(k) { return idx[k] != null ? String(row[idx[k]] == null ? '' : row[idx[k]]).trim() : ''; }
+    if (!canEditWrite_(me, p.type, cur('작업자'), cur('검수자'), stage)) throw new Error('권한 없음: 배정된 담당자만 입력할 수 있습니다.');
+    var fields = payload.fields || {}, errs = [];
+    parts.forEach(function (pt) { validateWrite_(pt, fields[pt] || {}, cur('2차 혐오 표현 여부') === 'Y').forEach(function (e) { errs.push((parts.length > 1 ? pt + ' · ' : '') + e); }); });
+    if (errs.length) throw new Error('점검 오류 ' + errs.length + '건: ' + errs.join(' / '));
+    parts.forEach(function (pt) {
+      var cols = writeStageCols_(pt, stage), fv = fields[pt] || {};
+      cols.forEach(function (c) { var f = c.slice(3); if (f in fv) setCell_(sh, rownum, idx, c, fv[f] == null ? '' : fv[f]); });
+    });
+    var stKey = phase + ' 상태', prev = cur(stKey) || STATUS.NONE, ns;
+    if (stage === 1) ns = (prev === STATUS.SECOND) ? STATUS.SECOND : STATUS.FIRST; else ns = STATUS.SECOND;
+    setCell_(sh, rownum, idx, stKey, ns); setCell_(sh, rownum, idx, phase + ' ' + stage + '차 일시', now_());
+    var summ = phase === '형태부' ? String((fields['형태부'] || {})['등재표제어'] || '') : String((fields['의미부'] || {})['뜻풀이'] || '');
+    appendLog_(me, payload.row_id, cur('신어 후보'), '집필 ' + phase + ' ' + stage + '차', summ.slice(0, 40), '', prev, ns);
     SpreadsheetApp.flush(); opMark_(payload.op_id);
     return { ok: true };
   } finally { lock.releaseLock(); }
 }
-// 집필 새 항목 추가
+// 집필 새 항목 추가(표제어만). 작업자=본인(관리자는 비움)
 function addWriteItem(token, projectId, cand) {
   var me = me_(token);
-  cand = String(cand || '').trim(); if (!cand) throw new Error('신어 후보를 입력하세요.');
-  var p = projById_(projectId); if (!p || p.type !== '집필') throw new Error('집필 프로젝트가 아닙니다.');
+  cand = String(cand || '').trim(); if (!cand) throw new Error('색인표제어를 입력해 주세요.');
+  var p = projById_(projectId); if (!p || !isWriteKind_(p.type)) throw new Error('집필 프로젝트가 아닙니다.');
   var sh = projItemSheet_(projectId); if (!sh) throw new Error('시트 없음');
-  var rid = projectId + '::new-' + Date.now().toString(36);
-  var row = HEADERS_WRITE.map(function (k) {
-    if (k === 'ID') return rid;
-    if (k === '신어 후보') return cand;
-    if (k === '작업 구분') return '집필';
-    if (k === '상태') return STATUS.NONE;
-    if (k === '작업자') return me.isManager ? '' : me.name;
-    return '';
-  });
-  sh.appendRow(row); styleHeader_(sh, HEADERS_WRITE.length); SpreadsheetApp.flush();
+  var idx = ensureCols_(sh, HEADERS_WRITE), rid = projectId + '::new-' + Date.now().toString(36), row = [];
+  for (var k in idx) row[idx[k]] = '';
+  row[idx['ID']] = rid; row[idx['신어 후보']] = cand; row[idx['작업 구분']] = p.type;
+  row[idx['형태부 상태']] = STATUS.NONE; row[idx['의미부 상태']] = STATUS.NONE;
+  row[idx['작업자']] = me.isManager ? '' : me.name;
+  sh.appendRow(row); SpreadsheetApp.flush();
   return { id: rid, cand: cand };
 }
 // 집필 새 항목 삭제 — 새로 추가한 항목(::new-)만 허용, 배분된 항목은 불가

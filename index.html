@@ -90,6 +90,7 @@
     .item.sel { border-color:var(--brand); background:#eef1ff; box-shadow:0 0 0 2px rgba(63,81,181,.12); }
     .item .cand { font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:space-between; gap:10px; } .item .cand .nm { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .item .meta { color:var(--muted); font-size:12px; margin-top:2px; }
     .pill { font-size:11px; padding:1px 8px; border-radius:10px; font-weight:600; white-space:nowrap; flex:none; }
+    .pills2 { display:flex; flex-direction:column; gap:3px; align-items:flex-end; flex:none; }
     .pill.미작업 { background:#eef0f3; color:#6b7280; }
     .pill.s1 { background:#e7ebff; color:#3f51b5; } .pill.s2 { background:var(--sineo-bg); color:var(--sineo); } .pill.sr { background:var(--hold-bg); color:var(--hold); }
     /* 판별 결과 색상: 신어(초록)·비신어(빨강)·판단 보류(주황)·불일치(보라) */
@@ -228,7 +229,8 @@
     .gsi svg { width:20px; height:20px; display:block; }
     .login-current { margin-top:10px; color:var(--muted); font-size:13px; } .login-current b { color:var(--ink); }
     .login-warn { color:var(--bisineo); background:var(--bisineo-bg); border-radius:10px; padding:10px 14px; margin:14px auto 0; max-width:460px; }
-    .modes { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-top:30px; }
+    .modes { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:16px; margin-top:30px; }
+    @media(max-width:900px){ .modes { grid-template-columns:1fr 1fr; } }
     .mode-card { background:var(--surface); border:1.5px solid var(--line); border-radius:16px; padding:28px 16px; cursor:pointer; transition:.12s; }
     .mode-card.active:hover { border-color:var(--brand); transform:translateY(-2px); box-shadow:0 8px 22px rgba(63,81,181,.16); }
     .mode-card.disabled { opacity:.55; cursor:not-allowed; }
@@ -382,6 +384,9 @@
           </div>
           <div class="mode-card active" onclick="enterMode('write')">
             <div class="mc-ico">✍️</div><div class="mc-t">신어 집필 작업</div>
+          </div>
+          <div class="mode-card active" onclick="enterMode('write_test')">
+            <div class="mc-ico">✍️</div><div class="mc-t">신어 집필 작업(테스트)</div>
           </div>
         </div>
         <div class="card" style="margin:26px 0 0;text-align:left" id="presence-card">
@@ -583,7 +588,9 @@
     function _diagToast(m){ var t=$('toast'); if(!t) return; t.textContent=m; t.style.display='block'; clearTimeout(t._t); t._t=setTimeout(function(){t.style.display='none';},6000); }
     window.addEventListener('error', function(ev){ try{ _diagToast('JS오류: '+(ev.message||'')+' @'+((ev.filename||'').split('/').pop())+':'+ev.lineno); }catch(e){} });
     window.addEventListener('unhandledrejection', function(ev){ try{ _diagToast('비동기오류: '+((ev.reason&&ev.reason.message)||ev.reason||'')); }catch(e){} });
-    function modeKind(){ return MODE==='agree' ? '일치도' : MODE==='write' ? '집필' : '실제'; }
+    function isWrite(){ return MODE==='write' || MODE==='write_test'; }
+    var WRITE_TEST_BOTH=['관리자','안진산','이수진','백미경'];   // 집필 테스트: 작업자·검수자 양쪽 편집
+    function modeKind(){ return MODE==='agree' ? '일치도' : MODE==='write' ? '집필' : MODE==='write_test' ? '집필 테스트' : '실제'; }
     function srcLabel(s){ return s==='NN'?'〈네이버 뉴스 말뭉치〉':s==='YT'?'〈유튜브 말뭉치〉':s==='공통'?'〈네이버 뉴스 말뭉치〉·〈유튜브 말뭉치〉':esc(s); }
     function ym(v){ v=String(v||''); return v.length>=6 ? v.slice(0,4)+'.'+v.slice(4,6) : esc(v); }
     function ymd(v){ function p(n){return n<10?'0'+n:n;} var s=String(v||''); var m=s.match(/(\d{4})-(\d{2})-(\d{2})/); if(m) return m[1]+'.'+m[2]+'.'+m[3]+'.'; var d=new Date(s); return isNaN(d.getTime())?esc(s):d.getFullYear()+'.'+p(d.getMonth()+1)+'.'+p(d.getDate())+'.'; }
@@ -633,20 +640,20 @@
       $('view-projects').classList.toggle('hidden', v!=='projects');
       $('view-home').classList.toggle('hidden', v!=='home');
       $('view-work').classList.toggle('hidden', v!=='mine' && v!=='all');
-      $('btn-add-item').style.display=((v==='mine'||v==='all') && MODE==='write')?'block':'none';
+      $('btn-add-item').style.display=((v==='mine'||v==='all') && isWrite())?'block':'none';
       $('view-researchers').classList.toggle('hidden', v!=='researchers');
       if(v==='projects') renderProjects();
       else if(v==='home'){ loadProgress(); loadAssign(); }
-      else if(v==='mine' || v==='all'){ var ps=_pendingStatus; _pendingStatus=''; $('f-status').value=ps; $('f-q').value=''; $('f-v1').value=''; $('f-v2').value=''; $('f-proper').innerHTML=chkOptions('고유명 여부'); $('f-hate').innerHTML=chkOptions('혐오 표현 여부'); $('f-proper').value=''; $('f-hate').value=''; $('f-proper').style.display=(MODE!=='write')?'':'none'; $('f-hate').style.display=(MODE!=='write')?'':'none'; $('f-v1').style.display=(MODE!=='write')?'':'none'; $('f-v2').style.display=(MODE==='real')?'':'none'; document.querySelectorAll('.opt-incomplete').forEach(function(o){o.hidden=!(MODE==='real'&&ME.isManager);}); var _wl=window.__weekList||[]; $('f-week').innerHTML='<option value="">전체 주차</option>'+_wl.map(function(w){return '<option value="'+esc(w)+'">'+esc(w)+'주차</option>';}).join(''); $('f-week').style.display=(MODE==='real')?'':'none'; populateAssignees(v); loadItems(); }
+      else if(v==='mine' || v==='all'){ var ps=_pendingStatus; _pendingStatus=''; $('f-status').value=ps; $('f-q').value=''; $('f-v1').value=''; $('f-v2').value=''; $('f-proper').innerHTML=chkOptions('고유명 여부'); $('f-hate').innerHTML=chkOptions('혐오 표현 여부'); $('f-proper').value=''; $('f-hate').value=''; $('f-proper').style.display=(!isWrite())?'':'none'; $('f-hate').style.display=(!isWrite())?'':'none'; $('f-v1').style.display=(!isWrite())?'':'none'; $('f-v2').style.display=(MODE==='real')?'':'none'; document.querySelectorAll('.opt-incomplete').forEach(function(o){o.hidden=!(MODE==='real'&&ME.isManager);}); var _wl=window.__weekList||[]; $('f-week').innerHTML='<option value="">전체 주차</option>'+_wl.map(function(w){return '<option value="'+esc(w)+'">'+esc(w)+'주차</option>';}).join(''); $('f-week').style.display=(MODE==='real')?'':'none'; populateAssignees(v); loadItems(); }
       else if(v==='researchers') loadResearchers();
     }
     var CURRENT_PROJECT = null, PROJ_LIST = [];
-    function modeName(){ return MODE==='agree' ? '🤝 연구자 일치도 작업' : MODE==='write' ? '✍️ 신어 집필 작업' : '🧭 신어 판별 작업'; }
+    function modeName(){ return MODE==='agree' ? '🤝 연구자 일치도 작업' : MODE==='write' ? '✍️ 신어 집필 작업' : MODE==='write_test' ? '✍️ 신어 집필 작업(테스트)' : '🧭 신어 판별 작업'; }
     function enterMode(mode){ MODE=mode; CURRENT_PROJECT=null; showView('projects'); }
 
     /* 프로젝트 목록 / 새 프로젝트(CSV 업로드) */
     function renderProjects(){
-      $('proj-title').textContent = (MODE==='agree'?'연구자 일치도 작업':MODE==='write'?'신어 집필 작업':'신어 판별 작업');
+      $('proj-title').textContent = (MODE==='agree'?'연구자 일치도 작업':MODE==='write'?'신어 집필 작업':MODE==='write_test'?'신어 집필 작업(테스트)':'신어 판별 작업');
       $('proj-new-btn').style.display = ME.isManager ? '' : 'none';
       $('proj-list').innerHTML='<span class="kbd">불러오는 중…</span>';
       google.script.run.withSuccessHandler(function(list){ PROJ_LIST=list||[];
@@ -801,7 +808,7 @@
       var q=new URLSearchParams(location.search), as=q.get('as')||'';
       apiCall_=function(){ return Promise.reject(new Error('데모 모드: 서버 호출 없음')); };
       ME = as==='작업자' ? {name:'이준',role:'작업자',isManager:false} : as==='검수자' ? {name:'송현주',role:'검수자',isManager:false} : {name:'관리자',role:'관리자',isManager:true};
-      MODE='write'; CURRENT_PROJECT={id:'demo',name:'데모 프로젝트',type:'집필',phase:q.get('phase')||'형태부'};
+      MODE=q.get('mode')==='write_test'?'write_test':'write'; CURRENT_PROJECT={id:'demo',name:'데모 프로젝트',type:'집필',phase:q.get('phase')||'형태부'};
       var base={ '__full':true, '작업자':'이준','검수자':'송현주','형태부 주차':'1','의미부 주차':'4','출처':'NN','작업 구분':'집필','2차 판별':'신어' };
       function mk(o){ var it={}; for(var k in base) it[k]=base[k]; for(var k2 in o) it[k2]=o[k2]; return it; }
       ITEMS=[
@@ -891,7 +898,7 @@
     }
     function renderPhaseCtl(){   // 집필 프로젝트 단계(형태부/의미부) 전환 — 관리자 전용
       var card=$('phase-card'); if(!card) return;
-      if(MODE!=='write' || !ME.isManager || !CURRENT_PROJECT){ card.style.display='none'; return; }
+      if(!isWrite() || !ME.isManager || !CURRENT_PROJECT){ card.style.display='none'; return; }
       var ph=projPhase(), nxt=(ph==='형태부')?'의미부':'형태부';
       card.style.display='';
       $('phase-body').innerHTML='<div class="stat-line"><span class="lbl">현재 단계</span><span class="val">'+esc(ph)+'</span></div>'
@@ -907,7 +914,7 @@
     }
     function loadProgress(){
       renderPhaseCtl();
-      $('home-title').textContent = (MODE==='agree'?'연구자 일치도':MODE==='write'?'신어 집필':'신어 판별')+' — 전체 진행률';
+      $('home-title').textContent = (MODE==='agree'?'연구자 일치도':isWrite()?'신어 집필':'신어 판별')+' — 전체 진행률';
       $('overall').innerHTML='<span class="kbd">불러오는 중…</span>'; $('second-body').innerHTML='';
       google.script.run.withSuccessHandler(function(p){
         var o=p.overall;
@@ -925,6 +932,12 @@
           var d2=(o.done2!=null)?o.done2:(o['2차완료']||0);
           var t=o.total||0;
           function pct(x){ return t?Math.round(x/t*100):0; }
+          if(isWrite() && o.parts){   // 집필: 형태부/의미부 각각 1차·2차
+            $('overall').innerHTML = ['형태부','의미부'].map(function(pt){ var q=o.parts[pt]||{done1:0,done2:0};
+              return '<div style="margin-top:'+(pt==='형태부'?0:16)+'px"><div class="kbd" style="font-size:14px;font-weight:700;color:var(--brand-d)">'+pt+(p.phase===pt?' (현재 단계)':'')+'</div>'
+                + '<div class="big-num">'+q.done1.toLocaleString()+' <small>/ '+t.toLocaleString()+' 1차 작업 완료 ('+pct(q.done1)+'%)</small></div>'+progBar({total:t,'1차완료':q.done1})
+                + '<div class="big-num" style="margin-top:8px">'+q.done2.toLocaleString()+' <small>/ '+t.toLocaleString()+' 2차 검수 완료 ('+pct(q.done2)+'%)</small></div>'+progBar({total:t,'2차완료':q.done2})+'</div>'; }).join('');
+          } else
           $('overall').innerHTML =
             '<div class="big-num">'+d1.toLocaleString()+' <small>/ '+t.toLocaleString()+' 1차 작업 완료 ('+pct(d1)+'%)</small></div>'
             + progBar({total:t,'1차완료':d1})
@@ -1058,7 +1071,13 @@
         var v1=String(it['1차 판별']||'').trim(), v2=String(it['2차 판별']||'').trim();
         function vp(v){ return v==='신어'?'v-sin':v==='비신어'?'v-bi':'v-hold'; }   // 판별값 → pill 색상
         var label, pcls;
-        if(MODE==='write'){ var ph=projPhase(), pst=String(it[ph+' 상태']||it['상태']||'미작업'); label = ph+' '+statusLabel(pst); pcls = pillClass(pst); }
+        if(isWrite()){   // 형태부/의미부 상태를 두 줄 배지로
+          var st1=String(it['형태부 상태']||'미작업'), st2=String(it['의미부 상태']||'미작업');
+          rows.push('<div class="item'+(i===CUR?' sel':'')+'" data-i="'+i+'" onclick="selectItem('+i+')"><div class="cand"><span class="nm">'+esc(it['신어 후보'])+'</span>'
+            +'<span class="pills2"><span class="pill '+pillClass(st1)+'">형태부 '+esc(statusLabel(st1))+'</span><span class="pill '+pillClass(st2)+'">의미부 '+esc(statusLabel(st2))+'</span></span></div>'
+            +'<div class="meta">'+fmtName(it['작업자'])+' - '+fmtName(it['검수자'])+'</div></div>');
+          continue;
+        }
         else if(MODE==='agree'){ label = v1 || '미작업'; pcls = v1?vp(v1):'미작업'; }
         else if(v1 && v2){ label = v1+' · '+v2+' · '+(v1===v2?'일치':'불일치'); pcls = (v1===v2)?vp(v1):'v-diff'; }
         else if(v1){ label = v1; pcls = vp(v1); }
@@ -1143,7 +1162,7 @@
     }
     function renderDetail(){
       var it=ITEMS[CUR];
-      if(MODE==='write'){ renderWriteDetail(it); return; }
+      if(isWrite()){ renderWriteDetail(it); return; }
       SEL={'1차':it['1차 판별']||'','2차':it['2차 판별']||''};
       CHK = { '1차': { proper: String(it['1차 고유명 여부']||'').trim(), hate: String(it['1차 혐오 표현 여부']||'').trim() },
               '2차': { proper: String(it['2차 고유명 여부']||'').trim(), hate: String(it['2차 혐오 표현 여부']||'').trim() } };
@@ -1232,9 +1251,9 @@
     function mark2(el){ el.classList.toggle('changed', String(el.value)!==String(el.getAttribute('data-orig')||'')); }
     // 자동완성: 전문 분야(『』, 67 중분류)·의미 영역(〔〕, 15 범주). 입력 → 목록 → ↑↓ → Enter
     var AC_DEF={ jm:{list:FIELD_67, l:'『', r:'』'}, um:{list:FIELD_15, l:'〔', r:'〕'}, pos:{list:POS_REST, l:'「', r:'」'} };
-    function acPlain(v){ return String(v||'').replace(/[『』〔〕「」\s]/g,''); }
+    function acPlain(v){ return String(v||'').replace(/[^가-힣ㄱ-ㅎㅏ-ㅣA-Za-z0-9]/g,''); }
     function acOpen(inp){ if(inp.disabled) return; var d=AC_DEF[inp.getAttribute('data-ac')], box=inp.nextElementSibling, q=acPlain(inp.value);
-      var items=d.list.filter(function(x){ return !q || x.replace(/\s/g,'').indexOf(q)>=0; });
+      var items=d.list.filter(function(x){ return !q || acPlain(x).indexOf(q)>=0; });
       if(!items.length){ box.style.display='none'; return; }
       box.innerHTML=items.map(function(x,i){ return '<div class="ac-item'+(i===0?' on':'')+'" data-v="'+ea(x)+'" onmousedown="acPick(this)">'+esc(d.l+x+d.r)+'</div>'; }).join(''); box.style.display='';
     }
@@ -1271,6 +1290,7 @@
       else { inp.value=btn.getAttribute('data-val'); if(fr) fr.parentNode.style.display='none'; }
       seg.querySelectorAll('.seg-btn').forEach(function(b){ b.classList.toggle('on', b===btn); }); onWriteInput(inp); }
     function segFree(fr){ var seg=fr.closest('.seg'), inp=seg.querySelector('.seg-val'); inp.value=fr.value.trim(); onWriteInput(inp); }
+    function segFreeBlur(fr){ setTimeout(function(){ if(fr.value.trim()) return; var seg=fr.closest('.seg'); if(!seg) return; fr.parentNode.style.display='none'; var fb=seg.querySelector('.seg-btn[data-free]'); if(fb) fb.classList.remove('on'); }, 200); }
     function segSync(inp){   // 값이 코드로 바뀌었을 때(자동 품사 등) 버튼 상태 맞춤
       var seg=inp.closest('.seg'); if(!seg) return; var v=inp.value, hit=false;
       seg.querySelectorAll('.seg-btn[data-val]').forEach(function(b){ var on=(b.getAttribute('data-val')===v); b.classList.toggle('on',on); if(on) hit=true; });
@@ -1369,8 +1389,9 @@
       return E;
     }
     function renderWriteDetail(it){
-      var isW=(ME.isManager||ME.name===String(it['작업자']||'').trim());
-      var isR=(ME.isManager||ME.name===String(it['검수자']||'').trim());
+      var both=ME.isManager || (MODE==='write_test' && WRITE_TEST_BOTH.indexOf(ME.name)>=0);
+      var isW=(both||ME.name===String(it['작업자']||'').trim());
+      var isR=(both||ME.name===String(it['검수자']||'').trim());
       var phase=projPhase();
       var newItem=String(it['ID']||'').indexOf('::new-')>=0;
       var h='<div class="cand-label">신어 집필</div><div class="cand-term">'+esc(it['신어 후보'])+'</div>'
@@ -1447,7 +1468,7 @@
       function seg(f,opts,free){ var v=pv(f), c=cls(f), custom=free && v && opts.indexOf(v)<0;
         return '<div class="seg'+(c.indexOf(' changed')>=0?' changed':'')+(c.indexOf(' rev-diff')>=0?' rev-diff':'')+'"><input type="hidden" class="'+c+' seg-val"'+attrs(f)+' value="'+ea(v)+'">'
           + opts.map(function(x){ return '<button type="button" class="seg-btn'+(x===v?' on':'')+'" data-val="'+ea(x)+'" onclick="segPick(this)">'+esc(x)+'</button>'; }).join('')
-          + (free ? '<button type="button" class="seg-btn'+(custom?' on':'')+'" data-free="1" onclick="segPick(this)">직접 입력</button><span class="ac seg-free-wrap" style="'+(custom?'':'display:none')+'"><input class="w-field seg-free-inp ac-inp" data-ac="'+(free===true?'pos':free)+'" value="'+ea(custom?v:'')+'" autocomplete="off" oninput="segFree(this)" onkeydown="acKey(event,this)" onfocus="acOpen(this)" onblur="acBlur(this)"><div class="ac-list" style="display:none"></div></span>' : '')
+          + (free ? '<button type="button" class="seg-btn'+(custom?' on':'')+'" data-free="1" onclick="segPick(this)">직접 입력</button><span class="ac seg-free-wrap" style="'+(custom?'':'display:none')+'"><input class="w-field seg-free-inp ac-inp" data-ac="'+(free===true?'pos':free)+'" value="'+ea(custom?v:'')+'" autocomplete="off" oninput="segFree(this)" onkeydown="acKey(event,this)" onfocus="acOpen(this)" onblur="acBlur(this);segFreeBlur(this)"><div class="ac-list" style="display:none"></div></span>' : '')
           + '</div>'+revNote(f)[1]; }
       function fld(step,label,ctrl,hint,f,half){ var block=(f==='뜻풀이'||f==='용례');
         var hk=f||label, help=FIELD_HELP[hk] ? '<span class="help-wrap"><span class="help" onclick="toggleHelp(this,event)">?</span><div class="help-pop" style="display:none" onclick="event.stopPropagation()">'+esc(FIELD_HELP[hk])+'</div></span>' : '';
@@ -1754,7 +1775,7 @@
       var pairs=[].slice.call(document.querySelectorAll('#team-body tr')).map(function(tr){ return [tr.querySelector('.t-w').value, tr.querySelector('.t-r').value]; }).filter(function(p){ return p[0]&&p[1]; });
       if(!pairs.length){ toast('팀을 하나 이상 지정하세요.'); return; }
       var weeks=parseInt($('asg-weeks').value,10)||4, perWeek=parseInt($('asg-perweek').value,10)||0;
-      if(!confirm('["'+CURRENT_PROJECT.name+'"] '+pairs.length+'개 팀 · '+weeks+'주로 균등 배분할까요?\n기존 '+(MODE==='write'?'신어 집필':'신어 판별')+' 데이터는 사라집니다.')) return;
+      if(!confirm('["'+CURRENT_PROJECT.name+'"] '+pairs.length+'개 팀 · '+weeks+'주로 균등 배분할까요?\n기존 '+(isWrite()?'신어 집필':'신어 판별')+' 데이터는 사라집니다.')) return;
       $('real-msg').textContent='배분 중…';
       google.script.run.withSuccessHandler(function(res){ $('real-msg').textContent='완료: '+((res&&res.rows)||0).toLocaleString()+'행 / '+pairs.length+'팀 · '+weeks+'주'; loadProgress(); })
         .withFailureHandler(function(e){ $('real-msg').textContent='실패: '+e.message; }).genReal(TOKEN, pid, { pairs:pairs, weeks:weeks, perWeek:perWeek });
