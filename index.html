@@ -69,8 +69,9 @@
     .stat-line { display:flex; justify-content:space-between; align-items:center; padding:9px 2px; border-bottom:1px solid var(--line); }
     .stat-line:last-child { border-bottom:none; } .stat-line .lbl { color:var(--muted); } .stat-line .val { font-weight:800; font-size:16px; }
     .stat-line .val.go { color:var(--brand); cursor:pointer; text-decoration:underline; }
-    .work-wrap { display:grid; grid-template-columns:300px minmax(0,1fr) auto; gap:16px; align-items:start; }
-    .list-col { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:12px; max-height:calc(100vh - 100px); overflow:auto; position:sticky; top:72px; }
+    .work-wrap { display:grid; grid-template-columns:250px minmax(0,1fr) auto; gap:14px; align-items:start; }
+    @media(max-width:1500px){ .ref-col { width:380px !important; } body.ref-collapsed .ref-col { width:40px !important; } }
+    .list-col { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:10px; max-height:calc(100vh - 100px); overflow:auto; position:sticky; top:72px; }
     .filters { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:10px; }
     .filters input, .filters select { height:34px; padding:6px 8px; border:1px solid var(--line); border-radius:8px; font-size:13px; line-height:1.2; box-sizing:border-box; vertical-align:middle; width:100%; min-width:0; }
     #f-q, #f-assignee { grid-column:1 / -1; }
@@ -85,12 +86,12 @@
     .chk-btn:hover { border-color:var(--brand); }
     .chk-btn.on { background:var(--brand); color:#fff; border-color:var(--brand); }
     .chk-btn:disabled { cursor:default; opacity:.55; }
-    .item { padding:9px 11px; border:1px solid var(--line); border-radius:10px; margin-bottom:6px; cursor:pointer; }
+    .item { padding:8px 10px; border:1px solid var(--line); border-radius:10px; margin-bottom:6px; cursor:pointer; }
     .item:hover { border-color:#bcc4f0; background:#f7f8ff; }
     .item.sel { border-color:var(--brand); background:#eef1ff; box-shadow:0 0 0 2px rgba(63,81,181,.12); }
-    .item .cand { font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:space-between; gap:10px; } .item .cand .nm { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .item .meta { color:var(--muted); font-size:12px; margin-top:2px; }
+    .item .cand { font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:space-between; gap:8px; } .item .cand .nm { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .item .meta { color:var(--muted); font-size:12px; margin-top:2px; }
     .pill { font-size:11px; padding:1px 8px; border-radius:10px; font-weight:600; white-space:nowrap; flex:none; }
-    .pills2 { display:flex; flex-direction:column; gap:3px; align-items:flex-end; flex:none; }
+    .pills2 { display:flex; flex-direction:column; gap:2px; align-items:flex-end; flex:none; } .pills2 .pill { font-size:10px; padding:1px 6px; }
     .pill.미작업 { background:#eef0f3; color:#6b7280; }
     .pill.s1 { background:#e7ebff; color:#3f51b5; } .pill.s2 { background:var(--sineo-bg); color:var(--sineo); } .pill.sr { background:var(--hold-bg); color:var(--hold); }
     /* 판별 결과 색상: 신어(초록)·비신어(빨강)·판단 보류(주황)·불일치(보라) */
@@ -141,7 +142,7 @@
     .part-sec.locked .write-cols { opacity:.45; pointer-events:none; filter:grayscale(.6); }
     .part-sec .write-cols { margin:4px 0 0; }
     /* 집필 사례: 본문 오른쪽 열. 접으면 세로 띠(버튼)만 남음 */
-    .ref-col { position:sticky; top:72px; height:calc(100vh - 100px); width:440px; display:flex; flex-direction:column; background:var(--surface); border:1px solid var(--line); border-radius:14px; overflow:hidden; transition:width .2s; }
+    .ref-col { position:sticky; top:72px; height:calc(100vh - 100px); width:420px; display:flex; flex-direction:column; background:var(--surface); border:1px solid var(--line); border-radius:14px; overflow:hidden; transition:width .2s; }
     body.ref-collapsed .ref-col { width:40px; }
     .ref-toggle { flex:none; border:none; background:var(--surface3); color:var(--brand-d); font-weight:700; font-size:13px; padding:8px 10px; cursor:pointer; text-align:left; }
     .ref-toggle:hover { background:#e2e6fb; }
