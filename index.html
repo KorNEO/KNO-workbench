@@ -1414,7 +1414,8 @@
         return refCard_({title:r[cI]||r[cH], year:r[cY], vals:vals, def:r[refCol('뜻풀이')]}, h[0][2]); }).join(''):'<div class="ref-empty">-</div>';
       // 2) 2025: 이 프로젝트(배분 목록) 안의 다른 항목. 최종값(2차 있으면 2차, 없으면 1차)
       var cur=[];
-      if(q.length>=2) ITEMS.forEach(function(x){ if(x===it) return; var t=headSrc_(x), sm=refSim_(q, refKey_(t)); if(!sm) return;
+      if(q.length>=2) ITEMS.forEach(function(x){ if(x===it) return; if(!/1차완료|2차완료/.test(String(x['형태부 상태']||''))) return;   // 형태부가 저장된 항목만
+        var t=headSrc_(x), sm=refSim_(q, refKey_(t)); if(!sm) return;
         var vals={}; ['단어/구','조어법','품사','일상어/전문어','등재표제어','원어','어원','전문 분야'].forEach(function(f){ vals[f]=fv(x,f); }); vals['어종']=fv(x,'어종 표시'); vals['의미 범주']=fv(x,'의미 영역');
         cur.push([sm,{title:t, year:'', vals:vals, def:fv(x,'뜻풀이')}]); });
       cur.sort(function(x,y){ return y[0][0]-x[0][0]; });
