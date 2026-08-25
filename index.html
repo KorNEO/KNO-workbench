@@ -1350,13 +1350,13 @@
       en['조어법']=!!wg && !wfSkip;
       en['품사']=!!wf && !posSkip;
       en['일상어/전문어']=wfSkip ? !!wg : (!!wf && !!pos);
-      en['전문 분야']=!!reg && !fldSkip;
-      en['등재표제어']=!!reg && (fldSkip || !!fld);
+      en['등재표제어']=!!reg;
       en['색인표제어']=false;
       en['고유어']=!!head;
       en['원어']=!!head && !native;
       en['어종 표시']=!!head && (native || !!orig);
       en['어원']=en['어종 표시'] && !!et && !native;
+      en['전문 분야']=en['어종 표시'] && !!et && !fldSkip;
       en['의미 영역']=en['어종 표시'] && !!et;
       en['집필 메모(형태부)']=true; en['검수 메모(형태부)']=true;
       sec.querySelectorAll('[data-f]').forEach(function(el){
@@ -1499,11 +1499,11 @@
           +fld(2,'조어법',seg('조어법',WF_TYPES),'','조어법')
           +fld(3,'품사',seg('품사',POS_BTNS,true),'','품사')
           +fld(4,'일상어/전문어',seg('일상어/전문어',['일상어','전문어']),'','일상어/전문어')
-          +fld(5,'전문 분야',ac('전문 분야','jm'),'','전문 분야')
-          +fld(6,'등재표제어',inp('등재표제어'),'','등재표제어')
-          +fld(7,'원어','<label class="chk-native"><input type="checkbox"'+attrs('고유어')+(pv('고유어')==='Y'?' checked':'')+'> 고유어</label>'+inp('원어'),'','원어')
-          +fld(8,'어종 표시',inp('어종 표시'),'','어종 표시',true)
-          +fld(9,'어원',inp('어원'),'','어원',true)
+          +fld(5,'등재표제어',inp('등재표제어'),'','등재표제어')
+          +fld(6,'원어','<label class="chk-native"><input type="checkbox"'+attrs('고유어')+(pv('고유어')==='Y'?' checked':'')+'> 고유어</label>'+inp('원어'),'','원어')
+          +fld(7,'어종 표시',inp('어종 표시'),'','어종 표시',true)
+          +fld(8,'어원',inp('어원'),'','어원',true)
+          +fld(9,'전문 분야',ac('전문 분야','jm'),'','전문 분야')
           +fld(10,'의미 영역',ac('의미 영역','um'),'','의미 영역')
           +fld('',(stage===1?'작업 메모':'검수 메모'),ta(memoF,2));
       } else {
