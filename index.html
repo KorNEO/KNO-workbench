@@ -1643,7 +1643,7 @@
       var sec1=document.querySelector('#detail .stage-sec[data-part="형태부"][data-stage="1"]'); var canW=sec1 && sec1.querySelector('[data-f="단어/구"]') && sec1.querySelector('[data-f="단어/구"]').getAttribute('data-ro')!=='1';
       return m[2]==='의미부' && projPhase()==='형태부' && !!canW; }
     function refreshLlmBtns(){ document.querySelectorAll('#detail .llm-copy[data-llm]').forEach(function(b){ var i=parseInt(b.getAttribute('data-llm'),10); b.disabled=!llmOk_(i, llmTargetOf(i)); }); }
-    function llmSet_(i, el){ var it=ITEMS[CUR]; el.value=String(it[LLM_MAP[i][0]]||''); if(el.classList.contains('seg-val')) segSync(el); onWriteInput(el); }
+    function llmSet_(i, el){ var it=ITEMS[CUR]; el.value=String(it[LLM_MAP[i][0]]||''); if(el.classList.contains('seg-val')) segSync(el); if(el.classList.contains('ac-inp')) acEnforce(el); onWriteInput(el); }   // 목록 필드는 복사 때도 목록 값만
     function llmCopy(btn){
       var it=ITEMS[CUR]; if(!it) return; var i=parseInt(btn.getAttribute('data-llm'),10), el=llmTargetOf(i);
       if(!llmOk_(i, el)) return;
