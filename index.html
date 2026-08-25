@@ -271,7 +271,9 @@
     .mode-card.primary { padding:30px 26px; border-color:#c6d0f5; background:linear-gradient(180deg,#fbfbff,#f2f4ff); }
     .mode-card.active:hover { border-color:var(--brand); transform:translateY(-2px); box-shadow:0 8px 22px rgba(63,81,181,.16); }
     .mode-card.disabled { opacity:.55; cursor:not-allowed; }
-    .mc-num { flex:none; width:40px; height:40px; border-radius:12px; background:var(--brand); color:#fff; font-weight:700; font-size:18px; display:flex; align-items:center; justify-content:center; }
+    .mc-ic { flex:none; width:48px; height:48px; border-radius:14px; background:var(--brand); color:#fff; display:flex; align-items:center; justify-content:center; } .mc-ic svg { width:26px; height:26px; }
+    .mc-ic.sm { width:38px; height:38px; border-radius:11px; background:#e9edfb; color:var(--brand-d); } .mc-ic.sm svg { width:20px; height:20px; }
+    body.dark .mc-ic.sm { background:#2a3352; color:#c2d7ff; }
     .mode-card .mc-t { font-size:18px; font-weight:700; }
     .mode-card.primary .mc-t { font-size:22px; }
     .modes.sub .mode-card .mc-t { font-size:16px; color:#3a4160; }
@@ -420,15 +422,15 @@
         <div class="mode-group">
           <div class="mg-label">작업</div>
           <div class="modes main">
-            <div class="mode-card active primary" onclick="enterMode('real')"><div class="mc-num">1</div><div class="mc-t">신어 판별 작업</div></div>
-            <div class="mode-card active primary" onclick="enterMode('write')"><div class="mc-num">2</div><div class="mc-t">신어 집필 작업</div></div>
+            <div class="mode-card active primary" onclick="enterMode('real')"><span class="mc-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/><path d="M7.8 10.6l1.9 1.9 3.4-3.6"/></svg></span><div class="mc-t">신어 판별 작업</div></div>
+            <div class="mode-card active primary" onclick="enterMode('write')"><span class="mc-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l3.5-.8L19 7.7a2 2 0 0 0 0-2.8l-.9-.9a2 2 0 0 0-2.8 0L3.8 15.5 3 19z"/><path d="M13.5 5.8l4.7 4.7"/><path d="M12 20h8"/></svg></span><div class="mc-t">신어 집필 작업</div></div>
           </div>
         </div>
         <div class="mode-group">
           <div class="mg-label">기타 작업</div>
           <div class="modes sub">
-            <div class="mode-card active" onclick="enterMode('write_test')"><div class="mc-t">신어 집필 작업(테스트)</div></div>
-            <div class="mode-card active" onclick="enterMode('agree')"><div class="mc-t">연구자 일치도 작업</div></div>
+            <div class="mode-card active" onclick="enterMode('write_test')"><span class="mc-ic sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M10 3v6.2L4.6 18.4A2 2 0 0 0 6.3 21h11.4a2 2 0 0 0 1.7-2.6L14 9.2V3"/><path d="M7.5 15h9"/></svg></span><div class="mc-t">신어 집필 작업(테스트)</div></div>
+            <div class="mode-card active" onclick="enterMode('agree')"><span class="mc-ic sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="6"/><circle cx="15" cy="12" r="6"/></svg></span><div class="mc-t">연구자 일치도 작업</div></div>
           </div>
         </div>
         <div class="card" style="margin:26px 0 0;text-align:left" id="presence-card">
