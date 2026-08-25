@@ -1369,7 +1369,8 @@
       function mark(t){ t=String(t||''); if(!part) return esc(t); var i=t.indexOf(part); return i<0?esc(t):esc(t.slice(0,i))+'<mark>'+esc(part)+'</mark>'+esc(t.slice(i+part.length)); }
       var rows=REF_F.map(function(f){ var v=String(rec.vals[f[0]]||'').trim(); if(!v) return ''; if(f[0]==='의미 범주' && !/^〔/.test(v)) v='〔'+v+'〕';
         return '<div class="ref-row'+(f[1]?' full':'')+'"><span class="k">'+esc(f[0])+'</span><span class="v">'+esc(v)+'</span></div>'; }).join('');
-      return '<div class="ref-item"><div class="ref-title">'+mark(rec.title)+(rec.year?'<span class="ref-year">'+esc(rec.year)+'</span>':'')+'</div><div class="ref-grid">'+rows+'</div>'+(rec.def?'<div class="ref-def">'+esc(rec.def)+'</div>':'')+'</div>';
+      if(rec.def) rows+='<div class="ref-row full"><span class="k">뜻풀이</span><span class="v">'+esc(rec.def)+'</span></div>';
+      return '<div class="ref-item"><div class="ref-title">'+mark(rec.title)+(rec.year?'<span class="ref-year">'+esc(rec.year)+'</span>':'')+'</div><div class="ref-grid">'+rows+'</div></div>';
     }
     function refRender(){
       var q=refKey_(($('ref-q')||{}).value||''), body=$('ref-body'); if(!body) return;
