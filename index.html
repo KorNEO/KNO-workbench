@@ -143,11 +143,11 @@
     .wing { position:fixed; top:50%; transform:translateY(-50%); width:22px; height:64px; border:1px solid var(--line); background:var(--surface); color:var(--muted); font-size:11px; cursor:pointer; z-index:121; padding:0; box-shadow:0 2px 8px rgba(20,30,60,.12); }
     .wing:hover { color:var(--brand); border-color:var(--brand); }
     .wing-l { left:0; border-left:none; border-radius:0 8px 8px 0; }
-    .wing-r { right:0; border-right:none; border-radius:8px 0 0 8px; transition:right .2s; } body.ref-open .wing-r { right:420px; }
+    .wing-r { right:0; border-right:none; border-radius:8px 0 0 8px; transition:right .2s; } body.ref-open .wing-r { right:460px; }
     body.list-collapsed .work-wrap { grid-template-columns:1fr; } body.list-collapsed .list-col { display:none; }
-    .ref-pane { position:fixed; top:54px; right:-440px; width:420px; max-width:92vw; height:calc(100vh - 54px); background:var(--bg); border-left:1px solid var(--line); z-index:120; transition:right .2s; display:flex; flex-direction:column; }
+    .ref-pane { position:fixed; top:54px; right:-480px; width:460px; max-width:92vw; height:calc(100vh - 54px); background:var(--bg); border-left:1px solid var(--line); z-index:120; transition:right .2s; display:flex; flex-direction:column; }
     .ref-pane.open { right:0; }
-    main { transition:padding-right .2s; } body.ref-open main { padding-right:438px; }
+    main { transition:padding-right .2s; } body.ref-open main { padding-right:478px; }
     body.ref-open .list-col { position:static; }
     .ref-head { display:flex; gap:8px; align-items:center; padding:12px 14px; background:var(--surface); border-bottom:1px solid var(--line); } .ref-head .w-field { flex:1; font-size:16px; } .ref-head .x { float:none; flex:none; }
     .ref-body { flex:1; overflow:auto; padding:10px 14px 24px; }
@@ -156,8 +156,10 @@
     .ref-title { font-size:17px; font-weight:800; display:flex; align-items:center; gap:8px; margin-bottom:8px; } .ref-title mark { background:#fff2a8; color:inherit; padding:0 2px; border-radius:3px; }
     .ref-year { margin-left:auto; font-size:12px; font-weight:600; color:var(--muted); background:var(--surface3); border-radius:8px; padding:2px 8px; }
     .ref-grid { display:grid; grid-template-columns:1fr 1fr; gap:3px 12px; }
-    .ref-row { display:flex; gap:8px; font-size:14px; line-height:1.5; min-width:0; } .ref-row .k { color:var(--muted); flex:none; width:72px; } .ref-row .v { min-width:0; overflow-wrap:anywhere; }
-    .ref-row:nth-child(5), .ref-row:nth-child(6), .ref-row:nth-child(7), .ref-row:nth-child(8) { grid-column:1 / -1; }
+    .ref-row { display:flex; gap:8px; font-size:14px; line-height:1.5; min-width:0; } .ref-row .k { color:var(--muted); flex:none; width:92px; white-space:nowrap; } .ref-row .v { min-width:0; overflow-wrap:anywhere; }
+    .ref-row.full { grid-column:1 / -1; }
+    .ref-sec { font-size:15px; font-weight:800; color:var(--brand-d); margin:6px 2px 8px; display:flex; align-items:center; gap:8px; } .ref-sec .ref-count { margin:0; font-weight:400; }
+    .ref-empty { color:var(--muted); font-size:14px; margin:0 2px 14px; }
     .ref-def { margin-top:8px; padding-top:8px; border-top:1px dashed var(--line); font-size:14px; line-height:1.6; color:var(--ink); }
     body.dark .ref-title mark { background:#5a4a12; }
     .ac { position:relative; }
@@ -1353,7 +1355,7 @@
       var head=(sec && secVal(sec,'색인표제어')) || String(it['신어 후보']||'');
       var pane=$('refPane'); if(!pane){ pane=document.createElement('div'); pane.id='refPane'; pane.className='ref-pane'; document.body.appendChild(pane); }
       pane.innerHTML='<div class="ref-head"><input id="ref-q" class="w-field" value="'+ea(head)+'" oninput="refRender()"><button class="x" onclick="closeRef()">×</button></div><div id="ref-body" class="ref-body"><span class="kbd">불러오는 중</span></div>';
-      pane.classList.add('open'); document.body.classList.add('ref-open'); wingTabs(); refLoad(refRender);
+      pane.classList.add('open'); document.body.classList.add('ref-open'); wingTabs(); refRender(); refLoad(refRender);
     }
     function closeRef(){ var p=$('refPane'); if(p) p.classList.remove('open'); document.body.classList.remove('ref-open'); wingTabs(); }
     // 빈 곳(입력 칸·버튼·링크·폼 밖) 클릭 시 패널 닫힘
@@ -1365,18 +1367,33 @@
     function wingTabs(){ var L=$('wingL'), R=$('wingR'); if(!L||!R) return; var work=!$('view-work').classList.contains('hidden');
       L.style.display=work?'':'none'; R.style.display=(work && isWrite())?'':'none';
       L.textContent=document.body.classList.contains('list-collapsed')?'▶':'◀'; R.textContent=document.body.classList.contains('ref-open')?'▶':'◀'; }
+    // 카드 공통: 집필 순서대로. rec={title,year,vals{필드:값},def}
+    var REF_F=[['단어/구',0],['조어법',0],['품사',0],['일상어/전문어',0],['등재표제어',1],['원어',1],['어종',0],['어원',1],['전문 분야',0],['의미 범주',0]];   // [이름, 전체폭]
+    function refCard_(rec, part){
+      function mark(t){ t=String(t||''); if(!part) return esc(t); var i=t.indexOf(part); return i<0?esc(t):esc(t.slice(0,i))+'<mark>'+esc(part)+'</mark>'+esc(t.slice(i+part.length)); }
+      var rows=REF_F.map(function(f){ var v=String(rec.vals[f[0]]||'').trim(); if(!v) return ''; if(f[0]==='의미 범주' && !/^〔/.test(v)) v='〔'+v+'〕';
+        return '<div class="ref-row'+(f[1]?' full':'')+'"><span class="k">'+esc(f[0])+'</span><span class="v">'+esc(v)+'</span></div>'; }).join('');
+      return '<div class="ref-item"><div class="ref-title">'+mark(rec.title)+(rec.year?'<span class="ref-year">'+esc(rec.year)+'</span>':'')+'</div><div class="ref-grid">'+rows+'</div>'+(rec.def?'<div class="ref-def">'+esc(rec.def)+'</div>':'')+'</div>';
+    }
     function refRender(){
-      if(!REF) return; var q=refKey_(($('ref-q')||{}).value||''), body=$('ref-body'); if(!body) return;
-      var cI=refCol('색인표제어'), cH=refCol('등재표제어'), cY=refCol('수집 연도'), hits=[];
-      if(q.length>=2){ REF.rows.forEach(function(r){ var sm=refSim_(q, refKey_(r[cI])); if(sm) hits.push([sm,r]); }); }
-      hits.sort(function(x,y){ return y[0][0]-x[0][0] || String(x[1][cY]).localeCompare(String(y[1][cY])); });
-      if(!hits.length){ body.innerHTML='<span class="kbd">-</span>'; return; }
-      var show=hits.slice(0,60), F=['단어/구','조어법','품사','일상어/전문어','등재표제어','원어','어종','어원','전문 분야','의미 범주'];   // 집필 순서와 동일, 뜻풀이는 아래 전체 폭
-      function mark(t, part){ t=String(t||''); if(!part) return esc(t); var i=t.indexOf(part); return i<0?esc(t):esc(t.slice(0,i))+'<mark>'+esc(part)+'</mark>'+esc(t.slice(i+part.length)); }
-      body.innerHTML='<div class="ref-count">'+hits.length+'건'+(hits.length>60?' 중 60건 표시':'')+'</div>'+show.map(function(h){ var r=h[1], sm=h[0], title=r[cI]||r[cH];
-        var rows=F.map(function(f){ var v=String(r[refCol(f)]||''); if(!v) return ''; if(f==='의미 범주' && !/^〔/.test(v)) v='〔'+v+'〕'; return '<div class="ref-row"><span class="k">'+esc(f)+'</span><span class="v">'+esc(v)+'</span></div>'; }).join('');
-        var def=String(r[refCol('뜻풀이')]||'');
-        return '<div class="ref-item"><div class="ref-title">'+mark(title, sm[2])+'<span class="ref-year">'+esc(r[cY])+'</span></div><div class="ref-grid">'+rows+'</div>'+(def?'<div class="ref-def">'+esc(def)+'</div>':'')+'</div>'; }).join('');
+      var q=refKey_(($('ref-q')||{}).value||''), body=$('ref-body'); if(!body) return;
+      var it=ITEMS[CUR], html='';
+      // 1) 유사 사례(2025): 이 프로젝트(배분 목록) 안의 다른 항목. 최종값(2차 있으면 2차, 없으면 1차)
+      var cur=[];
+      if(q.length>=2) ITEMS.forEach(function(x){ if(x===it) return; var t=headSrc_(x), sm=refSim_(q, refKey_(t)); if(!sm) return;
+        var vals={}; ['단어/구','조어법','품사','일상어/전문어','등재표제어','원어','어원','전문 분야'].forEach(function(f){ vals[f]=fv(x,f); }); vals['어종']=fv(x,'어종 표시'); vals['의미 범주']=fv(x,'의미 영역');
+        cur.push([sm,{title:t, year:'', vals:vals, def:fv(x,'뜻풀이')}]); });
+      cur.sort(function(x,y){ return y[0][0]-x[0][0]; });
+      html+='<div class="ref-sec">유사 사례(2025)<span class="ref-count">'+cur.length+'건</span></div>'+(cur.length?cur.slice(0,40).map(function(h){ return refCard_(h[1], h[0][2]); }).join(''):'<div class="ref-empty">-</div>');
+      // 2) 유사 사례(2020-2024): KNO_DATASET
+      var hits=[];
+      if(REF && q.length>=2){ var cI=refCol('색인표제어'), cH=refCol('등재표제어'), cY=refCol('수집 연도');
+        REF.rows.forEach(function(r){ var sm=refSim_(q, refKey_(r[cI])); if(sm) hits.push([sm,r]); });
+        hits.sort(function(x,y){ return y[0][0]-x[0][0] || String(x[1][cY]).localeCompare(String(y[1][cY])); }); }
+      html+='<div class="ref-sec">유사 사례(2020-2024)<span class="ref-count">'+(REF?hits.length+'건'+(hits.length>60?' 중 60건':''):'불러오는 중')+'</span></div>';
+      html+=hits.length?hits.slice(0,60).map(function(h){ var r=h[1], vals={}; REF.cols.forEach(function(c,i){ vals[c]=r[i]; });
+        return refCard_({title:r[cI]||r[cH], year:r[cY], vals:vals, def:r[refCol('뜻풀이')]}, h[0][2]); }).join(''):'<div class="ref-empty">-</div>';
+      body.innerHTML=html;
     }
     function segPick(btn){ var seg=btn.closest('.seg'), inp=seg.querySelector('.seg-val'); if(inp.disabled) return;
       var fr=seg.querySelector('.seg-free-inp');
