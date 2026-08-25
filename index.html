@@ -489,7 +489,7 @@
         </aside>
         <div class="detail-col" id="detail"><div class="placeholder">왼쪽에서 신어 후보 항목을 선택하세요.</div></div>
         <aside id="ref-box" class="ref-col" style="display:none">
-          <button class="ref-toggle" onclick="toggleRef()" id="ref-toggle">집필 사례</button>
+          <button class="ref-toggle" onclick="toggleRef()" id="ref-toggle">집필 사례 ▸</button>
           <div class="ref-inner">
             <div class="ref-head"><input id="ref-q" class="w-field" oninput="refRender()"></div>
             <div id="ref-body" class="ref-body"></div>
@@ -1354,12 +1354,13 @@
       if(n>=2) return [30+n,'접두',a.slice(0,n)];
       return null;
     }
-    function toggleRef(){ var c=document.body.classList.toggle('ref-collapsed'); lsSet('kno_ref_collapsed', c?'1':'0'); }
+    function refTogTxt(){ var b=$('ref-toggle'); if(b) b.textContent=document.body.classList.contains('ref-collapsed')?'◂ 집필 사례':'집필 사례 ▸'; }
+    function toggleRef(){ var c=document.body.classList.toggle('ref-collapsed'); lsSet('kno_ref_collapsed', c?'1':'0'); refTogTxt(); }
     if(lsGet('kno_ref_collapsed','0')==='1'){ document.body.classList.add('ref-collapsed'); }
     // 현재 항목 기준으로 집필 사례 갱신(집필 모드에서 항목을 고를 때마다)
     function refUpdate(){
       var it=ITEMS[CUR], box=$('ref-box'); if(!box) return; if(!it || !isWrite()){ box.style.display='none'; return; }
-      box.style.display='';
+      box.style.display=''; refTogTxt();
       var sec=document.querySelector('#detail .stage-sec[data-part="형태부"][data-stage="1"]');
       $('ref-q').value=(sec && secVal(sec,'색인표제어')) || String(it['신어 후보']||'');
       refRender(); refLoad(refRender);
@@ -1594,7 +1595,7 @@
           +fld(10,'의미 영역',ac('의미 영역','um'),'','의미 영역')
           +fld('','형태부 메모',ta(memoF,2));
       } else {
-        h+=fld(11,'뜻풀이',ta('뜻풀이',2)+(ed?'<div class="fld-tools"><button type="button" class="llm-copy" onclick="appendHateNote(this)">혐오 표현 문구 복사하기</button></div>':''),'','뜻풀이')
+        h+=fld(11,'뜻풀이',ta('뜻풀이',3)+(ed?'<div class="fld-tools"><button type="button" class="llm-copy" onclick="appendHateNote(this)">혐오 표현 문구 복사하기</button></div>':''),'','뜻풀이')
           +fld(12,'용례',ta('용례',2),'','용례')
           +fld(13,'참고 용례',ta('참고 용례',2)+(ed?symBar():''),'','참고 용례')
           +fld(14,'참고 용례 URL',inp('참고 용례 URL'),'','참고 용례 URL',true)
