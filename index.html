@@ -153,7 +153,7 @@
     .seg-btn:disabled { opacity:.45; cursor:default; }
     .seg .seg-free-wrap { flex-basis:100%; display:block; }
     .seg.changed { outline:2px solid #6f9bf0; outline-offset:3px; }
-    .seg.rev-diff { outline:2px solid #e0b04a; outline-offset:3px; }
+    .seg.rev-diff { outline:2px solid #e0921a; outline-offset:3px; }
     .help-wrap { position:relative; display:inline-flex; }
     .help { display:inline-flex; align-items:center; justify-content:center; width:13px; height:13px; border-radius:50%; border:1px solid var(--muted); color:var(--muted); font-size:9px; font-weight:700; cursor:pointer; line-height:1; opacity:.7; }
     .help:hover { border-color:var(--brand); color:var(--brand); }
@@ -178,7 +178,8 @@
     .wf.off { opacity:.5; }
     .wf label .kbd { font-weight:400; margin-left:4px; }
     .w-field:disabled { background:var(--surface3); color:var(--muted); cursor:not-allowed; }
-    .w-field.rev-diff { background:#fff1cc; border-color:#e0b04a; }
+    .w-field.rev-diff { border:2px solid #e0921a; }
+    .diff-tag { display:inline-block; font-size:12px; font-weight:800; color:#fff; background:#e0921a; border-radius:6px; padding:1px 7px; margin-left:4px; line-height:18px; }
     .rev-note { font-size:14px; color:#8a5a00; background:#fff7e0; border-radius:6px; padding:3px 8px; margin-top:2px; }
     .chk-native { display:flex; align-items:center; gap:6px; font-size:16px; margin-bottom:4px; cursor:pointer; } .chk-native input { margin:0; }
     .llm-copy { border:1px solid var(--line); background:var(--surface); border-radius:7px; padding:5px 11px; font-size:13px; cursor:pointer; white-space:nowrap; font-weight:700; color:var(--brand-d); }
@@ -191,7 +192,7 @@
     .vfy-err { color:var(--bisineo); background:var(--bisineo-bg); border-radius:8px; padding:10px 14px; margin:8px 0; font-size:15px; }
     .vfy-ok { color:var(--sineo); background:var(--sineo-bg); border-radius:8px; padding:10px 14px; margin:8px 0; font-size:15px; }
     .cf-tbl { width:100%; border-collapse:collapse; font-size:15px; } .cf-tbl th.cf-part { color:var(--brand-d); font-weight:800; font-size:15px; padding-top:12px; width:auto; } .cf-tbl th, .cf-tbl td { border-bottom:1px solid var(--line); padding:5px 8px; text-align:left; vertical-align:top; } .cf-tbl th { color:var(--muted); width:130px; font-weight:600; white-space:nowrap; }
-    body.dark .w-field.rev-diff { background:#4a3a12; border-color:#a8843a; } body.dark .rev-note { background:#3a2e12; color:#f0c86a; }
+    body.dark .w-field.rev-diff { border-color:#f0a838; } body.dark .rev-note { background:#3a2e12; color:#f0c86a; }
     .ss-head { font-weight:800; font-size:18px; margin-bottom:6px; } .ss-head .ss-who { font-weight:400; font-size:14px; color:var(--muted); margin-left:8px; }
     .w-field.changed { background:#dbe9ff; border-color:#6f9bf0; }
     .prior { background:#f7f8ff; border:1px solid #e2e6fb; border-radius:10px; padding:10px 12px; font-size:13px; margin-bottom:12px; } .prior .lab { color:var(--brand-d); font-weight:700; }
@@ -1435,10 +1436,6 @@
       var hasJ=['1차 판별','2차 판별','1차 메모','2차 메모','1차 고유명 여부','2차 고유명 여부'].some(function(k){ return String(it[k]||'').trim(); });
       if(hasJ) h+='<div class="llm-box"><h3>판별 메모</h3><table class="jtbl"><thead><tr><th>단계</th><th>담당자</th><th>판별 결과</th><th>고유명 여부</th><th>혐오 표현 여부</th><th>메모</th></tr></thead><tbody>'
         + jrow(1, '작업자', it['판별 작업자']) + jrow(2, '검수자', it['판별 검수자']) + '</tbody></table></div>';
-      // 판별 단계의 말뭉치 용례 + 최초 출현 기사문·〈네이버 뉴스〉 검색 링크
-      if(String(it['용례']||'').trim() || it['용례 URL'] || it['검색 URL'])
-        h+='<div class="llm-box"><h3>말뭉치 용례</h3><div class="ex-box">'+highlight(it['용례'], it['신어 후보'])+'</div>'
-          + '<div class="ex-foot"><span>작성일 '+ymd(it['용례 일자'])+'</span><span>'+link(it['용례 URL'],'기사문 링크')+'</span><span>'+link(it['검색 URL'],'〈네이버 뉴스〉 검색 화면 링크')+'</span></div></div>';
       // 형태부 → 의미부 세로 섹션. 프로젝트 단계에 따라 잠금.
       var act=activeParts(), last=act[act.length-1];
       PARTS.forEach(function(part){
@@ -1478,23 +1475,22 @@
         if(!ed) a+=' data-ro="1"';
         return a+(extra||'');
       }
-      function revNote(f){   // 1차 폼: 검수자가 고친 필드는 색으로만 표시
-        var v1=wv(it,1,f), v2=wv(it,2,f); if(stage!==1 || !v2.trim() || v2===v1) return ['',''];
-        return [' rev-diff',''];
-      }
-      function cls(f){ return 'w-field'+(stage===2?' w2':'')+(stage===2 && wv(it,2,f).trim() && wv(it,2,f)!==wv(it,1,f)?' changed':'')+revNote(f)[0]; }
+      function isDiff(f){ var v1=wv(it,1,f), v2=wv(it,2,f); return !!(v2.trim() && v2!==v1) && f.indexOf('메모')<0; }
+      function revNote(f){ return [isDiff(f)?' rev-diff':'','']; }   // 저장된 1차·2차가 다른 칸: 양쪽 모두 강조
+      function diffTag(f){ return isDiff(f)?'<span class="diff-tag">불일치</span>':''; }
+      function cls(f){ return 'w-field'+(stage===2?' w2':'')+revNote(f)[0]; }
       function inp(f,ph){ return '<input class="'+cls(f)+'"'+attrs(f)+' value="'+ea(pv(f))+'"'+(ph?' placeholder="'+ea(ph)+'"':'')+'>'+revNote(f)[1]; }
       function ta(f,rows){ return '<textarea class="'+cls(f)+'"'+attrs(f)+' rows="'+(rows||2)+'">'+esc(pv(f))+'</textarea>'+revNote(f)[1]; }
       function ac(f,kind){ return '<div class="ac"><input class="'+cls(f)+' ac-inp"'+attrs(f)+' data-ac="'+kind+'" value="'+ea(pv(f))+'" autocomplete="off" onkeydown="acKey(event,this)" onfocus="acOpen(this)" onblur="acBlur(this)"><div class="ac-list" style="display:none"></div></div>'+revNote(f)[1]; }
       // 버튼 선택. free=true면 '직접 입력' 버튼 + 텍스트 칸 추가(목록에 없는 값이면 자동으로 직접 입력 상태)
       function seg(f,opts,free){ var v=pv(f), c=cls(f), custom=free && v && opts.indexOf(v)<0;
-        return '<div class="seg'+(c.indexOf(' changed')>=0?' changed':'')+(c.indexOf(' rev-diff')>=0?' rev-diff':'')+'"><input type="hidden" class="'+c+' seg-val"'+attrs(f)+' value="'+ea(v)+'">'
+        return '<div class="seg'+(c.indexOf(' rev-diff')>=0?' rev-diff':'')+'"><input type="hidden" class="'+c+' seg-val"'+attrs(f)+' value="'+ea(v)+'">'
           + opts.map(function(x){ return '<button type="button" class="seg-btn'+(x===v?' on':'')+'" data-val="'+ea(x)+'" onclick="segPick(this)">'+esc(x)+'</button>'; }).join('')
           + (free ? '<button type="button" class="seg-btn'+(custom?' on':'')+'" data-free="1" onclick="segPick(this)">직접 입력</button><span class="ac seg-free-wrap" style="'+(custom?'':'display:none')+'"><input class="w-field seg-free-inp ac-inp" data-ac="'+(free===true?'pos':free)+'" value="'+ea(custom?v:'')+'" autocomplete="off" oninput="segFree(this)" onkeydown="acKey(event,this)" onfocus="acOpen(this)" onblur="acBlur(this);segFreeBlur(this)"><div class="ac-list" style="display:none"></div></span>' : '')
           + '</div>'+revNote(f)[1]; }
       function fld(step,label,ctrl,hint,f,half){ var block=(f==='뜻풀이'||f==='용례');
         var hk=f||label, help=FIELD_HELP[hk] ? '<span class="help-wrap"><span class="help" onclick="toggleHelp(this,event)">?</span><div class="help-pop" style="display:none" onclick="event.stopPropagation()">'+esc(FIELD_HELP[hk])+'</div></span>' : '';
-        return '<div class="wf'+(half?' half':'')+(step?' stepped':'')+'"><label>'+(step?'<span class="step">'+step+'</span>':'')+esc(label)+help+(hint?' <span class="kbd">'+hint+'</span>':'')+'</label>'+ctrl+'</div>'; }
+        return '<div class="wf'+(half?' half':'')+(step?' stepped':'')+'"><label>'+(step?'<span class="step">'+step+'</span>':'')+esc(label)+help+(f?diffTag(f):'')+(hint?' <span class="kbd">'+hint+'</span>':'')+'</label>'+ctrl+'</div>'; }
       var memoF = part==='형태부' ? (stage===1?'집필 메모(형태부)':'검수 메모(형태부)') : (stage===1?'집필 메모(의미부)':'검수 메모(의미부)');
       if(part==='형태부'){
         h+=fld('','색인표제어',inp('색인표제어'),'','색인표제어')
