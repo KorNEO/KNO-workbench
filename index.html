@@ -1226,6 +1226,23 @@
       else if(ev.key==='Escape'){ box.style.display='none'; }
       else { setTimeout(function(){ acOpen(inp); }, 0); }
     }
+    // 기호 자동 치환(집필_시_특수기호.txt 기준). 입력 중 즉시 정규화, 커서 위치 유지.
+    //  가운뎃점 변형(· • ․ ‧ ・ ･) → ㆍ / 반각 낫표 ｢｣ → 「」 / '…' → ‘ ’ / "…" → “ ” / ... → … / << >> → ≪ ≫
+    //  원어·어종 표시는 < > 를 쓰므로 따옴표·≪≫ 치환을 하지 않음
+    function normSym(v, f){
+      v=v.replace(/[\u00B7\u2022\u2024\u2027\u30FB\uFF65]/g,'ㆍ').replace(/\uFF62/g,'「').replace(/\uFF63/g,'」');
+      if(f==='원어'||f==='어종 표시'||f==='등재표제어'||f==='색인표제어') return v;
+      v=v.replace(/\.\.\./g,'…').replace(/<</g,'≪').replace(/>>/g,'≫');
+      v=v.replace(/(^|[\s(\[【「『〔≪“‘])'/g,'$1‘').replace(/'/g,'’');
+      v=v.replace(/(^|[\s(\[【「『〔≪‘])"/g,'$1“').replace(/"/g,'”');
+      return v;
+    }
+    function normField(el){
+      if(!el || el.type==='hidden' || el.type==='checkbox' || el.tagName==='SELECT') return;
+      var f=el.getAttribute('data-f')||'', v=el.value, n=normSym(v, f); if(n===v) return;
+      var tail=v.length-(el.selectionEnd||0); el.value=n;
+      try{ var pos=Math.max(0,n.length-tail); el.setSelectionRange(pos,pos); }catch(e){}
+    }
     function segPick(btn){ var seg=btn.closest('.seg'), inp=seg.querySelector('.seg-val'); if(inp.disabled) return;
       var fr=seg.querySelector('.seg-free-inp');
       if(btn.getAttribute('data-free')){ inp.value=fr?fr.value.trim():''; if(fr){ fr.parentNode.style.display=''; fr.focus(); } }
@@ -1239,6 +1256,7 @@
       if(fb){ var custom=!hit && !!v; fb.classList.toggle('on',custom); if(fr){ fr.parentNode.style.display=custom?'':'none'; if(custom) fr.value=v; } }
     }
     function onWriteInput(el){
+      normField(el);
       var sec=el.closest('.stage-sec'); if(!sec) return;
       if(el.classList.contains('w2')){ mark2(el); if(el.classList.contains('seg-val')) el.closest('.seg').classList.toggle('changed', el.classList.contains('changed')); }
       var stage=parseInt(sec.getAttribute('data-stage'),10), part=sec.getAttribute('data-part');
