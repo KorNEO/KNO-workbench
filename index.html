@@ -148,8 +148,8 @@
     .ref-col { position:fixed; right:14px; top:72px; height:calc(100vh - 90px); width:400px; display:flex; flex-direction:column; background:var(--surface); border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:0 8px 24px rgba(20,30,60,.10); z-index:59; }
     /* 집필 사례: 맨 오른쪽 고정 버튼 칸 + 그 왼쪽에서 열리는 패널 */
     .ref-btn-col { position:fixed; right:14px; top:50%; transform:translateY(-50%); z-index:60; transition:right .2s; } body.write-work:not(.ref-collapsed) .ref-btn-col { right:414px; }
-    .ref-toggle { border:1px solid var(--line); border-right:none; border-radius:12px 0 0 12px; background:var(--surface); color:var(--brand-d); font-weight:800; font-size:14px; line-height:1.3; padding:14px 10px 14px 12px; cursor:pointer; white-space:nowrap; width:84px; text-align:center; box-shadow:-4px 0 12px rgba(20,30,60,.08); transition:background .12s, color .12s; }
-    .ref-toggle.off { border-radius:12px; border-right:1px solid var(--line); box-shadow:0 2px 10px rgba(20,30,60,.10); }
+    .ref-toggle { border:none; border-radius:12px 0 0 12px; background:var(--brand); color:#fff; font-weight:800; font-size:14px; line-height:1.3; padding:14px 10px 14px 12px; cursor:pointer; white-space:nowrap; width:84px; text-align:center; box-shadow:-4px 0 12px rgba(20,30,60,.10); transition:background .12s; }
+    .ref-toggle.off { border-radius:12px; box-shadow:0 2px 10px rgba(20,30,60,.12); }
     .ref-toggle:hover { background:var(--brand-d); color:#fff; }
     .ref-col { position:fixed; right:14px; top:72px; height:calc(100vh - 90px); width:400px; display:flex; flex-direction:column; background:var(--surface); border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:0 8px 24px rgba(20,30,60,.10); z-index:59; }
     .ref-inner { flex:1; min-height:0; display:flex; flex-direction:column; }
@@ -1635,11 +1635,16 @@
     // LLM 값 복사: 1차 작업 폼의 대상 필드로(색인표제어는 자동 생성이라 항상 비활성)
     function llmTargetOf(i){ var m=LLM_MAP[i]; return document.querySelector('#detail .stage-sec[data-part="'+m[2]+'"][data-stage="1"] [data-f="'+m[1]+'"]'); }
     // 복사는 활성 여부와 무관(값을 넣어 두면 체인이 진행될 때 그대로 살아 있음). 색인표제어는 자동 생성이라 제외, 편집 권한 없으면 비활성.
-    function refreshLlmBtns(){ var it=ITEMS[CUR]||{}; document.querySelectorAll('#detail .llm-copy[data-llm]').forEach(function(b){ var i=parseInt(b.getAttribute('data-llm'),10), el=llmTargetOf(i); b.disabled=!(String(it[LLM_MAP[i][0]]||'').trim() && el && el.getAttribute('data-ro')!=='1' && LLM_MAP[i][1]!=='색인표제어'); }); }
+    function llmOk_(i, el){ var it=ITEMS[CUR]||{}, m=LLM_MAP[i]; if(!el || !String(it[m[0]]||'').trim() || m[1]==='색인표제어') return false;
+      if(el.getAttribute('data-ro')!=='1') return true;
+      // 의미부 칸은 형태부 단계에서 잠겨 있어도 복사 허용(작업자 본인 폼일 때). 값은 형태부 저장 시 함께 기록
+      var sec1=document.querySelector('#detail .stage-sec[data-part="형태부"][data-stage="1"]'); var canW=sec1 && sec1.querySelector('[data-f="단어/구"]') && sec1.querySelector('[data-f="단어/구"]').getAttribute('data-ro')!=='1';
+      return m[2]==='의미부' && projPhase()==='형태부' && !!canW; }
+    function refreshLlmBtns(){ document.querySelectorAll('#detail .llm-copy[data-llm]').forEach(function(b){ var i=parseInt(b.getAttribute('data-llm'),10); b.disabled=!llmOk_(i, llmTargetOf(i)); }); }
     function llmSet_(i, el){ var it=ITEMS[CUR]; el.value=String(it[LLM_MAP[i][0]]||''); if(el.classList.contains('seg-val')) segSync(el); onWriteInput(el); }
     function llmCopy(btn){
       var it=ITEMS[CUR]; if(!it) return; var i=parseInt(btn.getAttribute('data-llm'),10), el=llmTargetOf(i);
-      if(!el || el.getAttribute('data-ro')==='1') return;
+      if(!llmOk_(i, el)) return;
       llmSet_(i, el); toast('복사 완료');
     }
     // 기호 바(집필_시_특수기호.txt): 클릭하면 같은 칸의 커서 위치에 삽입
@@ -1664,12 +1669,14 @@
     // 전체 복사하기: 순서대로 복사하며 체인 활성화를 따라감(비활성 필드는 건너뜀)
     function llmCopyAll(){
       var it=ITEMS[CUR]; if(!it) return;
-      LLM_MAP.forEach(function(m,i){ if(m[1]==='색인표제어' || !String(it[m[0]]||'').trim()) return; var el=llmTargetOf(i); if(!el || el.getAttribute('data-ro')==='1') return; llmSet_(i, el); });
+      LLM_MAP.forEach(function(m,i){ var el=llmTargetOf(i); if(!llmOk_(i, el)) return; llmSet_(i, el); });
       refreshLlmBtns(); toast('복사 완료');
     }
     // 저장 전 확인 창: 전 필드 + 점검 결과
-    function collectAll_(stage){ var o={}; activeParts().forEach(function(part){ o[part]=collectWrite_(part, stage); }); return o; }
-    function validateAll_(all, it){ var E=[]; activeParts().forEach(function(part){ validateWrite(part, all[part]||{}, it).forEach(function(e){ E.push((activeParts().length>1?part+' · ':'')+e); }); }); return E; }
+    function collectAll_(stage){ var o={}; activeParts().forEach(function(part){ o[part]=collectWrite_(part, stage); });
+      if(projPhase()==='형태부' && stage===1){ var m=collectWrite_('의미부',1), any=false; for(var k in m){ if(!tplBlank(k,m[k]) && k!=='X년 Y월 신어') any=true; } if(any) o['의미부']=m; }   // 형태부 단계에서 미리 복사한 의미부 값 동반 저장
+      return o; }
+    function validateAll_(all, it){ var E=[]; activeParts().forEach(function(part){ validateWrite(part, all[part]||{}, it).forEach(function(e){ E.push((activeParts().length>1?part+' · ':'')+e); }); }); return E; }   // 점검은 활성 부만
     function openWriteConfirm(stage){
       var it=ITEMS[CUR]; if(!it) return;
       var all=collectAll_(stage), errs=validateAll_(all, it), parts=activeParts();

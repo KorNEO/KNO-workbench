@@ -794,7 +794,7 @@ function saveWrite(token, payload) {
     if (!p || !isWriteKind_(p.type)) throw new Error('집필 프로젝트가 아닙니다.');
     var phase = String(payload.phase || '').trim();
     if (phase !== p.phase) throw new Error('프로젝트 단계가 ' + p.phase + '(으)로 바뀌었습니다. 화면을 새로고침하세요.');
-    var parts = phase === '형태부' ? ['형태부'] : WRITE_PARTS;
+    var parts = phase === '형태부' ? ['형태부'] : WRITE_PARTS;   // 점검·상태 대상
     var sh = projItemSheet_(pid); if (!sh) throw new Error('프로젝트 없음');
     var idx = ensureCols_(sh, HEADERS_WRITE), rownum = findRow_(sh, idx, payload.row_id);
     if (rownum < 0) throw new Error('행 없음: ' + payload.row_id);
@@ -805,7 +805,8 @@ function saveWrite(token, payload) {
     var fields = payload.fields || {}, errs = [];
     parts.forEach(function (pt) { validateWrite_(pt, fields[pt] || {}, cur('2차 혐오 표현 여부') === 'Y').forEach(function (e) { errs.push((parts.length > 1 ? pt + ' · ' : '') + e); }); });
     if (errs.length) throw new Error('형식 오류 ' + errs.length + '건 존재. ' + errs.join(' / '));
-    parts.forEach(function (pt) {
+    WRITE_PARTS.forEach(function (pt) {   // 단계 외 부(형태부 단계의 의미부 복사값)도 값이 오면 기록. 점검·상태는 위에서 단계 부만
+      if (!fields[pt]) return;
       var cols = writeStageCols_(pt, stage), fv = fields[pt] || {};
       cols.forEach(function (c) { var f = c.slice(3); if (f in fv) setCell_(sh, rownum, idx, c, fv[f] == null ? '' : fv[f]); });
     });
