@@ -179,6 +179,9 @@
     .chk-native { display:flex; align-items:center; gap:6px; font-size:14px; margin-bottom:4px; cursor:pointer; } .chk-native input { margin:0; }
     .llm-copy { border:1px solid var(--line); background:var(--surface); border-radius:7px; padding:5px 11px; font-size:13px; cursor:pointer; white-space:nowrap; font-weight:700; color:var(--brand-d); }
     .fld-tools { display:flex; justify-content:flex-end; margin-top:4px; }
+    .sym-bar { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
+    .sym-bar .sym { border:1px solid var(--line); background:var(--surface); border-radius:6px; padding:3px 8px; font-size:14px; cursor:pointer; color:var(--ink); font-family:inherit; }
+    .sym-bar .sym:hover { border-color:var(--brand); background:#eef1ff; }
     .llm-foot { display:flex; justify-content:flex-end; margin-top:8px; padding-top:8px; border-top:1px solid var(--line); } .llm-all { padding:7px 16px; font-size:14px; }
     .llm-copy:hover:not(:disabled) { border-color:var(--brand); background:#eef1ff; } .llm-copy:disabled { opacity:.35; cursor:default; }
     .vfy-err { color:var(--bisineo); background:var(--bisineo-bg); border-radius:8px; padding:10px 14px; margin:8px 0; font-size:15px; }
@@ -1165,22 +1168,22 @@
     var LLM_MAP=[['LLM 색인표제어','색인표제어','형태부'],['LLM 조어법','조어법','형태부'],['LLM 품사','품사','형태부'],['LLM 일상어/전문어','일상어/전문어','형태부'],['LLM 전문 분야','전문 분야','형태부'],['LLM 의미 범주','의미 영역','형태부'],['LLM 뜻풀이','뜻풀이','의미부'],['LLM 용례','용례','의미부']];
     // 필드별 주요 지침 — 라벨 옆 ? 클릭 시 표시. 출처: 신어 집필 지침(§ 번호), 형태부 오류 유형 문서(docx)
     var FIELD_HELP={
-      '단어/구':'입력 필요',
-      '조어법':'입력 필요',
-      '품사':'입력 필요',
-      '일상어/전문어':'입력 필요',
-      '전문 분야':'입력 필요',
-      '등재표제어':'입력 필요',
-      '색인표제어':'입력 필요',
-      '원어':'입력 필요',
-      '어종 표시':'입력 필요',
-      '어원':'입력 필요',
-      '의미 영역':'입력 필요',
-      '뜻풀이':'입력 필요',
-      '용례':'입력 필요',
-      '참고 용례':'입력 필요',
-      '참고 용례 URL':'입력 필요',
-      'X년 Y월 신어':'입력 필요'
+      '단어/구':'주요 지침 입력 필요',
+      '조어법':'주요 지침 입력 필요',
+      '품사':'주요 지침 입력 필요',
+      '일상어/전문어':'주요 지침 입력 필요',
+      '전문 분야':'주요 지침 입력 필요',
+      '등재표제어':'주요 지침 입력 필요',
+      '색인표제어':'주요 지침 입력 필요',
+      '원어':'주요 지침 입력 필요',
+      '어종 표시':'주요 지침 입력 필요',
+      '어원':'주요 지침 입력 필요',
+      '의미 영역':'주요 지침 입력 필요',
+      '뜻풀이':'주요 지침 입력 필요',
+      '용례':'주요 지침 입력 필요',
+      '참고 용례':'주요 지침 입력 필요',
+      '참고 용례 URL':'주요 지침 입력 필요',
+      'X년 Y월 신어':'주요 지침 입력 필요'
     };
     function toggleHelp(el, ev){ if(ev) ev.stopPropagation(); var pop=el.nextElementSibling, open=pop.style.display!=='none';
       document.querySelectorAll('.help-pop').forEach(function(x){ x.style.display='none'; }); pop.style.display=open?'none':''; }
@@ -1441,7 +1444,7 @@
       } else {
         h+=fld('','뜻풀이',ta('뜻풀이',2)+(ed?'<div class="fld-tools"><button type="button" class="llm-copy" onclick="appendHateNote(this)">혐오 표현 문구 복사하기</button></div>':''),'','뜻풀이')
           +fld('','용례',ta('용례',2),'','용례')
-          +fld('','참고 용례',ta('참고 용례',2),'','참고 용례')
+          +fld('','참고 용례',ta('참고 용례',2)+(ed?symBar():''),'','참고 용례')
           +fld('','참고 용례 URL',inp('참고 용례 URL'),'','참고 용례 URL',true)
           +fld('','X년 Y월 신어',inp('X년 Y월 신어'),'','X년 Y월 신어',true)
           +fld('',(stage===1?'작업 메모':'검수 메모'),ta(memoF,2));
@@ -1464,6 +1467,18 @@
       var it=ITEMS[CUR]; if(!it) return; var i=parseInt(btn.getAttribute('data-llm'),10), el=llmTargetOf(i);
       if(!el || el.disabled){ toast('이 필드는 아직 활성화되지 않았습니다.'); return; }
       el.value=String(it[LLM_MAP[i][0]]||''); if(el.classList.contains('seg-val')) segSync(el); onWriteInput(el); if(!el.classList.contains('seg-val')) el.focus(); toast(LLM_MAP[i][1]+'에 복사했습니다.');
+    }
+    // 기호 바(집필_시_특수기호.txt): 클릭하면 같은 칸의 커서 위치에 삽입
+    var SYMS=['「」','『』','【】','≪≫','‘’','“”','〔〕','ㆍ','¶','…','▼','▽','←'];
+    function symBar(){ return '<div class="sym-bar">'+SYMS.map(function(x){ return '<button type="button" class="sym" onclick="insertSym(this,\''+x+'\')">'+esc(x)+'</button>'; }).join('')+'</div>'; }
+    function insertSym(btn, sym){
+      var el=btn.closest('.wf').querySelector('textarea[data-f],input[data-f]:not([type=hidden]):not([type=checkbox])'); if(!el || el.disabled) return;
+      var a=el.selectionStart||0, b=el.selectionEnd||0, v=el.value;
+      var pair=(sym.length===2 && sym!=='ㆍ'); var ins = pair && a!==b ? sym.charAt(0)+v.slice(a,b)+sym.charAt(1) : sym;
+      el.value=v.slice(0,a)+ins+v.slice(b);
+      var pos = pair ? a+1+(a!==b?(b-a):0) : a+ins.length;   // 쌍기호는 가운데(또는 감싼 뒤)로 커서
+      el.focus(); try{ el.setSelectionRange(pos,pos); }catch(e){}
+      onWriteInput(el);
     }
     // 혐오 표현 문구: 뜻풀이 끝에 붙임(이미 있으면 그대로)
     function appendHateNote(btn){
