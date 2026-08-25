@@ -849,6 +849,7 @@
     applyPrefs();
     (function init(){
       if((new URLSearchParams(location.search)).get('demo')==='write'){ setTimeout(demoWrite,0); return; }   // 스크립트 하단 var 초기화 이후 실행
+      if((new URLSearchParams(location.search)).get('demo')==='landing'){ setTimeout(function(){ apiCall_=function(){ return Promise.reject(new Error('데모')); }; ME={name:'관리자',role:'관리자',isManager:true}; $('who').innerHTML='관리자'; showView('landing'); },0); return; }
       if(!TOKEN){ try{ TOKEN = localStorage.getItem('kno_token') || ''; }catch(e){} }
       if(TOKEN) doBootstrap(); else showLogin();
     })();
