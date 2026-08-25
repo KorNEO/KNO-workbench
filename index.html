@@ -1392,6 +1392,10 @@
       var hasJ=['1차 판별','2차 판별','1차 메모','2차 메모','1차 고유명 여부','2차 고유명 여부'].some(function(k){ return String(it[k]||'').trim(); });
       if(hasJ) h+='<div class="llm-box"><h3>판별 메모</h3><table class="jtbl"><thead><tr><th>단계</th><th>담당자</th><th>판별 결과</th><th>고유명 여부</th><th>혐오 표현 여부</th><th>메모</th></tr></thead><tbody>'
         + jrow(1, '작업자', it['판별 작업자']) + jrow(2, '검수자', it['판별 검수자']) + '</tbody></table></div>';
+      // 판별 단계의 말뭉치 용례 + 최초 출현 기사문·〈네이버 뉴스〉 검색 링크
+      if(String(it['용례']||'').trim() || it['용례 URL'] || it['검색 URL'])
+        h+='<div class="llm-box"><h3>말뭉치 용례</h3><div class="ex-box">'+highlight(it['용례'], it['신어 후보'])+'</div>'
+          + '<div class="ex-foot"><span>작성일 '+ymd(it['용례 일자'])+'</span><span>'+link(it['용례 URL'],'기사문 링크')+'</span><span>'+link(it['검색 URL'],'〈네이버 뉴스〉 검색 화면 링크')+'</span></div></div>';
       // 형태부 → 의미부 세로 섹션. 프로젝트 단계에 따라 잠금.
       var act=activeParts(), last=act[act.length-1];
       PARTS.forEach(function(part){
