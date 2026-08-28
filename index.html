@@ -1590,7 +1590,8 @@
         if(!native){
           if(!orig) E.push('원어가 비어 있습니다 (고유어면 고유어를 체크)');
           else { if(!/^\(.+\)$/.test(orig)) E.push('원어를 ( ) 안에 쓰지 않았습니다');
-            if(/[^가-힣ㄱ-ㅎㅏ-ㅣ一-鿿㐀-䶿A-Za-z←▼▽<>\[\]()\/\s0-9]/.test(orig)) E.push('원어에 쓸 수 없는 문자가 있습니다 (^, -, + 등)'); }
+            if(/[^가-힣ㄱ-ㅎㅏ-ㅣ一-鿿㐀-䶿A-Za-z←▼▽<>\[\]()\/\s0-9\-]/.test(orig)) E.push('원어에 쓸 수 없는 문자가 있습니다 (^, + 등)');
+            if(/(^|[^A-Za-z])-|-([^A-Za-z]|$)/.test(orig)) E.push('원어의 -는 로마자 사이에만 쓸 수 있습니다 (on-line)'); }
         }
         if(!et) E.push('어종 표시가 비어 있습니다');
         else {
@@ -1788,7 +1789,7 @@
     // 행 → 런(글자 종류가 바뀌는 구간): 한자→한, 한글→고, 그 밖(로마자 등)→행의 언어명. 기호 ▼←는 뒤따르는 로마자 런에, ▽는 앞 한자에 붙음
     function origRuns(rows){
       var runs=[]; rows.forEach(function(r,i){
-        var re=/([一-鿿㐀-䶿]+▽?)|([가-힣]+)|([▼←]*[^一-鿿㐀-䶿가-힣▼▽]+)/g, m;   // 로마자 런 안의 ←(chip←inflation)는 같은 런
+        var re=/([一-鿿㐀-䶿]+(?:\/[一-鿿㐀-䶿]+)*▽?)|([가-힣]+)|([▼←]*(?:\[[^\]]*\]|[^一-鿿㐀-䶿가-힣▼▽\[\]])+)/g, m;   // 로마자 런 안의 ←(chip←inflation)·[漢字](Wuhan[武漢])는 같은 런, 한자 사이 /(木板/木版)는 한자 런
         while((m=re.exec(r.txt))){ if(m[1]) runs.push({row:i, lang:'한', txt:m[1], kind:'한'}); else if(m[2]) runs.push({row:i, lang:'고', txt:m[2], kind:'고'}); else { var t=m[3].trim(); if(t) runs.push({row:i, lang:r.lang, txt:t, kind:'외', np:!!r.np}); } }
       });
       return runs.filter(function(x){ return x.kind!=='외' || (x.lang && x.lang!=='고' && x.lang!=='한'); });
@@ -1802,7 +1803,7 @@
       var wf=el.closest('.wf'), sec=el.closest('.stage-sec'); if(!wf || !sec) return;
       var rows=[]; wf.querySelectorAll('.orow').forEach(function(r){ var txt=r.querySelector('.o-txt').value.trim(), a=r.querySelector('.o-dict');
         if(a){ if(txt){ a.href='https://opendict.korean.go.kr/search/searchResult?query='+encodeURIComponent(txt.replace(/[▼▽←]/g,'')); a.style.display=''; } else { a.removeAttribute('href'); a.style.display='none'; } }
-        var li=r.querySelector('.o-lang'), hasRoman=/[^一-鿿㐀-䶿가-힣▼▽←\s]/.test(txt);
+        var li=r.querySelector('.o-lang'), hasRoman=/[^一-鿿㐀-䶿가-힣▼▽←\s\/]/.test(txt);   // 한자 사이 /는 로마자 아님
         if(txt && !hasRoman){ var au=[]; if(/[一-鿿㐀-䶿]/.test(txt)) au.push('한자어'); if(/[가-힣]/.test(txt)) au.push('고유어'); li.value=au.join('·'); li.disabled=true; li.classList.add('auto'); }   // 한자·한글만: 언어명 자동 표시·잠금
         else if(li.classList.contains('auto')){ li.value=''; li.classList.remove('auto'); li.disabled=r.closest('.wf').querySelector('[data-f="원어"]').disabled; }
         rows.push({lang:origLangAbbr(li), txt:txt, pi:parseInt(r.getAttribute('data-piece'),10)||0, np:r.querySelector('.o-np-chk').checked}); });
@@ -1836,8 +1837,8 @@
       var v=String(oi.value||'').trim().replace(/^\(/,'').replace(/\)$/,'');
       var plain='', romans=[], pend='', re=/<([^>]+)>|([^<]+)/g, m;   // romans: 로마자 구간 {s,e,lang,np}
       while((m=re.exec(v))){ if(m[1]){ pend=m[1]; continue; }
-        var seg=m[2], r2=/([一-鿿㐀-䶿가-힣▽]+)|([^一-鿿㐀-䶿가-힣▽]+)/g, k;
-        while((k=r2.exec(seg))){ if(k[2] && k[2].trim()){ romans.push({s:plain.length, e:plain.length+k[2].length, lang:pend, np:!pend}); pend=''; } plain+=k[1]||k[2]; } }
+        var seg=m[2], r2=/((?:\[[^\]]*\]|[^一-鿿㐀-䶿가-힣▽\[\]])+)|([一-鿿㐀-䶿가-힣▽\/]+)/g, k;
+        while((k=r2.exec(seg))){ if(k[1] && k[1].trim()){ romans.push({s:plain.length, e:plain.length+k[1].length, lang:pend, np:!pend}); pend=''; } plain+=k[1]||k[2]; } }
       var olds=rowEls.map(function(r){ return r.querySelector('.o-txt').value.trim(); }), oldAll=olds.join('');
       var pfx=0; while(pfx<oldAll.length && pfx<plain.length && oldAll[pfx]===plain[pfx]) pfx++;
       var sfx=0; while(sfx<oldAll.length-pfx && sfx<plain.length-pfx && oldAll[oldAll.length-1-sfx]===plain[plain.length-1-sfx]) sfx++;
@@ -1924,12 +1925,12 @@
     }
     // 저장 전 확인 창: 전 필드 + 점검 결과
     function collectAll_(stage){ var o={}; activeParts().forEach(function(part){ o[part]=collectWrite_(part, stage); });
-      if(projPhase()==='형태부' && stage===1){ var m=collectWrite_('의미부',1), any=false; for(var k in m){ if(!tplBlank(k,m[k]) && k!=='X년 Y월 신어') any=true; } if(any) o['의미부']=m; }   // 형태부 단계에서 미리 복사한 의미부 값 동반 저장
+      if(projPhase()==='형태부'){ var m=collectWrite_('의미부',stage), any=false; for(var k in m){ if(!tplBlank(k,m[k]) && k!=='X년 Y월 신어') any=true; } if(any) o['의미부']=m; }   // 형태부 단계에서 의미부에 적은 값(1차·2차)도 함께 저장(점검·상태 갱신은 형태부만)
       return o; }
     function validateAll_(all, it){ var E=[]; activeParts().forEach(function(part){ validateWrite(part, all[part]||{}, it).forEach(function(e){ E.push((activeParts().length>1?part+' · ':'')+e); }); }); return E; }   // 점검은 활성 부만
     function openWriteConfirm(stage){
       var it=ITEMS[CUR]; if(!it) return;
-      var all=collectAll_(stage), errs=validateAll_(all, it), parts=activeParts();
+      var all=collectAll_(stage), errs=validateAll_(all, it), parts=Object.keys(all);   // 함께 저장되는 부(형태부 단계의 의미부 값 포함) 전부 표시
       var rows=parts.map(function(part){ var vals=all[part];
         return (parts.length>1?'<tr><th colspan="2" class="cf-part">'+esc(part)+'</th></tr>':'')
           + Object.keys(vals).filter(function(k){ return !(k==='고유어' && vals[k]!=='Y'); }).map(function(k){ var v=tplBlank(k,vals[k])?'':vals[k]; return '<tr><th>'+esc(k)+'</th><td>'+(v?esc(v).replace(/\n/g,'<br>'):'<span class="kbd">-</span>')+'</td></tr>'; }).join(''); }).join('');
@@ -1947,12 +1948,11 @@
       var all=collectAll_(stage); if(validateAll_(all, it).length) return;
       closeWriteConfirm();
       var phase=projPhase();
-      activeParts().forEach(function(part){ for(var k in all[part]) it[stage+'차 '+k]=all[part][k]; });
+      Object.keys(all).forEach(function(part){ for(var k in all[part]) it[stage+'차 '+k]=all[part][k]; });   // 함께 저장되는 부 전부 로컬 반영
       var stKey=phase+' 상태'; it[stKey] = stage===2 ? '2차완료' : (String(it[stKey]||'')==='2차완료' ? '2차완료' : '1차완료');
       renderList(); renderDetail();
-      google.script.run.withSuccessHandler(function(){ setSaveBadge('저장 완료',false); toast(phase+' '+stage+'차 저장 완료'); })
-        .withFailureHandler(function(e){ setSaveBadge('저장 실패',true); toast('실패: '+e.message); })
-        .saveWrite(TOKEN,{ row_id:it['ID'], phase:phase, stage:stage, fields:all, op_id:newOpId() });
+      enqueueSave('saveWrite', { row_id:it['ID'], phase:phase, stage:stage, fields:all, op_id:newOpId() });   // 무손실 큐: 재시도·localStorage 보존·이탈 경고·실패 로그
+      toast(phase+' '+stage+'차 저장');
     }
     // 1차 작업 확정: 작업자 1차 값을 2차에 그대로 복사 후 즉시 저장·다음 항목(판별과 동일). 점검 오류가 있으면 확인 창으로.
     function confirmFirstWrite(){
@@ -2012,7 +2012,7 @@
       else setSaveBadge('저장 완료', false);
     }
     function enqueueSave(fn, payload){
-      for(var i=0;i<PENDING.length;i++){ if(PENDING[i].fn===fn && PENDING[i].payload.row_id===payload.row_id){ PENDING.splice(i,1); break; } }  // 같은 항목·단계는 최신값으로 대체
+      for(var i=0;i<PENDING.length;i++){ if(PENDING[i].fn===fn && PENDING[i].payload.row_id===payload.row_id && String(PENDING[i].payload.stage||'')===String(payload.stage||'')){ PENDING.splice(i,1); break; } }  // 같은 항목·단계(차수)는 최신값으로 대체
       PENDING.push({ fn:fn, payload:payload, tries:0 });
       persistPending(); updateSaveBadge(); flushPending();
     }
@@ -2027,6 +2027,8 @@
         var ok=false;
         if(job.fn==='saveFirst') ok=(String((it||{})['1차 판별']||'').trim()===String(job.payload.verdict).trim());
         else if(job.fn==='saveSecond') ok=(String((it||{})['2차 판별']||'').trim()===String(job.payload.verdict).trim());
+        else if(job.fn==='saveWrite'){ var ph=job.payload.phase, st=job.payload.stage, key=(ph==='형태부')?'등재표제어':'뜻풀이', want=String(((job.payload.fields||{})[ph]||{})[key]||'').trim();
+          ok=!!want && String((it||{})[st+'차 '+key]||'').trim()===want && /1차완료|2차완료/.test(String((it||{})[ph+' 상태']||'')); }
         ok?onLanded():onNotLanded();
       }).withFailureHandler(function(){ onUnknown(); }).getItem(TOKEN, job.payload.row_id);
     }
@@ -2038,7 +2040,7 @@
           .logClientFail(TOKEN, { fn:job.fn, row_id:job.payload.row_id, verdict:job.payload.verdict, memo:job.payload.memo, reason:String(reason||'') });
       }
       try{ console.error('저장 실패→로그('+job.fn+' '+job.payload.row_id+'):', reason); }catch(x){}
-      toast('실패! 실패 로그에 저장되었습니다. 다음 항목을 판별해 주세요.');
+      toast(job.fn==='saveWrite' ? '저장 실패! 실패 로그에 기록되었습니다. 화면을 새로고침한 뒤 다시 저장해 주세요.' : '실패! 실패 로그에 저장되었습니다. 다음 항목을 판별해 주세요.');
       dropJob_(job);
       if(!PENDING.length) setSaveBadge('저장 실패 — 로그 기록됨', true);
     }

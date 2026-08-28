@@ -766,7 +766,8 @@ function validateWrite_(part, v, hateY) {
     if (!native) {
       if (!orig) E.push('원어가 비어 있습니다 (고유어면 고유어를 체크)');
       else { if (!/^\(.+\)$/.test(orig)) E.push('원어를 ( ) 안에 쓰지 않았습니다');
-        if (/[^가-힣ㄱ-ㅎㅏ-ㅣ一-鿿㐀-䶿A-Za-z←▼▽<>\[\]()\/\s0-9]/.test(orig)) E.push('원어에 쓸 수 없는 문자가 있습니다 (^, -, + 등)'); }
+        if (/[^가-힣ㄱ-ㅎㅏ-ㅣ一-鿿㐀-䶿A-Za-z←▼▽<>\[\]()\/\s0-9\-]/.test(orig)) E.push('원어에 쓸 수 없는 문자가 있습니다 (^, + 등)');
+        if (/(^|[^A-Za-z])-|-([^A-Za-z]|$)/.test(orig)) E.push('원어의 -는 로마자 사이에만 쓸 수 있습니다 (on-line)'); }
     }
     if (!et) E.push('어종 표시가 비어 있습니다');
     else {
