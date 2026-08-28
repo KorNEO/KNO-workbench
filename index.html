@@ -1371,7 +1371,7 @@
     // 원어 행: 언어(지침 표10, 자동완성)·기호 버튼(← 변형, ▼ 콩글리시, ▽ 한자음 변형 — 원어 글자 칸 커서 위치에 삽입)·원어 글자·결합(+ 한 단어 안, _ 띄어쓰기, ^ 전문어 구)
     var ORIG_LANGS=[['고','고유어'],['한','한자어'],['영','영어'],['일','일본어'],['중','중국어'],['프','프랑스어'],['독','독일어'],['라','라틴어'],['그','그리스어'],['이','이탈리아어'],['에','에스파냐어'],['러','러시아어'],['네','네덜란드어'],['노','노르웨이어'],['루','루마니아어'],['말','말레이어'],['몽','몽골어'],['베','베트남어'],['불','불가리아어'],['산','산스크리트어'],['세','세르보크로아트어'],['와','스와힐리어'],['스','스웨덴어'],['아','아랍어'],['인','인도네시아어'],['체','체코어'],['타','타이어'],['터','터키어'],['페','페르시아어'],['포','포르투갈어'],['폴','폴란드어'],['헝','헝가리어'],['히','히브리어'],['힌','힌디어']];
     var ORIG_LANG_ABBR={}; ORIG_LANGS.forEach(function(x){ ORIG_LANG_ABBR[x[1]]=x[0]; });
-    var AC_DEF={ jm:{list:FIELD_67, l:'『', r:'』'}, um:{list:FIELD_15, l:'〔', r:'〕'}, pos:{list:POS_REST, l:'「', r:'」'}, lang:{list:ORIG_LANGS.filter(function(x){ return x[0]!=='고' && x[0]!=='한'; }).map(function(x){ return x[1]; }), l:'', r:''} };
+    var AC_DEF={ jm:{list:FIELD_67, l:'『', r:'』'}, um:{list:FIELD_15, l:'〔', r:'〕'}, pos:{list:POS_REST, l:'「', r:'」'}, lang:{list:ORIG_LANGS.filter(function(x){ return x[0]!=='고' && x[0]!=='한'; }).map(function(x){ return x[1]; }), l:'', r:'', free:true} };
     function acPlain(v){ return String(v||'').replace(/[^가-힣ㄱ-ㅎㅏ-ㅣA-Za-z0-9]/g,''); }
     function acOpen(inp){ if(inp.disabled) return; var d=AC_DEF[inp.getAttribute('data-ac')], box=inp.nextElementSibling, q=acPlain(inp.value);
       var grp=(inp.getAttribute('data-ac')==='jm') ? FIELD_67_GROUP : null;
@@ -1388,6 +1388,7 @@
       var d=AC_DEF[inp.getAttribute('data-ac')], v=String(inp.value||'').trim(); if(!d || !v) return;
       var full=d.list.map(function(x){ return d.l+x+d.r; }); if(full.indexOf(v)>=0) return;
       var q=acPlain(v), hit=d.list.filter(function(x){ return q && acPlain(x).indexOf(q)>=0; })[0];
+      if(!hit && d.free) return;   // 직접 입력 허용(외국어 언어명)
       inp.value = hit ? d.l+hit+d.r : '';
       if(inp.classList.contains('seg-free-inp')) segFree(inp); else onWriteInput(inp);
     }
@@ -1578,7 +1579,7 @@
         }
         if(!et) E.push('어종 표시가 비어 있습니다');
         else {
-          et.replace(/[+_^()\s]/g,'|').split('|').filter(Boolean).forEach(function(t){ if(LANG_ABBR.indexOf(t)<0) E.push('어종 표시에 쓸 수 없는 값이 있습니다: '+t); });
+          et.replace(/[+_^()\s]/g,'|').split('|').filter(Boolean).forEach(function(t){ if(!/^[가-힣]$/.test(t)) E.push('어종 표시에 쓸 수 없는 값이 있습니다: '+t); });   // 약어는 한글 1음절(직접 입력 언어 포함)
           // 성분이 하나인 단어(혼성·축약 등)는 어종이 형태소를 +로 나열하므로(칩플레이션 영+영) 대조하지 않음. 여럿이면 괄호 안을 뺀 상위 기호만 대조
           var seqH=(head||'').replace(/\d+$/,'').replace(/[^-\s^]/g,'').replace(/-/g,'+').replace(/\s/g,'_'), seqE=et.replace(/\([^)]*\)/g,'X').replace(/[^+_^]/g,'');
           if(head && seqH && seqH!==seqE) E.push('어종 표시의 기호(+ _ ^)가 등재표제어의 분절(- 공백 ^)과 맞지 않습니다');
@@ -1779,6 +1780,11 @@
       });
       return runs.filter(function(x){ return x.kind!=='외' || (x.lang && x.lang!=='고' && x.lang!=='한'); });
     }
+    // 언어명 → 약어. 목록에 없는 언어명(직접 입력)은 첫 음절. 첫 음절이 기존 약어와 겹치면 안내하고 빈 값(행 제외)
+    function origLangAbbr(li){ var name=li.value.trim(); if(!name) return ''; if(ORIG_LANG_ABBR[name]) return ORIG_LANG_ABBR[name];
+      var ab=name.charAt(0);
+      if(LANG_ABBR.indexOf(ab)>=0){ if(li.getAttribute('data-warned')!==name){ toast('해당 언어명에 대한 약어 배정이 필요합니다. 관리자에게 문의해 주세요.'); li.setAttribute('data-warned', name); } return ''; }
+      return /[가-힣]/.test(ab) ? ab : ''; }
     function origCompose(el, keepOrig){
       var wf=el.closest('.wf'), sec=el.closest('.stage-sec'); if(!wf || !sec) return;
       var rows=[]; wf.querySelectorAll('.orow').forEach(function(r){ var txt=r.querySelector('.o-txt').value.trim(), a=r.querySelector('.o-dict');
@@ -1786,7 +1792,7 @@
         var li=r.querySelector('.o-lang'), hasRoman=/[^一-鿿㐀-䶿가-힣▼▽←\s]/.test(txt);
         if(txt && !hasRoman){ var au=[]; if(/[一-鿿㐀-䶿]/.test(txt)) au.push('한자어'); if(/[가-힣]/.test(txt)) au.push('고유어'); li.value=au.join('·'); li.disabled=true; li.classList.add('auto'); }   // 한자·한글만: 언어명 자동 표시·잠금
         else if(li.classList.contains('auto')){ li.value=''; li.classList.remove('auto'); li.disabled=r.closest('.wf').querySelector('[data-f="원어"]').disabled; }
-        rows.push({lang:ORIG_LANG_ABBR[li.value.trim()]||'', txt:txt, pi:parseInt(r.getAttribute('data-piece'),10)||0, np:r.querySelector('.o-np-chk').checked}); });
+        rows.push({lang:origLangAbbr(li), txt:txt, pi:parseInt(r.getAttribute('data-piece'),10)||0, np:r.querySelector('.o-np-chk').checked}); });
       rows=rows.filter(function(r){ return r.txt; }); if(!rows.length) return;
       var runs=origRuns(rows); if(!runs.length) return;
       var ps=origPieces(secVal(sec,'등재표제어')), m=Math.max(ps.length,1);

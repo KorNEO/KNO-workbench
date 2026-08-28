@@ -770,7 +770,7 @@ function validateWrite_(part, v, hateY) {
     }
     if (!et) E.push('어종 표시가 비어 있습니다');
     else {
-      et.replace(/[+_^()\s]/g, '|').split('|').filter(function (x) { return x; }).forEach(function (t) { if (W_LANG.indexOf(t) < 0) E.push('어종 표시에 쓸 수 없는 값이 있습니다: ' + t); });
+      et.replace(/[+_^()\s]/g, '|').split('|').filter(function (x) { return x; }).forEach(function (t) { if (!/^[가-힣]$/.test(t)) E.push('어종 표시에 쓸 수 없는 값이 있습니다: ' + t); });   // 약어는 한글 1음절(직접 입력 언어 포함)
       // 성분이 하나인 단어(혼성·축약 등)는 어종이 형태소를 +로 나열하므로 대조하지 않음. 여럿이면 괄호 안을 뺀 상위 기호만 대조
       var seqH = (head || '').replace(/\d+$/, '').replace(/[^-\s^]/g, '').replace(/-/g, '+').replace(/\s/g, '_'), seqE = et.replace(/\([^)]*\)/g, 'X').replace(/[^+_^]/g, '');
       if (head && seqH && seqH !== seqE) E.push('어종 표시의 기호(+ _ ^)가 등재표제어의 분절(- 공백 ^)과 맞지 않습니다');
