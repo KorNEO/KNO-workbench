@@ -1621,13 +1621,10 @@
       var hasJ=['1차 판별','2차 판별','1차 메모','2차 메모','1차 고유명 여부','2차 고유명 여부'].some(function(k){ return String(it[k]||'').trim(); });
       if(hasJ) h+='<div class="llm-box"><h3>판별 메모</h3><table class="jtbl"><thead><tr><th>단계</th><th>담당자</th><th>판별 결과</th><th>고유명 여부</th><th>혐오 표현 여부</th><th>메모</th></tr></thead><tbody>'
         + jrow(1, '작업자', it['판별 작업자']) + jrow(2, '검수자', it['판별 검수자']) + '</tbody></table></div>';
-      // 형태부 → 의미부 세로 섹션. 프로젝트 단계에 따라 잠금.
-      var act=activeParts(), last=act[act.length-1];
+      // 형태부 → 의미부 세로 섹션. 두 부 모두 항상 편집 가능(프로젝트 단계는 점검·상태 갱신 대상만 정함). 저장 버튼은 맨 아래(의미부)
       PARTS.forEach(function(part){
-        var locked=(act.indexOf(part)<0);
-        h+='<div class="part-sec'+(locked?' locked':'')+'" data-part="'+part+'"><div class="ps-head">'+(part==='형태부'?'형태부':'의미부')
-          + (locked?'<span class="ps-state">의미부 작업 단계로 전환 시 활성화됩니다.</span>':'')+'</div>';
-        var ed1=!locked && isW, ed2=!locked && isR, foot=(part===last);
+        h+='<div class="part-sec" data-part="'+part+'"><div class="ps-head">'+(part==='형태부'?'형태부':'의미부')+'</div>';
+        var ed1=isW, ed2=isR, foot=(part===PARTS[PARTS.length-1]);
         h+='<div class="write-cols">'+stageSec(it,part,1,ed1,foot)+stageSec(it,part,2,ed2,foot)+'</div></div>';
       });
       // 뜻풀이 변경 이력(맨 아래)
@@ -1637,6 +1634,7 @@
         + '<div class="drow"><span class="dl">작업자</span><div class="dv">'+wordDiff_(llmDef,wv(it,1,'뜻풀이'),'m1')+'</div></div>'
         + '<div class="drow"><span class="dl">검수자</span><div class="dv">'+wordDiff_(wv(it,1,'뜻풀이'),wv(it,2,'뜻풀이'),'m2')+'</div></div></div>';
       $('detail').innerHTML=h;
+      document.querySelectorAll('#detail .stage-sec [data-ro="1"]').forEach(function(el){ el.disabled=true; });   // 읽기 전용(상대 차수) 칸은 모든 부에서 잠금
       document.querySelectorAll('#detail .stage-sec[data-part="형태부"]').forEach(function(sec){ chainApply(sec, sec.getAttribute('data-chain')==='1'); });
       refreshLlmBtns();
       refUpdate();
@@ -1704,7 +1702,7 @@
       }
       h+='</div>';
       if(foot){   // 저장 버튼: 활성 부 전체를 한 번에 저장
-        var canConfirm = stage===2 && ed && /1차완료|2차완료/.test(String(it[part+' 상태']||''));
+        var canConfirm = stage===2 && ed && /1차완료|2차완료/.test(String(it[projPhase()+' 상태']||''));   // 확정 가능 여부는 현재 단계의 상태로
         h+='<div class="ss-foot">'+(ed?(canConfirm?'<button class="btn confirm-first" style="margin-left:0;margin-right:6px" onclick="confirmFirstWrite()" title="작업자의 1차 작업 값을 그대로 2차에 입력하고 저장합니다 (메모는 복사하지 않음)">✓ 1차 작업 확정 및 저장</button>':'')
           +'<button class="btn save" onclick="openWriteConfirm('+stage+')">'+(stage===1?'1차 작업 저장':'2차 검수 저장')+'</button>'
           +' <span class="save-badge"></span>':'<span class="kbd">'+(stage===1?'작업자만 저장':'검수자만 저장')+'</span>')+'</div>';
