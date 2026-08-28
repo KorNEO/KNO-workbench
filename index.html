@@ -717,6 +717,8 @@
     function showView(v){
       if((v==='home'||v==='mine'||v==='all') && !CURRENT_PROJECT) v='projects';   // 프로젝트 선택 필수
       SCOPE=v;
+      if(v==='projects'||v==='home'||v==='mine'||v==='all') lsSet('kno_last', JSON.stringify({mode:MODE, pid:CURRENT_PROJECT?CURRENT_PROJECT.id:'', view:v}));   // 새로고침 복원용
+      else if(v==='landing') lsSet('kno_last','');
       var onLanding=(v==='landing');
       $('nav').style.display = onLanding ? 'none':'';
       $('who').style.display = onLanding ? 'none':'';
@@ -877,7 +879,19 @@
       loadPending(); flushPending();   // 지난 세션의 미저장분이 있으면 재전송(무손실)
       startPresence();                 // 접속 하트비트 시작
       showView('landing');
+      restoreLast();                   // 새로고침 전 화면으로
     }).withFailureHandler(function(e){ try{ localStorage.removeItem('kno_token'); }catch(x){} TOKEN=''; showLogin(); }).getBootstrap(TOKEN);
+    }
+    // 마지막 화면 복원: 모드 → 프로젝트 목록 로드 대기 → 프로젝트 열기 → 탭 → 항목
+    var RESTORE_ITEM='';
+    function restoreLast(){
+      var st; try{ st=JSON.parse(lsGet('kno_last','')||''); }catch(e){ return; } if(!st || !st.mode) return;
+      MODE=st.mode; CURRENT_PROJECT=null; showView('projects'); lsSet('kno_last', JSON.stringify(st));
+      if(!st.pid) return;
+      var tries=0, t=setInterval(function(){ tries++;
+        var ok=PROJ_LIST.some(function(p){ return p.id===st.pid; });
+        if(ok){ clearInterval(t); openProject(st.pid); if(st.view==='mine'||st.view==='all'){ RESTORE_ITEM=st.item||''; showView(st.view); } }
+        else if(tries>80) clearInterval(t); }, 250);
     }
     function lsGet(k,d){ try{ var v=localStorage.getItem(k); return v==null?d:v; }catch(e){ return d; } }
     function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
@@ -1167,6 +1181,7 @@
     }
     function applyResults(){
       renderList();
+      if(RESTORE_ITEM){ var ri=-1; ITEMS.forEach(function(x,k){ if(ri<0 && String(x['ID']||'')===RESTORE_ITEM) ri=k; }); RESTORE_ITEM=''; if(ri>=0){ selectItem(ri); return; } }
       if(CUR<0){ var shown=ITEMS.filter(itemPasses).length; $('detail').innerHTML='<div class="placeholder">'+(shown?'왼쪽에서 신어 후보 항목을 선택하세요.':'표시할 항목이 없습니다.')+'</div>'; var rb=$('ref-box'); if(rb) rb.style.display='none'; var rbc=$('ref-btn-col'); if(rbc) rbc.style.display='none'; document.body.classList.remove('write-work'); }
     }
     function renderList(){
@@ -1202,6 +1217,7 @@
         if(stageComplete(st)) doSave(st, false);
         else { toast('저장되지 않음: 판별·고유명·혐오 여부를 모두 선택해야 저장됩니다.'); DIRTY=false; clearTimeout(AUTO_TIMER); setSaveBadge('', false); } }
       CUR=i; var it=ITEMS[i];
+      try{ var _l=JSON.parse(lsGet('kno_last','')||'{}'); _l.item=String(it['ID']||''); lsSet('kno_last', JSON.stringify(_l)); }catch(e){}
       document.querySelectorAll('.item').forEach(function(el){ el.classList.toggle('sel', el.getAttribute('data-i')==i); });
       if(it.__full){ renderDetail(); prefetch(i+1); return; }
       $('detail').innerHTML='<div class="placeholder">불러오는 중…</div>';
