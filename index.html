@@ -422,7 +422,7 @@
 </head>
 <body>
   <header>
-    <div class="brand" onclick="showView('landing')">KNO <b>Workbench</b></div>
+    <div class="brand" onclick="lsSet('kno_last','');showView('landing')">KNO <b>Workbench</b></div>
     <span class="modebadge hidden" id="modeBadge" onclick="if(SCOPE!=='projects')showView('projects')" style="cursor:pointer" title="프로젝트 목록으로"></span>
     <nav class="tabs" id="nav">
       <button data-view="projects">프로젝트</button>
@@ -717,8 +717,7 @@
     function showView(v){
       if((v==='home'||v==='mine'||v==='all') && !CURRENT_PROJECT) v='projects';   // 프로젝트 선택 필수
       SCOPE=v;
-      if(v==='projects'||v==='home'||v==='mine'||v==='all') lsSet('kno_last', JSON.stringify({mode:MODE, pid:CURRENT_PROJECT?CURRENT_PROJECT.id:'', view:v}));   // 새로고침 복원용
-      else if(v==='landing') lsSet('kno_last','');
+      if(v==='projects'||v==='home'||v==='mine'||v==='all') lsSet('kno_last', JSON.stringify({mode:MODE, pid:CURRENT_PROJECT?CURRENT_PROJECT.id:'', view:v}));   // 새로고침 복원용(랜딩은 브랜드 클릭에서만 지움)
       var onLanding=(v==='landing');
       $('nav').style.display = onLanding ? 'none':'';
       $('who').style.display = onLanding ? 'none':'';
