@@ -688,6 +688,14 @@
       $('uiConfirmOk').onclick=function(){ box.classList.add('hidden'); onOk(); };
       $('uiConfirmOk').focus();
     }
+    function uiAlert(msg){   // 안내 팝업 — uiConfirm과 같은 디자인(확인 버튼만). 안내 메시지 팝업은 전부 이 함수로 통일
+      var box=$('uiAlert'); if(!box){ box=document.createElement('div'); box.id='uiAlert'; box.className='modal'; document.body.appendChild(box); }
+      box.innerHTML='<div class="modal-box" style="width:min(440px,92vw)"><div class="cf-msg">'+esc(msg).replace(/\n/g,'<br>')+'</div>'
+        + '<div class="actions" style="margin-top:16px"><button class="btn save" id="uiAlertOk">확인</button></div></div>';
+      box.classList.remove('hidden');
+      $('uiAlertOk').onclick=function(){ box.classList.add('hidden'); };
+      $('uiAlertOk').focus();
+    }
     function toast(m){ var t=$('toast'); t.textContent=m; t.style.display='block'; clearTimeout(t._t); t._t=setTimeout(function(){t.style.display='none';},2400); }
     // 진단: 잡히지 않은 오류를 화면에 노출(F12 없이 원인 파악). 길게 보이게 5초.
     function _diagToast(m){ var t=$('toast'); if(!t) return; t.textContent=m; t.style.display='block'; clearTimeout(t._t); t._t=setTimeout(function(){t.style.display='none';},6000); }
@@ -1798,6 +1806,15 @@
     }
     // LLM 값 복사: 1차 작업 폼의 대상 필드로(색인표제어는 자동 생성이라 항상 비활성)
     // LLM 값 읽기: 단어/구가 구이면 조어법·품사는 없음(LLM이 넣었어도 무시)
+    // LLM 값이 그 필드의 허용값(범주) 안인지 — 목록이 정해진 여섯 필드만 점검, 뜻풀이·용례는 자유 입력
+    function llmValueOk_(f, v){ v=String(v||'').trim(); if(!v) return true;
+      if(f==='단어/구') return v==='단어'||v==='구';
+      if(f==='조어법') return WF_TYPES.indexOf(v)>=0;
+      if(f==='품사') return /^「.+」$/.test(v) && POS_LIST.indexOf(v.slice(1,-1))>=0;
+      if(f==='일상어/전문어') return v==='일상어'||v==='전문어';
+      if(f==='전문 분야') return /^『.+』$/.test(v) && FIELD_67.indexOf(v.slice(1,-1))>=0;
+      if(f==='의미 범주') return /^〔.+〕$/.test(v) && FIELD_15.indexOf(v.slice(1,-1))>=0;
+      return true; }
     function llmVal_(it, m){ var v=String(it[m[0]]||'').trim(); if(String(it['LLM 단어/구']||'').trim()==='구' && (m[1]==='조어법'||m[1]==='품사')) return ''; return v; }
     function llmTargetOf(i){ var m=LLM_MAP[i]; return document.querySelector('#detail .stage-sec[data-part="'+m[2]+'"][data-stage="1"] [data-f="'+m[1]+'"]'); }
     // 복사는 활성 여부와 무관(값을 넣어 두면 체인이 진행될 때 그대로 살아 있음). 색인표제어는 자동 생성이라 제외, 편집 권한 없으면 비활성.
@@ -1813,6 +1830,7 @@
     function llmCopy(btn){
       var it=ITEMS[CUR]; if(!it) return; var i=parseInt(btn.getAttribute('data-llm'),10), el=llmTargetOf(i);
       if(!llmOk_(i, el)) return;
+      if(!llmValueOk_(LLM_MAP[i][1], llmVal_(it, LLM_MAP[i]))){ uiAlert('LLM 생성 결과에 오류가 있습니다. 수동으로 입력해 주십시오.'); return; }
       llmSet_(i, el); toast('복사 완료');
     }
     function origRowHtml(pi, label, sub){
@@ -1996,8 +2014,11 @@
     // 전체 복사하기: 순서대로 복사하며 체인 활성화를 따라감(비활성 필드는 건너뜀)
     function llmCopyAll(){
       var it=ITEMS[CUR]; if(!it) return;
-      LLM_MAP.forEach(function(m,i){ var el=llmTargetOf(i); if(!llmOk_(i, el)) return; llmSet_(i, el); });
-      refreshLlmBtns(); toast('복사 완료');
+      var bad=0;
+      LLM_MAP.forEach(function(m,i){ var el=llmTargetOf(i); if(!llmOk_(i, el)) return;
+        if(!llmValueOk_(m[1], llmVal_(it, m))){ bad++; return; }   // 허용값 밖 필드는 복사하지 않음
+        llmSet_(i, el); });
+      refreshLlmBtns(); if(bad) uiAlert('LLM 생성 결과에 오류가 있습니다. 수동으로 입력해 주십시오.'); else toast('복사 완료');
     }
     // 저장 전 확인 창: 전 필드 + 점검 결과
     function collectAll_(stage){ var o={}; activeParts().forEach(function(part){ o[part]=collectWrite_(part, stage); });
