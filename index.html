@@ -1761,18 +1761,28 @@
         + '<div class="o-line2"><div class="ac"><input class="w-field ac-inp o-lang" data-ac="lang" autocomplete="off" placeholder="외국어 언어명" oninput="acOpen(this);origCompose(this)" onkeydown="acKey(event,this)" onfocus="acOpen(this)" onblur="acBlur(this)"><div class="ac-list" style="display:none"></div></div>'+sb('▼')+sb('▽')+sb('←')
         + '<span class="o-symw"><label class="o-np"><input type="checkbox" class="o-np-chk" onchange="origCompose(this)">고유명</label><div class="sym-tip">'+esc(NP_TIP)+'</div></span></div></div>';
     }
-    // 등재표제어의 조각(-·공백·^)마다 행 하나. 조각이 바뀔 때마다 현재 조각 수에 맞춰 다시 만든다(늘면 빈 행 추가, 줄면 뒤 성분의 행·그 추가 행 제거). 남는 성분의 행에 적힌 원어·언어명·고유명은 같은 순서로 유지
+    // 등재표제어의 조각(-·공백·^)마다 행 하나. 조각이 바뀔 때마다 현재 조각 수에 맞춰 다시 만든다(늘면 행 추가, 줄면 뒤 성분의 행·그 추가 행 제거).
+    //  남는 성분의 행 값(원어·언어명·고유명)은 유지. 사라진 성분의 행 값은 성분 번호별로 보관(box._stash)했다가 그 번호의 성분이 다시 생기면 복원(추가 행 포함). 상자는 항목마다 새로 만들어지므로 보관값은 항목 안에서만 유효
     function origRebuild(sec){
       var box=sec.querySelector('.orows'); if(!box) return;
       var ps=origPieces(secVal(sec,'등재표제어')); if(!ps.length) ps=[{txt:'', sep:''}];
       var sig=ps.map(function(x){ return x.txt+x.sep; }).join('|'); if(box.getAttribute('data-sig')===sig) return;   // 조각 글자·결합 기호가 같으면 유지
       var old=[]; box.querySelectorAll('.orow').forEach(function(r){ old.push({pi:parseInt(r.getAttribute('data-piece'),10), sub:!!r.querySelector('.o-piece.sub'), txt:r.querySelector('.o-txt').value, lang:r.querySelector('.o-lang').value, np:r.querySelector('.o-np-chk').checked}); });
-      old=old.filter(function(o){ return o.pi<ps.length; });   // 사라진 성분(뒤쪽)의 행은 값과 함께 버림
-      var h=''; ps.forEach(function(x,pi){ h+=origRowHtml(pi, x.txt, false); old.forEach(function(o){ if(o.sub && o.pi===pi) h+=origRowHtml(pi, '', true); }); });
+      var stash=box._stash||(box._stash={}), dropped={};
+      old.forEach(function(o){ if(o.pi>=ps.length) (dropped[o.pi]=dropped[o.pi]||[]).push(o); });
+      Object.keys(dropped).forEach(function(k){ stash[k]=dropped[k]; });   // 사라진 성분의 행은 최신 상태로 보관(비운 채 사라졌으면 빈 값으로 덮음)
+      var vals=[], h='';
+      ps.forEach(function(x,pi){
+        var g=old.filter(function(o){ return o.pi===pi; });
+        if(!g.length && stash[pi]){ g=stash[pi]; delete stash[pi]; }   // 새로 생긴 성분: 보관값이 있으면 복원
+        var main=g.filter(function(o){ return !o.sub; })[0]||{txt:'', lang:'', np:false}, subs=g.filter(function(o){ return o.sub; });
+        h+=origRowHtml(pi, x.txt, false); vals.push(main);
+        subs.forEach(function(o){ h+=origRowHtml(pi, '', true); vals.push(o); });
+      });
       box.innerHTML=h; box.setAttribute('data-sig', sig);
-      var rows=box.querySelectorAll('.orow'), k=0; old.forEach(function(o){ if(k<rows.length){ rows[k].querySelector('.o-txt').value=o.txt; rows[k].querySelector('.o-lang').value=o.lang; rows[k].querySelector('.o-np-chk').checked=!!o.np; k++; } });
+      var rows=box.querySelectorAll('.orow'); vals.forEach(function(o,k){ rows[k].querySelector('.o-txt').value=o.txt; rows[k].querySelector('.o-lang').value=o.lang; rows[k].querySelector('.o-np-chk').checked=!!o.np; });
       var oi=sec.querySelector('[data-f="원어"]'); if(oi) box.querySelectorAll('input,button').forEach(function(b){ b.disabled=oi.disabled; });
-      if(old.some(function(o){ return o.txt; })) origCompose(box.querySelector('.o-txt'));
+      if(vals.some(function(o){ return o.txt; })) origCompose(box.querySelector('.o-txt'));
     }
     // 기호는 커서 위치와 무관하게 제자리에: ▼·←는 원어 앞(▼ 다음 ←), ▽는 원어 뒤. 같은 기호를 다시 누르면 제거
     function origSym(btn, sym){ var el=btn.closest('.orow').querySelector('.o-txt'); if(el.disabled) return;
