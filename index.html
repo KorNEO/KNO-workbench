@@ -783,7 +783,7 @@
                 : '')
             + '<div class="pc-name">'+esc(p.name)+'</div>'
             + '<div class="pc-meta">등록 <b>'+esc(p.registered||'-')+'</b> · 마감 <b>'+esc(p.due||'-')+'</b></div>'
-            + '<span class="pc-status '+esc(p.status||'')+'">'+esc(p.status||'')+'</span></div>';
+            + '<span class="pc-status '+esc(p.status||'')+'">'+esc(String(p.status||'').replace('배분완료','배분 완료').replace('미배분','미배분'))+'</span></div>';   // 라벨은 '배분 완료'로 띄어 표기(저장값·CSS 클래스는 기존 그대로)
         }).join('') : '<span class="kbd">프로젝트가 없습니다.'+(ME.isManager?' 우측 위 <b>+ 새 프로젝트</b>로 만드세요.':'')+'</span>';
       }).withFailureHandler(function(e){ $('proj-list').innerHTML='<span class="kbd">실패: '+esc(e.message)+'</span>'; }).getProjects(TOKEN, modeKind());
     }
