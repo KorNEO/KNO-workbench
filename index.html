@@ -1069,7 +1069,7 @@
           if(isWrite() && o.parts){   // 집필: 형태부/의미부 각각 1차·2차
             $('overall').innerHTML = ['형태부','의미부'].map(function(pt){ var q=o.parts[pt]||{done1:0,done2:0}, qt=(q.total!=null)?q.total:t; function qp(x){ return qt?Math.round(x/qt*100):0; }   // 분모: 부별 대상 수(의미부=의미부 대상만)
               return '<div style="margin-top:'+(pt==='형태부'?0:16)+'px"><div class="kbd" style="font-size:14px;font-weight:700;color:var(--brand-d)">'+pt+(p.phase===pt?' (현재 단계)':'')+'</div>'
-                + '<div class="big-num">'+q.done1.toLocaleString()+' <small>/ '+qqt.toLocaleString()+' 1차 작업 완료 ('+qp(q.done1)+'%)</small></div>'+progBar({total:qt,'1차완료':q.done1})
+                + '<div class="big-num">'+q.done1.toLocaleString()+' <small>/ '+qt.toLocaleString()+' 1차 작업 완료 ('+qp(q.done1)+'%)</small></div>'+progBar({total:qt,'1차완료':q.done1})
                 + '<div class="big-num" style="margin-top:8px">'+q.done2.toLocaleString()+' <small>/ '+qt.toLocaleString()+' 2차 검수 완료 ('+qp(q.done2)+'%)</small></div>'+progBar({total:qt,'2차완료':q.done2})+'</div>'; }).join('');
           } else
           $('overall').innerHTML =
