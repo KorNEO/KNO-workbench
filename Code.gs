@@ -533,7 +533,8 @@ function getProgressWrite_(projectId) {
         WRITE_PARTS.forEach(function (pt) { if (pt === '의미부' && !sem) return; o.parts[pt].total++; var st = g(r, pt + ' 상태'); if (st === STATUS.FIRST || st === STATUS.SECOND) o.parts[pt].done1++; if (st === STATUS.SECOND) o.parts[pt].done2++; });
         if (inPhase) { var cur = g(r, phase + ' 상태') || STATUS.NONE; if (o[cur] !== undefined) o[cur]++; }
         o.done1 = o.parts[phase].done1; o.done2 = o.parts[phase].done2;
-        var wk = g(r, phase + ' 주차'); if (wk && inPhase) o.weeks[wk] = (o.weeks[wk] || 0) + 1;
+        var wkPhase = (phase === '의미부' && !sem) ? '형태부' : phase;   // 항목별 실제 단계의 주차(getItems의 주차 필터와 동일 기준)
+        var wk = g(r, wkPhase + ' 주차'); if (wk) o.weeks[wk] = (o.weeks[wk] || 0) + 1;
       });
     }
   }

@@ -194,6 +194,7 @@
     .part-lock { background:var(--hold-bg); color:var(--hold); border-radius:8px; padding:8px 12px; font-size:13px; margin-bottom:10px; }
     .ps-head .pill { margin-left:10px; vertical-align:middle; font-size:12px; padding:2px 9px; }
     .pill.na { background:#eef0f3; color:#6b7280; }   /* 미집필(해당 없음): 회색. 집필 대상은 푸른색(s1) */
+    body.dark .pill.na { background:#333a44; color:#aab3bd; }
     .w-field[data-f="X년 Y월 신어"][readonly] { background:var(--surface2); cursor:default; }
     .w-field[data-f="색인표제어"], .w-field[data-f="색인표제어"]:disabled { font-size:19px; font-weight:700; color:var(--ink); background:var(--surface2); cursor:default; }
     .wf.off .w-field[data-f="색인표제어"] { color:var(--ink); }
@@ -551,7 +552,7 @@
         <div class="detail-col" id="detail"><div class="placeholder">왼쪽에서 신어 후보 항목을 선택하세요.</div></div>
         <aside id="ref-box" class="ref-col" style="display:none">
           <div class="ref-inner">
-            <div class="ref-head"><div class="ref-ttl">집필 사례</div><input id="ref-q" class="w-field" oninput="refRender()"></div>
+            <div class="ref-head"><div class="ref-ttl">집필 사례</div><input id="ref-q" class="w-field" oninput="refRenderSoon()"></div>
             <div id="ref-body" class="ref-body"></div>
           </div>
         </aside>
@@ -1529,6 +1530,8 @@
       if(rec.def) rows+='<tr><th>뜻풀이</th><td>'+esc(rec.def)+'</td></tr>';
       return '<div class="ref-item"><div class="ref-title"><span class="ref-name">'+mark(rec.title)+'</span>'+(rec.year?'<span class="ref-year">'+esc(rec.year)+'</span>':'')+'</div><table class="ref-tbl">'+rows+'</table></div>';
     }
+    var _refT=null;
+    function refRenderSoon(){ clearTimeout(_refT); _refT=setTimeout(refRender, 150); }   // 입력 중 과도한 재렌더 방지
     function refRender(){
       var q=refKey_(($('ref-q')||{}).value||''), body=$('ref-body'); if(!body) return;
       var it=ITEMS[CUR], html='';
@@ -1565,7 +1568,8 @@
           html+='<div class="ref-sub">'+(kind==='접미'?'접미사':'접두사')+' '+esc(label)+'<span class="ref-count">'+list.length+'건</span></div>'+(list.length?list.map(function(rec){ return refCard_(rec, a, kind==='접미'); }).join(''):'<div class="ref-empty">-</div>');
         });
       }
-      body.innerHTML=html;
+      if(body._last===html) return;   // 같은 내용이면 다시 그리지 않음
+      body._last=html; body.innerHTML=html;
     }
     function segPick(btn){ var seg=btn.closest('.seg'), inp=seg.querySelector('.seg-val'); if(inp.disabled) return;
       var fr=seg.querySelector('.seg-free-inp');
@@ -1609,7 +1613,10 @@
       var head=secVal(sec,'등재표제어'); var ix=sec.querySelector('[data-f="색인표제어"]'), ixEditing=!!(ix && ix.getAttribute('data-edit')==='1');
       if(ix && !ixEditing){ var ixOld=String(ix.value||'').trim(), base=idxBase_(ix.value)||idxBase_(headSrc_(it)), nv=base?indexHeadword(it, base):''; if(nv && ix.value!==nv){ secSet(sec,'색인표제어', nv); ix.classList.remove('changed'); }
         // 등재표제어: 비어 있으면 색인표제어를 그대로 복사, 색인표제어(어깨 번호 정리 포함)가 바뀌었고 등재표제어가 그 이전 값 그대로면 따라감. 편집 가능한 폼에서만
-        if(chain && nv && (!head || head===ixOld) && head!==nv){ secSet(sec,'등재표제어', nv); head=nv; var hEl=sec.querySelector('[data-f="등재표제어"]'); if(hEl && hEl.classList.contains('w2')) mark2(hEl); } }   // 색인표제어 = 고정된 바탕 어형 + 어깨 번호(동형어가 있으면 자동, 없으면 없음). 등재표제어를 따라 바뀌지 않음
+        if(chain && nv && (!head || head===ixOld) && head!==nv){ secSet(sec,'등재표제어', nv); head=nv; var hEl=sec.querySelector('[data-f="등재표제어"]'); if(hEl && hEl.classList.contains('w2')) mark2(hEl); }
+        // 어깨 번호(끝 숫자)는 두 필드에 함께: 같은 바탕 어형이면 등재표제어 끝 번호를 색인표제어의 번호와 일치시킴(가발-킹 ↔ 가발킹01 → 가발-킹01)
+        if(chain && nv && head && idxBase_(head)===idxBase_(nv)){ var num=nv.slice(idxBase_(nv).length), hb=head.replace(/\d+$/,'');
+          if(head!==hb+num){ secSet(sec,'등재표제어', hb+num); head=hb+num; var hEl2=sec.querySelector('[data-f="등재표제어"]'); if(hEl2 && hEl2.classList.contains('w2')) mark2(hEl2); } } }   // 색인표제어 = 고정된 바탕 어형 + 어깨 번호(동형어가 있으면 자동, 없으면 없음). 등재표제어를 따라 바뀌지 않음
       var pos=secVal(sec,'품사'), fld=secVal(sec,'전문 분야'), orig=secVal(sec,'원어'), et=secVal(sec,'어종 표시');
       var en={};
       en['단어/구']=true;
@@ -1853,18 +1860,22 @@
       var box=sec.querySelector('.orows'); if(!box) return;
       var ps=origPieces(secVal(sec,'등재표제어')); if(!ps.length) ps=[{txt:'', sep:''}];
       var sig=ps.map(function(x){ return x.txt+x.sep; }).join('|'); if(box.getAttribute('data-sig')===sig) return;   // 조각 글자·결합 기호가 같으면 유지
-      var old=[]; box.querySelectorAll('.orow').forEach(function(r){ old.push({pi:parseInt(r.getAttribute('data-piece'),10), sub:!!r.querySelector('.o-piece.sub'), txt:r.querySelector('.o-txt').value, lang:r.querySelector('.o-lang').value, np:r.querySelector('.o-np-chk').checked}); });
-      var stash=box._stash||(box._stash={}), dropped={};
-      old.forEach(function(o){ if(o.pi>=ps.length) (dropped[o.pi]=dropped[o.pi]||[]).push(o); });
-      Object.keys(dropped).forEach(function(k){ stash[k]=dropped[k]; });   // 사라진 성분의 행은 최신 상태로 보관(비운 채 사라졌으면 빈 값으로 덮음)
+      // 기존 행을 성분 '텍스트' 기준으로 새 성분에 붙임(중간 성분을 지워도 남은 성분의 값이 밀리거나 숨지 않게). 같은 텍스트가 여럿이면 앞에서부터
+      var groups={};   // {성분 텍스트: [행 묶음(주 행+추가 행), ...]}
+      var byPi={};
+      box.querySelectorAll('.orow').forEach(function(r){ var pi=parseInt(r.getAttribute('data-piece'),10);
+        var o={sub:!!r.querySelector('.o-piece.sub'), txt:r.querySelector('.o-txt').value, lang:r.querySelector('.o-lang').value, np:r.querySelector('.o-np-chk').checked, label:(r.querySelector('.o-piece')||{}).textContent||''};
+        (byPi[pi]=byPi[pi]||[]).push(o); });
+      Object.keys(byPi).forEach(function(pi){ var g=byPi[pi], t=(g.filter(function(o){ return !o.sub; })[0]||{}).label||''; (groups[t]=groups[t]||[]).push(g); });
+      var stash=box._stash||(box._stash={});   // {성분 텍스트: [행 묶음, ...]}
       var vals=[], h='';
       ps.forEach(function(x,pi){
-        var g=old.filter(function(o){ return o.pi===pi; });
-        if(!g.length && stash[pi]){ g=stash[pi]; delete stash[pi]; }   // 새로 생긴 성분: 보관값이 있으면 복원
+        var g=(groups[x.txt]||[]).shift() || (stash[x.txt]||[]).shift() || [];
         var main=g.filter(function(o){ return !o.sub; })[0]||{txt:'', lang:'', np:false}, subs=g.filter(function(o){ return o.sub; });
         h+=origRowHtml(pi, x.txt, false); vals.push(main);
         subs.forEach(function(o){ h+=origRowHtml(pi, '', true); vals.push(o); });
       });
+      Object.keys(groups).forEach(function(t){ if(groups[t].length) stash[t]=(stash[t]||[]).concat(groups[t]); });   // 안 쓰인 행 묶음은 텍스트 키로 보관 → 같은 성분이 다시 생기면 복원
       box.innerHTML=h; box.setAttribute('data-sig', sig);
       var rows=box.querySelectorAll('.orow'); vals.forEach(function(o,k){ rows[k].querySelector('.o-txt').value=o.txt; rows[k].querySelector('.o-lang').value=o.lang; rows[k].querySelector('.o-np-chk').checked=!!o.np; });
       var oi=sec.querySelector('[data-f="원어"]'); if(oi) box.querySelectorAll('input,button').forEach(function(b){ b.disabled=oi.disabled; });
