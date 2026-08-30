@@ -192,6 +192,8 @@
     .llm-inline .k { color:var(--brand-d); font-weight:700; white-space:nowrap; font-size:13px; padding-top:2px; } .llm-inline .v { flex:1; white-space:pre-wrap; }
     body.dark .llm-inline { background:var(--surface2); border-color:var(--line); }
     .part-lock { background:var(--hold-bg); color:var(--hold); border-radius:8px; padding:8px 12px; font-size:13px; margin-bottom:10px; }
+    .ps-head .pill { margin-left:10px; vertical-align:middle; font-size:12px; padding:2px 9px; }
+    .pill.na { background:#eef0f3; color:#6b7280; }   /* 미집필(해당 없음): 회색. 집필 대상은 푸른색(s1) */
     .w-field[data-f="X년 Y월 신어"][readonly] { background:var(--surface2); cursor:default; }
     .w-field[data-f="색인표제어"], .w-field[data-f="색인표제어"]:disabled { font-size:19px; font-weight:700; color:var(--ink); background:var(--surface2); cursor:default; }
     .wf.off .w-field[data-f="색인표제어"] { color:var(--ink); }
@@ -215,7 +217,7 @@
     .w-field.rev-diff { border-color:#e0921a; background:#fffaf0; }
     .diff-tag { display:inline-block; font-size:12px; font-weight:800; color:#fff; background:#e0921a; border-radius:6px; padding:1px 7px; margin-left:4px; line-height:18px; }
     .rev-note { font-size:14px; color:#8a5a00; background:#fff7e0; border-radius:6px; padding:3px 8px; margin-top:2px; }
-    .chk-native { display:flex; align-items:center; gap:6px; font-size:16px; margin-bottom:4px; cursor:pointer; } .chk-native .o-note-r { margin-left:auto; cursor:default; } .chk-native input { margin:0; }
+    .wf label.chk-native { display:flex; align-items:center; gap:6px; font-size:14px; font-weight:400; margin-bottom:4px; cursor:pointer; } .chk-native .chk-sub { font-size:12px; color:var(--muted); } .chk-native input { margin:0; }
     /* 원어 행: [언어][기호][원어 글자][결합][삭제] → 원어·어종 표시 자동 조립 */
     .orows { display:flex; flex-direction:column; gap:6px; margin-bottom:6px; }
     .orow { display:flex; flex-direction:column; gap:6px; padding:8px 6px; border:1px solid var(--line); border-radius:10px; background:var(--surface2); }
@@ -239,6 +241,10 @@
     .orow .o-del { border:1px solid var(--line); background:var(--surface); border-radius:8px; width:28px; height:38px; flex:none; cursor:pointer; font-size:16px; color:var(--muted); } .orow .o-del:hover:not(:disabled) { border-color:var(--brand); color:var(--brand); }
     .o-note { font-size:13px; color:var(--muted); font-weight:400; margin-left:10px; }
     .o-lang.auto { color:var(--muted); background:var(--surface3); }
+    /* 언어명 칸이 비어 있을 때 칸 안에 '외국어 언어명' + 작은 * 문구(한 줄, 자동 생성 대상이 언어명임을 표시). 값이 들어오면(자동 표시 포함) 사라짐 */
+    .o-lang-note { display:none; position:absolute; left:12px; right:8px; top:50%; transform:translateY(-50%); align-items:baseline; gap:6px; color:var(--muted); pointer-events:none; white-space:nowrap; overflow:hidden; }
+    .o-lang-note span { font-size:14px; } .o-lang-note small { font-size:11px; }
+    .o-lang:placeholder-shown ~ .o-lang-note { display:flex; }
     .llm-copy.o-add { font-size:24px; font-weight:400; line-height:1; padding:0; height:38px; width:100%; margin-bottom:8px; }
     body.dark .orow .o-del { background:var(--surface2); }
     .llm-copy { border:1px solid var(--line); background:var(--surface); border-radius:7px; padding:5px 11px; font-size:13px; cursor:pointer; white-space:nowrap; font-weight:700; color:var(--brand-d); }
@@ -707,6 +713,9 @@
     }
     function statusLabel(s){ return s==='1차완료'?'1차 작업 완료':s==='2차완료'?'2차 검수 완료':(s||'미작업'); }
     function pillClass(s){ return s==='1차완료'?'s1':s==='2차완료'?'s2':'미작업'; }
+    // 집필 목록·상세 라벨(2026-08-30): 미작업=미완료, 1차완료='1차 작업 완료', 2차완료='2차 검수 완료', 의미부 대상이 아니면 미집필
+    function wStatusLabel(s){ return s==='1차완료'?'1차 작업 완료':s==='2차완료'?'2차 검수 완료':'미완료'; }
+    function wPartPill(it, part){ var na=(part==='의미부' && !semTarget(it)); if(na) return '<span class="pill na">'+esc(part)+' 미집필(빈도 10미만)</span>'; var st=String(it[part+' 상태']||'미작업'); return '<span class="pill '+pillClass(st)+'">'+esc(part)+' 집필 대상 · '+esc(wStatusLabel(st))+'</span>'; }
     function reEscape(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
     function highlight(text, cand){
       text=String(text||''); cand=String(cand||'').replace(/\s+/g,'');
@@ -937,7 +946,7 @@
              '용례':'당원게시판에는 그를 가발킹이라 부르며 조롱하는 글이 잇따랐다.','용례 일자':'2024-11-29 14:00:00','용례 URL':'https://n.news.naver.com/','검색 URL':'https://search.naver.com/' }),
         mk({ 'ID':'demo::3','신어 후보':'가세연방지법','추출 시기':'202501','2차 고유명 여부':'Y','2차 혐오 표현 여부':'N','형태부 상태':'미작업','의미부 상태':'미작업',
              'LLM 색인표제어':'가세연방지법','LLM 단어/구':'구','LLM 조어법':'','LLM 품사':'','LLM 일상어/전문어':'전문어','LLM 전문 분야':'『법률』','LLM 의미 범주':'〔정치와 행정〕','LLM 뜻풀이':'유튜브 채널 가세연으로 인한 허위 사실 유포를 막기 위해 발의된 법안을 이르는 말.','LLM 용례':'¶가세연방지법 청원이 등장했다.' }),
-        mk({ 'ID':'demo::4','신어 후보':'그린래시','추출 시기':'202412','2차 고유명 여부':'N','2차 혐오 표현 여부':'N','형태부 상태':'1차완료','의미부 상태':'미작업',   // 형식 오류 예시(저장 차단 확인용)
+        mk({ 'ID':'demo::4','신어 후보':'그린래시','추출 시기':'202412','의미부 대상':'N','의미부 주차':'','2차 고유명 여부':'N','2차 혐오 표현 여부':'N','형태부 상태':'1차완료','의미부 상태':'미작업',   // 형식 오류 예시(저장 차단 확인용)
              '1차 단어/구':'단어','1차 조어법':'차용','1차 품사':'「명사」','1차 일상어/전문어':'일상어','1차 전문 분야':'『환경』','1차 등재표제어':'그린 래시^','1차 원어':'<영>▼green lash','1차 어종 표시':'영+영','1차 어원':'【】','1차 의미 범주':'환경' })
       ];
       document.querySelector('header').style.display=''; document.querySelector('main').style.display='';
@@ -1050,9 +1059,9 @@
           var t=o.total||0;
           function pct(x){ return t?Math.round(x/t*100):0; }
           if(isWrite() && o.parts){   // 집필: 형태부/의미부 각각 1차·2차
-            $('overall').innerHTML = ['형태부','의미부'].map(function(pt){ var q=o.parts[pt]||{done1:0,done2:0};
+            $('overall').innerHTML = ['형태부','의미부'].map(function(pt){ var q=o.parts[pt]||{done1:0,done2:0}, qt=(q.total!=null)?q.total:t; function qp(x){ return qt?Math.round(x/qt*100):0; }   // 분모: 부별 대상 수(의미부=의미부 대상만)
               return '<div style="margin-top:'+(pt==='형태부'?0:16)+'px"><div class="kbd" style="font-size:14px;font-weight:700;color:var(--brand-d)">'+pt+(p.phase===pt?' (현재 단계)':'')+'</div>'
-                + '<div class="big-num">'+q.done1.toLocaleString()+' <small>/ '+t.toLocaleString()+' 1차 작업 완료 ('+pct(q.done1)+'%)</small></div>'+progBar({total:t,'1차완료':q.done1})
+                + '<div class="big-num">'+q.done1.toLocaleString()+' <small>/ '+qt.toLocaleString()+' 1차 작업 완료 ('+qp(q.done1)+'%)</small></div>'+progBar({total:qt,'1차완료':q.done1})
                 + '<div class="big-num" style="margin-top:8px">'+q.done2.toLocaleString()+' <small>/ '+t.toLocaleString()+' 2차 검수 완료 ('+pct(q.done2)+'%)</small></div>'+progBar({total:t,'2차완료':q.done2})+'</div>'; }).join('');
           } else
           $('overall').innerHTML =
@@ -1167,7 +1176,7 @@
     var CHK_FILTERS = [['f-proper','고유명 여부'],['f-hate','혐오 표현 여부']];
     function itemPasses(it){
       var fst=$('f-status').value;
-      if(isWrite()){ var pst=String(it[projPhase()+' 상태']||'').trim();
+      if(isWrite()){ var pst=String(it[itemPhase(it)+' 상태']||'').trim();
         if(fst==='_no1' && (pst==='1차완료'||pst==='2차완료')) return false;
         if(fst==='_no2' && pst==='2차완료') return false;
         return true; }
@@ -1203,7 +1212,7 @@
         if(isWrite()){   // 형태부/의미부 상태를 두 줄 배지로
           var st1=String(it['형태부 상태']||'미작업'), st2=String(it['의미부 상태']||'미작업');
           rows.push('<div class="item'+(i===CUR?' sel':'')+'" data-i="'+i+'" onclick="selectItem('+i+')"><div class="cand"><span class="nm">'+esc(it['신어 후보'])+'</span>'
-            +'<span class="pills2"><span class="pill '+pillClass(st1)+'">형태부 '+esc(statusLabel(st1))+'</span><span class="pill '+pillClass(st2)+'">의미부 '+esc(statusLabel(st2))+'</span></span></div>'
+            +'<span class="pills2">'+wPartPill(it,'형태부')+wPartPill(it,'의미부')+'</span></div>'
             +'<div class="meta">'+fmtName(it['작업자'])+' - '+fmtName(it['검수자'])+'</div></div>');
           continue;
         }
@@ -1385,6 +1394,9 @@
     function wv(it,stage,f){ return String(it[stage+'차 '+f]==null?'':it[stage+'차 '+f]); }
     function fv(it,f){ var v2=wv(it,2,f); return v2.trim()?v2:wv(it,1,f); }   // 최종값 = 2차 우선
     function projPhase(){ return (CURRENT_PROJECT&&CURRENT_PROJECT.phase)||'형태부'; }
+    // 의미부 대상(2026-08-30 회의: 형태부 전수, 의미부는 NN+YT 합산 빈도 10 이상만). 시트 '의미부 대상' N = 형태부만. 빈 값·Y = 대상(기존 프로젝트 호환)
+    function semTarget(it){ return String((it||{})['의미부 대상']||'').trim().toUpperCase()!=='N'; }
+    function itemPhase(it){ it=it||ITEMS[CUR]; return (projPhase()==='의미부' && !semTarget(it)) ? '형태부' : projPhase(); }   // 이 항목에 실제 적용되는 단계
     function tok_(s){ return String(s||'').trim().split(/\s+/).filter(Boolean); }
     function wordDiff_(prev, cur, cls){
       if(!String(cur||'').trim()) return '<span class="kbd">-</span>';
@@ -1688,9 +1700,11 @@
       if(hasJ) h+='<div class="llm-box"><h3>판별 메모</h3><table class="jtbl"><thead><tr><th>단계</th><th>담당자</th><th>판별 결과</th><th>고유명 여부</th><th>혐오 표현 여부</th><th>메모</th></tr></thead><tbody>'
         + jrow(1, '작업자', it['판별 작업자']) + jrow(2, '검수자', it['판별 검수자']) + '</tbody></table></div>';
       // 형태부 → 의미부 세로 섹션. 두 부 모두 항상 편집 가능(프로젝트 단계는 점검·상태 갱신 대상만 정함). 저장 버튼은 맨 아래(의미부)
+      var semOk=semTarget(it), lastPart=semOk?PARTS[PARTS.length-1]:'형태부';   // 의미부 대상이 아니면 의미부 폼 잠금, 저장 버튼은 형태부 아래
       PARTS.forEach(function(part){
-        h+='<div class="part-sec" data-part="'+part+'"><div class="ps-head">'+(part==='형태부'?'형태부':'의미부')+'</div>';
-        var ed1=isW, ed2=isR, foot=(part===PARTS[PARTS.length-1]);
+        var na=(part==='의미부' && !semOk);
+        h+='<div class="part-sec'+(na?' part-na':'')+'" data-part="'+part+'"><div class="ps-head">'+esc(part)+(na?'<span class="pill na">미집필 대상(빈도 10미만)</span>':'<span class="pill s1">집필 대상</span>')+'</div>';
+        var ed1=isW && !na, ed2=isR && !na, foot=(part===lastPart);
         h+='<div class="write-cols">'+stageSec(it,part,1,ed1,foot)+stageSec(it,part,2,ed2,foot)+'</div></div>';
       });
       // 뜻풀이 변경 이력(맨 아래)
@@ -1707,7 +1721,7 @@
     }
     // 단계 폼: 1차(작업자)·2차(검수자). 2차는 1차 값 복사 + 변경분 하이라이트. 1차는 2차가 고친 필드를 역표시.
     // 프로젝트 단계별 활성 부: 형태부 단계=형태부만, 의미부 단계=형태부+의미부(한 번에 저장)
-    function activeParts(){ return projPhase()==='형태부' ? ['형태부'] : ['형태부','의미부']; }
+    function activeParts(it){ return itemPhase(it)==='형태부' ? ['형태부'] : ['형태부','의미부']; }
     function stageSec(it, part, stage, ed, foot){
       var chain=(part==='형태부' && ed);   // 체인은 형태부 폼이 편집 가능하면 항상(형태부·의미부 단계, 1차·2차 동일)
       var who=stage===1?'작업자 '+fmtName(it['작업자']||'?'):'검수자 '+fmtName(it['검수자']||'?');
@@ -1754,7 +1768,7 @@
           +fld(4,'일상어/전문어',seg('일상어/전문어',['일상어','전문어']),'','일상어/전문어')
           +fld(5,'전문 분야',ac('전문 분야','jm'),'','전문 분야')
           +fld(6,'등재표제어',inp('등재표제어'),'','등재표제어')
-          +fld(7,'원어','<label class="chk-native"><input type="checkbox"'+attrs('고유어')+(pv('고유어')==='Y'?' checked':'')+'> 원어 미입력(고유어 단일어)'+(ed?'<span class="o-note o-note-r">* 고유어, 한자어 자동 생성</span>':'')+'</label>'+(ed?'<div class="orows"></div><div><button type="button" class="llm-copy o-add" onclick="origAddRow(this)">+</button></div>':'')+inp('원어'),'','원어')
+          +fld(7,'원어','<label class="chk-native"><input type="checkbox"'+attrs('고유어')+(pv('고유어')==='Y'?' checked':'')+'> <span>원어 미입력<span class="chk-sub">(e.g. 고유어 단일어)</span></span></label>'+(ed?'<div class="orows"></div><div><button type="button" class="llm-copy o-add" onclick="origAddRow(this)">+</button></div>':'')+inp('원어'),'','원어')
           +fld(8,'어종 표시',inp('어종 표시'),'','어종 표시',true)
           +fld(9,'어원',inp('어원'),'','어원',true)
           +fld(10,'의미 범주',ac('의미 범주','um'),'','의미 범주')
@@ -1769,7 +1783,7 @@
       }
       h+='</div>';
       if(foot){   // 저장 버튼: 활성 부 전체를 한 번에 저장
-        var canConfirm = stage===2 && ed && /1차완료|2차완료/.test(String(it[projPhase()+' 상태']||''));   // 확정 가능 여부는 현재 단계의 상태로
+        var canConfirm = stage===2 && ed && /1차완료|2차완료/.test(String(it[itemPhase(it)+' 상태']||''));   // 확정 가능 여부는 현재 단계의 상태로
         h+='<div class="ss-foot">'+(ed?(canConfirm?'<button class="btn confirm-first" style="margin-left:0;margin-right:6px" onclick="confirmFirstWrite()" title="작업자의 1차 작업 값을 그대로 2차에 입력하고 저장합니다 (메모는 복사하지 않음)">✓ 1차 작업 확정 및 저장</button>':'')
           +'<button class="btn save" onclick="openWriteConfirm('+stage+')">'+(stage===1?'1차 작업 저장':'2차 검수 저장')+'</button>'
           +' <span class="save-badge"></span>':'<span class="kbd">'+(stage===1?'작업자만 저장':'검수자만 저장')+'</span>')+'</div>';
@@ -1791,7 +1805,7 @@
       if(el.getAttribute('data-ro')!=='1') return true;
       // 의미부 칸은 형태부 단계에서 잠겨 있어도 복사 허용(작업자 본인 폼일 때). 값은 형태부 저장 시 함께 기록
       var sec1=document.querySelector('#detail .stage-sec[data-part="형태부"][data-stage="1"]'); var canW=sec1 && sec1.querySelector('[data-f="단어/구"]') && sec1.querySelector('[data-f="단어/구"]').getAttribute('data-ro')!=='1';
-      return m[2]==='의미부' && projPhase()==='형태부' && !!canW; }
+      return m[2]==='의미부' && projPhase()==='형태부' && !!canW && semTarget(it); }
     function refreshLlmBtns(){ document.querySelectorAll('#detail .llm-copy[data-llm]').forEach(function(b){ var i=parseInt(b.getAttribute('data-llm'),10); b.disabled=!llmOk_(i, llmTargetOf(i)); }); }
     function llmSet_(i, el){ var it=ITEMS[CUR], v=llmVal_(it, LLM_MAP[i]);
       if(el.getAttribute('data-f')==='뜻풀이' && (String(it['2차 혐오 표현 여부']||'').trim()==='Y' || el.value.indexOf(HATE_NOTE)>=0) && v.indexOf(HATE_NOTE)<0) v=(v.replace(/\s+$/,'')+' '+HATE_NOTE).trim();   // 혐오 표현 항목: 정의문 뒤에 혐오 문구 유지
@@ -1809,8 +1823,9 @@
       var NP_TIP='2.1.9. 원어의 언어명을 밝힌다.\n예) 다다미(<일>←tatami[疊])\n다만, 원어의 언어명이 불명확할 때에는 밝히지 않는다. 또한, 고유명사는 언어명을 밝히지 않는다.';   // 신어 집필 지침(2022) 원문
       function sb(sym){ return '<span class="o-symw"><button type="button" class="o-sym" onclick="origSym(this,\''+sym+'\')">'+sym+'</button><div class="sym-tip">'+esc(SYM_TIP[sym])+'</div></span>'; }
       return '<div class="orow" data-piece="'+pi+'"><div class="o-line1">'+(sub?'<span class="o-piece sub">└</span>':'<span class="o-piece">'+esc(label)+'</span>')+'<input class="w-field o-txt" autocomplete="off" placeholder="원어" oninput="origCompose(this)"><a class="o-dict" target="_blank" rel="noopener" style="display:none">우리말샘 검색 결과</a>'+(sub?'<button type="button" class="o-del" onclick="origDelRow(this)">×</button>':'')+'</div>'
-        + '<div class="o-line2"><div class="ac"><input class="w-field ac-inp o-lang" data-ac="lang" autocomplete="off" placeholder="외국어 언어명" oninput="acOpen(this);origCompose(this)" onkeydown="acKey(event,this)" onfocus="acOpen(this)" onblur="acBlur(this)"><div class="ac-list" style="display:none"></div></div>'+sb('▼')+sb('▽')+sb('←')
-        + '<span class="o-symw"><label class="o-np"><input type="checkbox" class="o-np-chk" onchange="origCompose(this)">고유명</label><div class="sym-tip">'+esc(NP_TIP)+'</div></span></div></div>';
+        + '<div class="o-line2"><div class="ac"><input class="w-field ac-inp o-lang" data-ac="lang" autocomplete="off" placeholder=" " oninput="acOpen(this);origCompose(this)" onkeydown="acKey(event,this)" onfocus="acOpen(this)" onblur="acBlur(this)"><div class="ac-list" style="display:none"></div><span class="o-lang-note"><span>외국어 언어명</span><small>* 고유어, 한자어 자동 생성</small></span></div>'+sb('▼')+sb('▽')+sb('←')
+        + '<span class="o-symw"><label class="o-np"><input type="checkbox" class="o-np-chk" onchange="origCompose(this)">고유명</label><div class="sym-tip">'+esc(NP_TIP)+'</div></span></div>'
+        + '</div>';
     }
     // 등재표제어의 조각(-·공백·^)마다 행 하나. 조각이 바뀔 때마다 현재 조각 수에 맞춰 다시 만든다(늘면 행 추가, 줄면 뒤 성분의 행·그 추가 행 제거).
     //  남는 성분의 행 값(원어·언어명·고유명)은 유지. 사라진 성분의 행 값은 성분 번호별로 보관(box._stash)했다가 그 번호의 성분이 다시 생기면 복원(추가 행 포함). 상자는 항목마다 새로 만들어지므로 보관값은 항목 안에서만 유효
@@ -1986,7 +2001,7 @@
     }
     // 저장 전 확인 창: 전 필드 + 점검 결과
     function collectAll_(stage){ var o={}; activeParts().forEach(function(part){ o[part]=collectWrite_(part, stage); });
-      if(projPhase()==='형태부'){ var m=collectWrite_('의미부',stage), any=false; for(var k in m){ if(!tplBlank(k,m[k]) && k!=='X년 Y월 신어') any=true; } if(any) o['의미부']=m; }   // 형태부 단계에서 의미부에 적은 값(1차·2차)도 함께 저장(점검·상태 갱신은 형태부만)
+      if(itemPhase()==='형태부'){ var m=collectWrite_('의미부',stage), any=false; for(var k in m){ if(!tplBlank(k,m[k]) && k!=='X년 Y월 신어') any=true; } if(any) o['의미부']=m; }   // 형태부 단계에서 의미부에 적은 값(1차·2차)도 함께 저장(점검·상태 갱신은 형태부만)
       return o; }
     function validateAll_(all, it){ var E=[]; activeParts().forEach(function(part){ validateWrite(part, all[part]||{}, it).forEach(function(e){ E.push((activeParts().length>1?part+' · ':'')+e); }); }); return E; }   // 점검은 활성 부만
     function openWriteConfirm(stage){
@@ -2010,10 +2025,10 @@
       closeWriteConfirm();
       var phase=projPhase();
       Object.keys(all).forEach(function(part){ for(var k in all[part]) it[stage+'차 '+k]=all[part][k]; });   // 함께 저장되는 부 전부 로컬 반영
-      var stKey=phase+' 상태'; it[stKey] = stage===2 ? '2차완료' : (String(it[stKey]||'')==='2차완료' ? '2차완료' : '1차완료');
+      var eff=itemPhase(it), stKey=eff+' 상태'; it[stKey] = stage===2 ? '2차완료' : (String(it[stKey]||'')==='2차완료' ? '2차완료' : '1차완료');
       renderList(); renderDetail();
-      enqueueSave('saveWrite', { row_id:it['ID'], phase:phase, stage:stage, fields:all, op_id:newOpId() });   // 무손실 큐: 재시도·localStorage 보존·이탈 경고·실패 로그
-      toast(phase+' '+stage+'차 저장');
+      enqueueSave('saveWrite', { row_id:it['ID'], phase:phase, phase_eff:eff, stage:stage, fields:all, op_id:newOpId() });   // 무손실 큐: 재시도·localStorage 보존·이탈 경고·실패 로그. phase_eff=이 항목에 적용된 단계(검증용)
+      toast(eff+' '+stage+'차 저장');
     }
     // 1차 작업 확정: 작업자 1차 값을 2차에 그대로 복사 후 즉시 저장·다음 항목(판별과 동일). 점검 오류가 있으면 확인 창으로.
     function confirmFirstWrite(){
@@ -2088,7 +2103,7 @@
         var ok=false;
         if(job.fn==='saveFirst') ok=(String((it||{})['1차 판별']||'').trim()===String(job.payload.verdict).trim());
         else if(job.fn==='saveSecond') ok=(String((it||{})['2차 판별']||'').trim()===String(job.payload.verdict).trim());
-        else if(job.fn==='saveWrite'){ var ph=job.payload.phase, st=job.payload.stage, key=(ph==='형태부')?'등재표제어':'뜻풀이', want=String(((job.payload.fields||{})[ph]||{})[key]||'').trim();
+        else if(job.fn==='saveWrite'){ var ph=job.payload.phase_eff||job.payload.phase, st=job.payload.stage, key=(ph==='형태부')?'등재표제어':'뜻풀이', want=String(((job.payload.fields||{})[ph]||{})[key]||'').trim();
           ok=!!want && String((it||{})[st+'차 '+key]||'').trim()===want && /1차완료|2차완료/.test(String((it||{})[ph+' 상태']||'')); }
         ok?onLanded():onNotLanded();
       }).withFailureHandler(function(){ onUnknown(); }).getItem(TOKEN, job.payload.row_id);
