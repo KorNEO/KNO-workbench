@@ -813,6 +813,7 @@ function saveWrite(token, payload) {
     var row = sh.getRange(rownum, 1, 1, sh.getLastColumn()).getValues()[0];
     function cur(k) { return idx[k] != null ? String(row[idx[k]] == null ? '' : row[idx[k]]).trim() : ''; }
     var eff = (phase === '의미부' && !semTarget_(cur('의미부 대상'))) ? '형태부' : phase;   // 이 항목에 실제 적용되는 단계(의미부 대상이 아니면 형태부)
+    if (payload.phase_eff && String(payload.phase_eff) !== eff) throw new Error('항목의 의미부 대상 설정이 바뀌었습니다. 화면을 새로고침하세요.');
     var parts = eff === '형태부' ? ['형태부'] : WRITE_PARTS;   // 점검·상태 대상
     if (!canEditWrite_(me, p.type, cur('작업자'), cur('검수자'), stage)) throw new Error('권한 없음: 배정된 담당자만 입력할 수 있습니다.');
     var fields = payload.fields || {}, errs = [];

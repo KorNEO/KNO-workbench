@@ -1120,10 +1120,11 @@
         html += myHead(done, assigned, '판별 완료')
           + statLine('배분된 항목', assigned) + statLine('판별 완료', done) + statLine('남은 항목', assigned-done);
       } else if(isWrite()){
-        var ph=projPhase(), st=function(it){ return String(it[ph+' 상태']||'').trim(); };
-        var w1=cnt(function(it){ return /1차완료|2차완료/.test(st(it)); }), w2=cnt(function(it){ return st(it)==='2차완료'; });
-        html += myHead(isReviewer?w2:w1, assigned, ph+' '+(isReviewer?'2차 검수 완료':'1차 작업 완료'))
-          + statLine('배분된 항목', assigned) + statLine('1차 작업 완료', w1) + statLine('2차 검수 완료', w2) + weekBreakdown(items, isReviewer?'2차 판별':'1차 판별');
+        var ph=projPhase(), list=(ph==='의미부')?items.filter(function(it){ return semTarget(it); }):items;   // 의미부 단계 분모 = 의미부 대상만(백엔드 집계와 동일)
+        var st=function(it){ return String(it[ph+' 상태']||'').trim(); };
+        var w1=list.filter(function(it){ return /1차완료|2차완료/.test(st(it)); }).length, w2=list.filter(function(it){ return st(it)==='2차완료'; }).length;
+        html += myHead(isReviewer?w2:w1, list.length, ph+' '+(isReviewer?'2차 검수 완료':'1차 작업 완료'))
+          + statLine('배분된 항목', assigned) + statLine('1차 작업 완료', w1) + statLine('2차 검수 완료', w2) + weekBreakdown(list, isReviewer?'2차 판별':'1차 판별');
       } else if(isReviewer){
         var d2=cnt(function(it){return String(it['2차 판별']||'').trim();}), waiting=cnt(function(it){return String(it['1차 판별']||'').trim() && !String(it['2차 판별']||'').trim();});
         html += myHead(d2, assigned, '2차 검수 완료') + statLine('배분된 항목', assigned)
@@ -1428,9 +1429,9 @@
     function ixEdit(btn){ var line=btn.closest('.ix-line'), ix=line.querySelector('[data-f="색인표제어"]'); if(!ix || ix.getAttribute('data-ro')==='1') return;
       ix.setAttribute('data-edit','1'); ix.setAttribute('data-ix0', String(ix.value||'').trim()); ix.disabled=false; line.querySelector('.ix-edit').disabled=true; line.querySelector('.ix-save').disabled=false; ix.focus(); try{ ix.setSelectionRange(0, ix.value.length); }catch(e){} }
     function ixSave(el){ var line=el.closest('.ix-line'), ix=line.querySelector('[data-f="색인표제어"]'); if(!ix || ix.getAttribute('data-edit')!=='1') return;
-      var sec=ix.closest('.stage-sec'), nv=String(ix.value||'').trim(); ix.value=nv;
+      var sec=ix.closest('.stage-sec'), old=ix.getAttribute('data-ix0')||'', nv=String(ix.value||'').trim(); ix.value=nv;
       ix.removeAttribute('data-edit'); ix.removeAttribute('data-ix0'); line.querySelector('.ix-edit').disabled=false; line.querySelector('.ix-save').disabled=true;
-      if(sec){ if(nv){ secSet(sec,'등재표제어', nv); var hEl=sec.querySelector('[data-f="등재표제어"]'); if(hEl && hEl.classList.contains('w2')) mark2(hEl); }   // 색인표제어를 저장하면 등재표제어도 항상 그 값으로(원어 행은 chainApply→origRecompose가 다시 만듦)
+      if(sec){ if(nv && nv!==old){ secSet(sec,'등재표제어', nv); var hEl=sec.querySelector('[data-f="등재표제어"]'); if(hEl && hEl.classList.contains('w2')) mark2(hEl); }   // 값이 바뀐 경우에만 등재표제어 교체 — 무변경 저장이 -·^ 표기를 지우지 않게(원어 행은 chainApply→origRecompose가 다시 만듦)
         chainApply(sec, sec.getAttribute('data-chain')==='1'); origRecompose(sec); } }
     function mark2(el){ el.classList.toggle('changed', String(el.value)!==String(el.getAttribute('data-orig')||'')); }
     // 자동완성: 전문 분야(『』, 67 중분류)·의미 범주(〔〕, 15 범주). 입력 → 목록 → ↑↓ → Enter
@@ -1493,7 +1494,7 @@
     //    + 접사 사례(kno_affix.json: 경북대 신어 목록 2012-2023의 접두/접미 행 614건과 접사 목록, workbench/_tools/build_kno_affix.py로 생성) ──
     var REF=null, AFX=null, REF_LOADING=false;
     function refLoad(cb){ if(REF){ cb(); return; } if(REF_LOADING) return; REF_LOADING=true;
-      Promise.all([fetch('kno_dataset.json?v=1').then(function(r){ return r.json(); }), fetch('kno_affix.json?v=1').then(function(r){ return r.json(); })]).then(function(d){ REF=d[0]; AFX=d[1]; REF_LOADING=false; cb(); }).catch(function(){ REF_LOADING=false; toast('유사 사례 자료를 불러오지 못했습니다.'); }); }
+      Promise.all([fetch('kno_dataset.json?v=1').then(function(r){ return r.json(); }), fetch('kno_affix.json?v=1').then(function(r){ return r.json(); }).catch(function(){ return null; })]).then(function(d){ REF=d[0]; AFX=d[1]; REF_LOADING=false; cb(); }).catch(function(){ REF_LOADING=false; toast('유사 사례 자료를 불러오지 못했습니다.'); }); }   // 접사 자료 실패는 접사 섹션만 생략
     function refCol(name){ return REF.cols.indexOf(name); }
     function refKey_(w){ return String(w||'').replace(/[^가-힣A-Za-z0-9]/g,''); }
     // 유사도: 포함(짧은 쪽 길이) > 공통 접미 > 공통 접두, 2자 이상만. 반환 [점수, 종류, 공유 문자열]
@@ -1551,7 +1552,8 @@
       //    사례 = 시트에서 그 접사로 태그된 행 + 2020-2024 KNO_DATASET에서 같은 접사로 끝나거나 시작하는 항목(조어법이 비어 있거나 파생인 행만). 연도·색인표제어가 같으면 한 번만. 최근 연도부터
       if(AFX && REF && q.length>=2){
         [['접미',function(w,a){ return w.length>a.length && w.slice(-a.length)===a; }],['접두',function(w,a){ return w.length>a.length && w.slice(0,a.length)===a; }]].forEach(function(k){
-          var kind=k[0], a=null; (AFX.affixes[kind]||[]).some(function(x){ if(k[1](q,x)){ a=x; return true; } return false; });
+          var kind=k[0], a=null, qb=idxBase_(q)||q;   // 어깨 번호(01·02) 제거한 바탕 어형으로 접사 대조
+          (AFX.affixes[kind]||[]).some(function(x){ if(k[1](qb,x)){ a=x; return true; } return false; });
           if(!a) return;
           var label=(kind==='접미'?'-'+a:a+'-'), seen={}, list=[], A=function(c){ return AFX.cols.indexOf(c); };
           AFX.rows.forEach(function(r){ if(r[A('조어법구분')]!==kind || r[A('접사')]!==a) return; var key=r[A('연도')]+'|'+refKey_(r[A('색인표제어')]); if(seen[key]) return; seen[key]=1;
