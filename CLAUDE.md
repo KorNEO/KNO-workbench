@@ -35,3 +35,8 @@
 - **셀프 재설정**: 로그인 화면 "비밀번호를 잊으셨나요?" → 이메일 OTP 인증 → 새 비번 설정. `resetPassword(email, code, pw)`.
 - **관리자 수동 초기화**: 연구원 명부 표의 `계정` 열 "🔑 비번 초기화" → 임시 비번 발급. `adminResetPassword(token, email)` (매니저 전용).
 - OTP 보안: 5회 오입력 시 무효화, 60초 재발송 쿨다운.
+
+## 의미부 선별 집필 (2026-08-30, 백엔드 @33)
+- 회의 결과: 형태부는 전 항목, 의미부(뜻풀이·용례)는 NN+YT 합산 단어빈도 10 이상 항목만 집필.
+- 항목 시트 컬럼 `의미부 대상`: `Y`/`N`. **빈 값은 Y로 간주**(이전 프로젝트 호환). `N`이면 의미부 단계에서도 형태부만 점검·상태·집계(`semTarget_`), 프론트는 의미부 폼 잠금·`의미부 미집필(빈도 10미만)` 표시.
+- 업로드 CSV는 `workbench/_tools/build_write_upload.py`(계열 배분 xlsx → 32컬럼, `--llm-csv`로 LLM 컬럼 채움). 배분은 `workbench_reference/_tools/series/distribute_series.py --sem-col '단어빈도 합계' --sem-min 10`.
