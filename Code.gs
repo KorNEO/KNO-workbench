@@ -421,9 +421,11 @@ function createProject(token, kind, name, csvText, regDate, dueDate) {
   }
   if (out.length) sh.getRange(2, 1, out.length, H.length).setValues(out);
   styleHeader_(sh, H.length);
+  var aIdx = H.indexOf('작업자');
+  var preAssigned = aIdx >= 0 && out.length > 0 && out.every(function (r) { return String(r[aIdx] || '').trim(); });   // CSV에 배분이 실려 오면 생성 즉시 배분완료
   var reg = fmtDate_(regDate) || Utilities.formatDate(new Date(), TZ, 'yyyy.MM.dd');   // 미지정 시 오늘
   var regSh = projRegSheet_(), ridx = headerIndex_(regSh), rrow = [];
-  PROJ_HEADERS.forEach(function (h) { rrow[ridx[h]] = ({ '프로젝트 ID': pid, '이름': name, '유형': kind, '등록일': reg, '마감일': fmtDate_(dueDate), '상태': '미배분', '파일 ID': fileId, '단계': isWriteKind_(kind) ? '형태부' : '' })[h]; });
+  PROJ_HEADERS.forEach(function (h) { rrow[ridx[h]] = ({ '프로젝트 ID': pid, '이름': name, '유형': kind, '등록일': reg, '마감일': fmtDate_(dueDate), '상태': preAssigned ? '배분완료' : '미배분', '파일 ID': fileId, '단계': isWriteKind_(kind) ? '형태부' : '' })[h]; });
   regSh.appendRow(rrow);
   return { id: pid, name: name, items: out.length };
 }

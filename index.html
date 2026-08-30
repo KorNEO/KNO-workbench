@@ -1033,7 +1033,7 @@
       var pid=CURRENT_PROJECT&&CURRENT_PROJECT.id; if(!pid || nxt===projPhase()) return;
       uiConfirm(nxt+' 단계로 전환할까요?', function(){
         $('phase-msg').textContent='전환 중';
-        google.script.run.withSuccessHandler(function(){ CURRENT_PROJECT.phase=nxt; $('modeBadge').textContent=modeName()+' · '+CURRENT_PROJECT.name; renderPhaseCtl(); toast(nxt+' 단계로 전환했습니다.'); })
+        google.script.run.withSuccessHandler(function(){ CURRENT_PROJECT.phase=nxt; $('modeBadge').textContent=modeName()+' · '+CURRENT_PROJECT.name; renderPhaseCtl(); loadProgress(); toast(nxt+' 단계로 전환했습니다.'); })   // 전환 즉시 진행률·미완료 N건 보기 갱신
           .withFailureHandler(function(e){ $('phase-msg').textContent='실패: '+e.message; })
           .setProjectPhase(TOKEN, pid, nxt);
       });
