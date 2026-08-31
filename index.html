@@ -1719,9 +1719,9 @@
       // 형태부 → 의미부 세로 섹션. 두 부 모두 항상 편집 가능(프로젝트 단계는 점검·상태 갱신 대상만 정함). 저장 버튼은 맨 아래(의미부)
       var semOk=semTarget(it), lastPart=semOk?PARTS[PARTS.length-1]:'형태부';   // 의미부 대상이 아니면 의미부 폼 잠금, 저장 버튼은 형태부 아래
       PARTS.forEach(function(part){
-        var na=(part==='의미부' && !semOk);
+        var na=(part==='의미부' && !semOk), naLock=na && MODE!=='write_test';   // 집필 테스트는 영상·연습용으로 전부 열어 둠(라벨은 유지)
         h+='<div class="part-sec'+(na?' part-na':'')+'" data-part="'+part+'"><div class="ps-head">'+esc(part)+(na?'<span class="pill na">미집필 대상(빈도 10미만)</span>':'<span class="pill s1">집필 대상</span>')+'</div>';
-        var ed1=isW && !na, ed2=isR && !na, foot=(part===lastPart);
+        var ed1=isW && !naLock, ed2=isR && !naLock, foot=(part===lastPart);
         h+='<div class="write-cols">'+stageSec(it,part,1,ed1,foot)+stageSec(it,part,2,ed2,foot)+'</div></div>';
       });
       // 뜻풀이 변경 이력(맨 아래)
@@ -1831,7 +1831,7 @@
       if(el.getAttribute('data-ro')!=='1') return true;
       // 의미부 칸은 형태부 단계에서 잠겨 있어도 복사 허용(작업자 본인 폼일 때). 값은 형태부 저장 시 함께 기록
       var sec1=document.querySelector('#detail .stage-sec[data-part="형태부"][data-stage="1"]'); var canW=sec1 && sec1.querySelector('[data-f="단어/구"]') && sec1.querySelector('[data-f="단어/구"]').getAttribute('data-ro')!=='1';
-      return m[2]==='의미부' && projPhase()==='형태부' && !!canW && semTarget(it); }
+      return m[2]==='의미부' && projPhase()==='형태부' && !!canW && (semTarget(it) || MODE==='write_test'); }
     function refreshLlmBtns(){ document.querySelectorAll('#detail .llm-copy[data-llm]').forEach(function(b){ var i=parseInt(b.getAttribute('data-llm'),10); b.disabled=!llmOk_(i, llmTargetOf(i)); }); }
     function llmSet_(i, el){ var it=ITEMS[CUR], v=llmVal_(it, LLM_MAP[i]);
       if(el.getAttribute('data-f')==='뜻풀이' && (String(it['2차 혐오 표현 여부']||'').trim()==='Y' || el.value.indexOf(HATE_NOTE)>=0) && v.indexOf(HATE_NOTE)<0) v=(v.replace(/\s+$/,'')+' '+HATE_NOTE).trim();   // 혐오 표현 항목: 정의문 뒤에 혐오 문구 유지
