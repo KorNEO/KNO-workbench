@@ -648,7 +648,7 @@
         .then(function(r){ return r.text(); })
         .then(function(t){
           var j; try{ j = JSON.parse(t); }catch(e){ var err = new Error('서버 응답 오류'); err.__retryable = true; throw err; }
-          if(!j.ok) throw new Error(j.error||'서버 오류');
+          if(!j.ok){ var se = new Error(j.error||'서버 오류'); se.__server = true; throw se; }   // 서버가 명시적으로 돌려준 오류(형식 오류·권한·단계 불일치 등) — 재확인 없이 확정 실패
           return j.data;
         })
         .catch(function(e){
@@ -667,7 +667,7 @@
       var proxy = new Proxy({}, { get: function(t, prop){
         if(prop==='withSuccessHandler') return function(fn){ s=fn; return proxy; };
         if(prop==='withFailureHandler') return function(fn){ f=fn; return proxy; };
-        return function(){ apiCall_(prop, [].slice.call(arguments)).then(function(d){ if(s)s(d); }).catch(function(e){ if(f)f({message:(e&&e.message)||String(e)}); }); return proxy; };
+        return function(){ apiCall_(prop, [].slice.call(arguments)).then(function(d){ if(s)s(d); }).catch(function(e){ if(f)f({message:(e&&e.message)||String(e), server:!!(e&&e.__server)}); }); return proxy; };
       }});
       return proxy;
     }});
@@ -1717,12 +1717,13 @@
       var hasJ=['1차 판별','2차 판별','1차 메모','2차 메모','1차 고유명 여부','2차 고유명 여부'].some(function(k){ return String(it[k]||'').trim(); });
       if(hasJ) h+='<div class="llm-box"><h3>판별 메모</h3><table class="jtbl"><thead><tr><th>단계</th><th>담당자</th><th>판별 결과</th><th>고유명 여부</th><th>혐오 표현 여부</th><th>메모</th></tr></thead><tbody>'
         + jrow(1, '작업자', it['판별 작업자']) + jrow(2, '검수자', it['판별 검수자']) + '</tbody></table></div>';
-      // 형태부 → 의미부 세로 섹션. 두 부 모두 항상 편집 가능(프로젝트 단계는 점검·상태 갱신 대상만 정함). 저장 버튼은 맨 아래(의미부)
-      var semOk=semTarget(it), lastPart=semOk?PARTS[PARTS.length-1]:'형태부';   // 의미부 대상이 아니면 의미부 폼 잠금, 저장 버튼은 형태부 아래
+      // 형태부 → 의미부 세로 섹션. 관리자의 프로젝트 단계 설정이 우선: 형태부 단계=의미부 폼 비활성(대상 여부 무관, LLM 복사값만 들어가고 형태부 저장 시 함께 기록), 저장 버튼은 형태부 아래.
+      // 의미부 단계=형태부+의미부 편집, 저장 버튼은 의미부 아래(의미부 대상이 아니면 의미부 잠금·저장 버튼은 형태부 아래. 집필 테스트는 대상 아님도 열어 둠, 라벨은 유지)
+      var semOk=semTarget(it), semOpen=(phase==='의미부' && (semOk || MODE==='write_test')), lastPart=(itemPhase(it)==='의미부')?'의미부':'형태부';
       PARTS.forEach(function(part){
-        var na=(part==='의미부' && !semOk), naLock=na && MODE!=='write_test';   // 집필 테스트는 영상·연습용으로 전부 열어 둠(라벨은 유지)
+        var na=(part==='의미부' && !semOk), lock=(part==='의미부' && !semOpen);
         h+='<div class="part-sec'+(na?' part-na':'')+'" data-part="'+part+'"><div class="ps-head">'+esc(part)+(na?'<span class="pill na">미집필 대상(빈도 10미만)</span>':'<span class="pill s1">집필 대상</span>')+'</div>';
-        var ed1=isW && !naLock, ed2=isR && !naLock, foot=(part===lastPart);
+        var ed1=isW && !lock, ed2=isR && !lock, foot=(part===lastPart);
         h+='<div class="write-cols">'+stageSec(it,part,1,ed1,foot)+stageSec(it,part,2,ed2,foot)+'</div></div>';
       });
       // 뜻풀이 변경 이력(맨 아래)
@@ -2145,13 +2146,16 @@
     }
     function dropJob_(job){ var i=PENDING.indexOf(job); if(i>=0) PENDING.splice(i,1); persistPending(); FLUSHING=false; flushPending(); }
     // 확정 실패: 서버 저장실패로그에 1회 기록 + 사용자에게 알리고 큐에서 제거(다음 항목 진행).
-    function reportFail_(job, reason){
+    // 집필 저장은 로그의 판별 열에 '형태부 1차' 식 단계, 메모 열에 등재표제어(형태부)/뜻풀이(의미부)를 기록. serverMsg=서버가 돌려준 오류 문구(있으면 팝업으로 표시)
+    function reportFail_(job, reason, serverMsg){
+      var p=job.payload||{}, isWr=(job.fn==='saveWrite'), ph=p.phase_eff||p.phase, key=(ph==='형태부')?'등재표제어':'뜻풀이';
       if(!job.logged){ job.logged=true;
         google.script.run.withSuccessHandler(function(){}).withFailureHandler(function(){})
-          .logClientFail(TOKEN, { fn:job.fn, row_id:job.payload.row_id, verdict:job.payload.verdict, memo:job.payload.memo, reason:String(reason||'') });
+          .logClientFail(TOKEN, { fn:job.fn, row_id:p.row_id, verdict: isWr ? (ph+' '+p.stage+'차') : p.verdict, memo: isWr ? String(((p.fields||{})[ph]||{})[key]||'') : p.memo, reason:String(reason||'') });
       }
-      try{ console.error('저장 실패→로그('+job.fn+' '+job.payload.row_id+'):', reason); }catch(x){}
-      toast(job.fn==='saveWrite' ? '저장 실패! 실패 로그에 기록되었습니다. 화면을 새로고침한 뒤 다시 저장해 주세요.' : '실패! 실패 로그에 저장되었습니다. 다음 항목을 판별해 주세요.');
+      try{ console.error('저장 실패→로그('+job.fn+' '+p.row_id+'):', reason); }catch(x){}
+      toast(isWr ? '저장 실패! 실패 로그에 기록되었습니다. 화면을 새로고침한 뒤 다시 저장해 주세요.' : '실패! 실패 로그에 저장되었습니다. 다음 항목을 판별해 주세요.');
+      if(serverMsg) uiAlert('저장 실패: '+serverMsg);
       dropJob_(job);
       if(!PENDING.length) setSaveBadge('저장 실패 — 로그 기록됨', true);
     }
@@ -2162,6 +2166,7 @@
         .withSuccessHandler(function(){ doneJob_(job); })
         .withFailureHandler(function(e){
           var msg=(e&&e.message)?String(e.message):String(e);
+          if(e && e.server){ reportFail_(job, msg, msg); return; }   // 서버 명시 오류(형식 오류·권한·단계 불일치)는 저장이 안 된 것이 확실 → 행 재확인 없이 바로 실패 처리(같은 값 재저장 시 '반영됨' 오판 방지)
           verifyJob_(job,
             function(){ doneJob_(job); },                          // 반영됨 → 성공
             function(){ reportFail_(job, msg||'확정 미저장'); },     // 확정 미저장 → 실패 보고+로그
