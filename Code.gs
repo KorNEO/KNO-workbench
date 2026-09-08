@@ -818,6 +818,7 @@ function saveWrite(token, payload) {
     var parts = eff === '형태부' ? ['형태부'] : WRITE_PARTS;   // 점검·상태 대상
     if (!canEditWrite_(me, p.type, cur('작업자'), cur('검수자'), stage)) throw new Error('권한 없음: 배정된 담당자만 입력할 수 있습니다.');
     var fields = payload.fields || {}, errs = [];
+    Object.keys(fields).forEach(function (pt) { var fv = fields[pt]; if (!fv || typeof fv !== 'object') return; Object.keys(fv).forEach(function (k) { if (typeof fv[k] === 'string') fv[k] = fv[k].normalize('NFC'); }); });   // 분해형(e+결합 부호) → 조합형(é) 통일 후 점검·저장(2026-09-08)
     parts.forEach(function (pt) { validateWrite_(pt, fields[pt] || {}, cur('2차 혐오 표현 여부') === 'Y').forEach(function (e) { errs.push((parts.length > 1 ? pt + ' · ' : '') + e); }); });
     if (errs.length) throw new Error('형식 오류 ' + errs.length + '건 존재. ' + errs.join(' / '));
     WRITE_PARTS.forEach(function (pt) {   // 단계 외 부(형태부 단계의 의미부 복사값)도 값이 오면 기록. 점검·상태는 위에서 단계 부만
