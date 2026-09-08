@@ -1441,7 +1441,7 @@
     var ORIG_LANG_ABBR={}; ORIG_LANGS.forEach(function(x){ ORIG_LANG_ABBR[x[1]]=x[0]; });
     var AC_DEF={ jm:{list:FIELD_67, l:'『', r:'』'}, um:{list:FIELD_15, l:'〔', r:'〕'}, pos:{list:POS_REST, l:'「', r:'」'}, lang:{list:ORIG_LANGS.filter(function(x){ return x[0]!=='고' && x[0]!=='한'; }).map(function(x){ return x[1]; }), l:'', r:'', free:true} };
     function acPlain(v){ return String(v||'').replace(/[^가-힣ㄱ-ㅎㅏ-ㅣA-Za-z0-9]/g,''); }
-    function acOpen(inp){ if(inp.disabled) return; var d=AC_DEF[inp.getAttribute('data-ac')], box=inp.nextElementSibling, q=acPlain(inp.value);
+    function acOpen(inp){ if(inp.disabled) return; var d=AC_DEF[inp.getAttribute('data-ac')], box=inp.nextElementSibling, q=inp.classList.contains('auto')?'':acPlain(inp.value);   // 자동값(한자어·고유어) 칸은 목록 전체 표시
       var grp=(inp.getAttribute('data-ac')==='jm') ? FIELD_67_GROUP : null;
       var items=d.list.filter(function(x){ return !q || acPlain(x).indexOf(q)>=0 || (grp && acPlain(grp[x]||'').indexOf(q)>=0); });
       if(!items.length){ box.style.display='none'; return; }
@@ -1644,7 +1644,7 @@
         var wf_=el.closest('.wf'); if(wf_) wf_.classList.toggle('off', chain && !en[f] && !ro && f!=='색인표제어');
       });
       origRebuild(sec);
-      var oi=sec.querySelector('[data-f="원어"]'); if(oi) sec.querySelectorAll('.orows select,.orows input,.orows button,.o-add').forEach(function(b){ b.disabled=oi.disabled || b.classList.contains('auto'); });
+      var oi=sec.querySelector('[data-f="원어"]'); if(oi) sec.querySelectorAll('.orows select,.orows input,.orows button,.o-add').forEach(function(b){ b.disabled=oi.disabled; });   // 자동값(한자어·고유어) 언어 칸도 잠그지 않음(2026-09-08)
     }
     // 저장 전 점검 — 필수 형식 오류만(전부 저장 차단). 버튼·목록·자동 비활성으로 UI가 강제하는 항목은 점검하지 않음.
     function validateWrite(part, v, it){
@@ -1853,7 +1853,7 @@
       var NP_TIP='2.1.9. 원어의 언어명을 밝힌다.\n예) 다다미(<일>←tatami[疊])\n다만, 원어의 언어명이 불명확할 때에는 밝히지 않는다. 또한, 고유명사는 언어명을 밝히지 않는다.';   // 신어 집필 지침(2022) 원문
       function sb(sym){ return '<span class="o-symw"><button type="button" class="o-sym" onclick="origSym(this,\''+sym+'\')">'+sym+'</button><div class="sym-tip">'+esc(SYM_TIP[sym])+'</div></span>'; }
       return '<div class="orow" data-piece="'+pi+'"><div class="o-line1">'+(sub?'<span class="o-piece sub">└</span>':'<span class="o-piece">'+esc(label)+'</span>')+'<input class="w-field o-txt" autocomplete="off" placeholder="원어" oninput="origCompose(this)"><a class="o-dict" target="_blank" rel="noopener" style="display:none">우리말샘 검색 결과</a>'+(sub?'<button type="button" class="o-del" onclick="origDelRow(this)">×</button>':'')+'</div>'
-        + '<div class="o-line2"><div class="ac"><input class="w-field ac-inp o-lang" data-ac="lang" autocomplete="off" placeholder=" " oninput="acOpen(this);origCompose(this)" onkeydown="acKey(event,this)" onfocus="acOpen(this)" onblur="acBlur(this)"><div class="ac-list" style="display:none"></div><span class="o-lang-note"><span>외국어 언어명</span><small>* 고유어, 한자어 자동 생성</small></span></div>'+sb('▼')+sb('▽')+sb('←')
+        + '<div class="o-line2"><div class="ac"><input class="w-field ac-inp o-lang" data-ac="lang" autocomplete="off" placeholder=" " oninput="acOpen(this);origCompose(this)" onkeydown="acKey(event,this)" onfocus="if(this.classList.contains(\'auto\')) this.select();acOpen(this)" onblur="acBlur(this)"><div class="ac-list" style="display:none"></div><span class="o-lang-note"><span>외국어 언어명</span><small>* 고유어, 한자어 자동 생성</small></span></div>'+sb('▼')+sb('▽')+sb('←')
         + '<span class="o-symw"><label class="o-np"><input type="checkbox" class="o-np-chk" onchange="origCompose(this)">고유명</label><div class="sym-tip">'+esc(NP_TIP)+'</div></span></div>'
         + '</div>';
     }
@@ -1900,12 +1900,13 @@
     function origRuns(rows){
       var runs=[]; rows.forEach(function(r,i){
         var re=/([一-鿿㐀-䶿]+(?:\/[一-鿿㐀-䶿]+)*▽?)|([가-힣]+)|([▼←]*(?:\[[^\]]*\]|[^一-鿿㐀-䶿가-힣▼▽\[\]])+)/g, m;   // 로마자 런 안의 ←(chip←inflation)·[漢字](Wuhan[武漢])는 같은 런, 한자 사이 /(木板/木版)는 한자 런
-        while((m=re.exec(r.txt))){ if(m[1]) runs.push({row:i, lang:'한', txt:m[1], kind:'한'}); else if(m[2]) runs.push({row:i, lang:'고', txt:m[2], kind:'고'}); else { var t=m[3].trim(); if(t) runs.push({row:i, lang:r.lang, txt:t, kind:'외', np:!!r.np}); } }
+        var fl=(r.lang && r.lang!=='고' && r.lang!=='한') ? r.lang : '';   // 행에 외국어를 골랐으면 한자 런도 그 언어(<중>谢谢)
+        while((m=re.exec(r.txt))){ if(m[1]) runs.push(fl ? {row:i, lang:fl, txt:m[1], kind:'외', np:!!r.np} : {row:i, lang:'한', txt:m[1], kind:'한'}); else if(m[2]) runs.push({row:i, lang:'고', txt:m[2], kind:'고'}); else { var t=m[3].trim(); if(t) runs.push({row:i, lang:r.lang, txt:t, kind:'외', np:!!r.np}); } }
       });
       return runs.filter(function(x){ return x.kind!=='외' || (x.lang && x.lang!=='고' && x.lang!=='한'); });
     }
     // 언어명 → 약어. 목록에 없는 언어명(직접 입력)은 첫 음절. 첫 음절이 기존 약어와 겹치면 안내하고 빈 값(행 제외)
-    function origLangAbbr(li){ var name=li.value.trim(); if(!name) return ''; if(ORIG_LANG_ABBR[name]) return ORIG_LANG_ABBR[name];
+    function origLangAbbr(li){ var name=li.value.trim(); if(!name || /^(한자어|고유어)(·(한자어|고유어))?$/.test(name)) return ''; if(ORIG_LANG_ABBR[name]) return ORIG_LANG_ABBR[name];
       var ab=name.charAt(0);
       if(LANG_ABBR.indexOf(ab)>=0){ if(li.getAttribute('data-warned')!==name){ toast('해당 언어명에 대한 약어 배정이 필요합니다. 관리자에게 문의해 주세요.'); li.setAttribute('data-warned', name); } return ''; }
       return /[가-힣]/.test(ab) ? ab : ''; }
@@ -1914,8 +1915,10 @@
       var rows=[]; wf.querySelectorAll('.orow').forEach(function(r){ var txt=r.querySelector('.o-txt').value.trim(), a=r.querySelector('.o-dict');
         if(a){ if(txt){ a.href='https://opendict.korean.go.kr/search/searchResult?query='+encodeURIComponent(txt.replace(/[▼▽←]/g,'')); a.style.display=''; } else { a.removeAttribute('href'); a.style.display='none'; } }
         var li=r.querySelector('.o-lang'), hasRoman=/[^一-鿿㐀-䶿가-힣▼▽←\s\/]/.test(txt);   // 한자 사이 /는 로마자 아님
-        if(txt && !hasRoman){ var au=[]; if(/[一-鿿㐀-䶿]/.test(txt)) au.push('한자어'); if(/[가-힣]/.test(txt)) au.push('고유어'); li.value=au.join('·'); li.disabled=true; li.classList.add('auto'); }   // 한자·한글만: 언어명 자동 표시·잠금
-        else if(li.classList.contains('auto')){ li.value=''; li.classList.remove('auto'); li.disabled=r.closest('.wf').querySelector('[data-f="원어"]').disabled; }
+        if(txt && !hasRoman){ var au=[]; if(/[一-鿿㐀-䶿]/.test(txt)) au.push('한자어'); if(/[가-힣]/.test(txt)) au.push('고유어');
+          var lv=li.value.trim(); if(!lv || /^(한자어|고유어)(·(한자어|고유어))?$/.test(lv)){ li.value=au.join('·'); li.classList.add('auto'); } else li.classList.remove('auto'); }   // 한자·한글만: 언어명 자동 표시(잠그지 않음). 작업자가 다른 언어를 고르면 그 언어로 조립(<중>谢谢 등, 2026-09-08)
+        else if(li.classList.contains('auto')){ li.value=''; li.classList.remove('auto'); }
+        li.disabled=r.closest('.wf').querySelector('[data-f="원어"]').disabled;
         rows.push({lang:origLangAbbr(li), txt:txt, pi:parseInt(r.getAttribute('data-piece'),10)||0, np:r.querySelector('.o-np-chk').checked}); });
       rows=rows.filter(function(r){ return r.txt; }); if(!rows.length) return;
       var runs=origRuns(rows); if(!runs.length) return;
@@ -1948,7 +1951,7 @@
       var plain='', romans=[], pend='', re=/<([^>]+)>|([^<]+)/g, m;   // romans: 로마자 구간 {s,e,lang,np}
       while((m=re.exec(v))){ if(m[1]){ pend=m[1]; continue; }
         var seg=m[2], r2=/((?:\[[^\]]*\]|[^一-鿿㐀-䶿가-힣▽\[\]])+)|([一-鿿㐀-䶿가-힣▽\/]+)/g, k;
-        while((k=r2.exec(seg))){ if(k[1] && k[1].trim()){ romans.push({s:plain.length, e:plain.length+k[1].length, lang:pend, np:!pend}); pend=''; } plain+=k[1]||k[2]; } }
+        while((k=r2.exec(seg))){ if(k[1] && k[1].trim()){ romans.push({s:plain.length, e:plain.length+k[1].length, lang:pend, np:!pend}); pend=''; } else if(k[2] && pend){ romans.push({s:plain.length, e:plain.length+k[2].length, lang:pend, np:false}); pend=''; } plain+=k[1]||k[2]; } }   // 태그 뒤 한자(<중>谢谢)도 언어 지정 구간
       var olds=rowEls.map(function(r){ return r.querySelector('.o-txt').value.trim(); }), oldAll=olds.join('');
       var pfx=0; while(pfx<oldAll.length && pfx<plain.length && oldAll[pfx]===plain[pfx]) pfx++;
       var sfx=0; while(sfx<oldAll.length-pfx && sfx<plain.length-pfx && oldAll[oldAll.length-1-sfx]===plain[plain.length-1-sfx]) sfx++;
@@ -1960,6 +1963,7 @@
         r.querySelector('.o-txt').value=plain.slice(a,b).trim();
         var lang=null, np=null; romans.forEach(function(x){ if(x.s>=a && x.s<b){ if(x.lang && abbrName[x.lang]){ lang=abbrName[x.lang]; np=false; } else if(x.np && lang===null) np=true; } });
         var li=r.querySelector('.o-lang'); if(lang!==null){ li.value=lang; li.disabled=false; li.classList.remove('auto'); }
+        else if(!/[^一-鿿㐀-䶿가-힣▼▽←\s\/]/.test(plain.slice(a,b)) && !li.classList.contains('auto')) li.value='';   // 태그를 지운 한자·한글 행은 자동(한자어·고유어)으로 복귀
         if(np!==null) r.querySelector('.o-np-chk').checked=np; });
       origCompose(rowEls[0].querySelector('.o-txt'), true);
     }
