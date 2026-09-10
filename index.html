@@ -221,12 +221,12 @@
     .wf label.chk-native { display:flex; align-items:center; gap:6px; font-size:14px; font-weight:400; margin-bottom:4px; cursor:pointer; } .chk-native .chk-sub { font-size:12px; color:var(--muted); } .chk-native input { margin:0; }
     /* 원어 행: [언어][기호][원어 글자][결합][삭제] → 원어·어종 표시 자동 조립 */
     .orows { display:flex; flex-direction:column; gap:6px; margin-bottom:6px; }
-    .orow { display:flex; flex-direction:column; gap:6px; padding:8px 6px; border:1px solid var(--line); border-radius:10px; background:var(--surface2); }
+    .orow { display:flex; flex-direction:row; align-items:stretch; gap:6px; padding:8px 6px; border:1px solid var(--line); border-radius:10px; background:var(--surface2); } .orow .o-body { flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; }
     .orow .o-line1, .orow .o-line2 { display:flex; align-items:center; gap:4px; }
     .orow .ac { flex:1; min-width:0; } .orow .o-line1 .o-txt { flex:1; min-width:0; }
     .o-np { display:flex; align-items:center; gap:4px; font-size:14px; white-space:nowrap; cursor:pointer; flex:none; margin-left:2px; } .o-np input { margin:0; }
     .orow .o-piece { flex:none; width:96px; font-weight:700; color:var(--brand-d); } .orow .o-piece::placeholder { color:var(--muted); font-weight:400; text-align:center; }   /* 성분 칸: 등재표제어 조각이 미리 들어가며 편집 가능. 비어 있으면(└) 위 성분에 이어짐 */
-    .o-grip { flex:none; width:14px; text-align:center; color:var(--muted); cursor:grab; user-select:none; font-size:16px; line-height:1; } .o-grip:active { cursor:grabbing; } .orow:has(.o-txt:disabled) .o-grip { opacity:.35; cursor:default; }
+    .o-grip { flex:none; width:26px; align-self:stretch; display:flex; align-items:center; justify-content:center; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--muted); cursor:grab; user-select:none; font-size:18px; line-height:1; } .o-grip:hover { border-color:var(--brand); color:var(--brand); } .o-grip:active { cursor:grabbing; } body.dark .o-grip { background:var(--surface2); } .orow:has(.o-txt:disabled) .o-grip { opacity:.35; cursor:default; }
     .orow.dragging { opacity:.4; } .orow.drop-before { box-shadow:0 -4px 0 -1px var(--brand); } .orow.drop-after { box-shadow:0 4px 0 -1px var(--brand); }
     .orow .w-field { font-size:16px; padding:7px 8px; }
     .o-symw { position:relative; flex:none; display:inline-flex; }
@@ -1855,10 +1855,10 @@
       var NP_TIP='2.1.9. 원어의 언어명을 밝힌다.\n예) 다다미(<일>←tatami[疊])\n다만, 원어의 언어명이 불명확할 때에는 밝히지 않는다. 또한, 고유명사는 언어명을 밝히지 않는다.';   // 신어 집필 지침(2022) 원문
       function sb(sym){ return '<span class="o-symw"><button type="button" class="o-sym" onclick="origSym(this,\''+sym+'\')">'+sym+'</button><div class="sym-tip">'+esc(SYM_TIP[sym])+'</div></span>'; }
       // 모든 행이 같은 모양: 손잡이(드래그) · 성분 칸(편집 가능, 비어 있으면 위 성분에 이어짐) · 원어 칸 · 우리말샘 · ×. 자동 생성 행은 성분 칸에 등재표제어 조각이 들어감
-      return '<div class="orow" ondragstart="origDragStart(event,this)" ondragend="origDragEnd(event,this)"><div class="o-line1"><span class="o-grip" onmousedown="origGrip(this,true)" onmouseup="origGrip(this,false)">⋮</span><input class="w-field o-piece" autocomplete="off" placeholder="└" value="'+esc(label).replace(/"/g,'&quot;')+'" oninput="normField(this);origTouch(this);origCompose(this)"><input class="w-field o-txt" autocomplete="off" placeholder="원어" oninput="origCompose(this)"><a class="o-dict" target="_blank" rel="noopener" style="display:none">우리말샘 검색 결과</a><button type="button" class="o-del" onclick="origDelRow(this)">×</button></div>'
+      return '<div class="orow" ondragstart="origDragStart(event,this)" ondragend="origDragEnd(event,this)"><span class="o-grip" onmousedown="origGrip(this,true)" onmouseup="origGrip(this,false)">⋮</span><div class="o-body"><div class="o-line1"><input class="w-field o-piece" autocomplete="off" placeholder="└" value="'+esc(label).replace(/"/g,'&quot;')+'" oninput="normField(this);origTouch(this);origCompose(this)"><input class="w-field o-txt" autocomplete="off" placeholder="원어" oninput="origCompose(this)"><a class="o-dict" target="_blank" rel="noopener" style="display:none">우리말샘 검색 결과</a><button type="button" class="o-del" onclick="origDelRow(this)">×</button></div>'
         + '<div class="o-line2"><div class="ac"><input class="w-field ac-inp o-lang" data-ac="lang" autocomplete="off" placeholder=" " oninput="acOpen(this);origCompose(this)" onkeydown="acKey(event,this)" onfocus="if(this.classList.contains(\'auto\')) this.select();acOpen(this)" onblur="acBlur(this)"><div class="ac-list" style="display:none"></div><span class="o-lang-note"><span>외국어 언어명</span><small>* 고유어, 한자어 자동 생성</small></span></div>'+sb('▼')+sb('▽')+sb('←')
         + '<span class="o-symw"><label class="o-np"><input type="checkbox" class="o-np-chk" onchange="origCompose(this)">고유명</label><div class="sym-tip">'+esc(NP_TIP)+'</div></span></div>'
-        + '</div>';
+        + '</div></div>';
     }
     // 등재표제어의 조각(-·공백·^)마다 행 하나를 자동 생성. 조각이 바뀔 때마다 현재 조각 수에 맞춰 다시 만든다(늘면 행 추가, 줄면 뒤 성분의 행·그 추가 행 제거).
     //  남는 성분의 행 값(원어·언어명·고유명)은 유지. 사라진 성분의 행 값은 성분 텍스트별로 보관(box._stash)했다가 그 텍스트의 성분이 다시 생기면 복원(추가 행 포함). 상자는 항목마다 새로 만들어지므로 보관값은 항목 안에서만 유효.
