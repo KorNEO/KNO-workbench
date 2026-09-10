@@ -225,7 +225,9 @@
     .orow .o-line1, .orow .o-line2 { display:flex; align-items:center; gap:4px; }
     .orow .ac { flex:1; min-width:0; } .orow .o-line1 .o-txt { flex:1; min-width:0; }
     .o-np { display:flex; align-items:center; gap:4px; font-size:14px; white-space:nowrap; cursor:pointer; flex:none; margin-left:2px; } .o-np input { margin:0; }
-    .o-piece { flex:none; font-size:15px; font-weight:700; color:var(--brand-d); min-width:40px; max-width:110px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .o-piece.sub { color:var(--muted); min-width:20px; text-align:center; }
+    .orow .o-piece { flex:none; width:96px; font-weight:700; color:var(--brand-d); } .orow .o-piece::placeholder { color:var(--muted); font-weight:400; text-align:center; }   /* 성분 칸: 등재표제어 조각이 미리 들어가며 편집 가능. 비어 있으면(└) 위 성분에 이어짐 */
+    .o-grip { flex:none; width:14px; text-align:center; color:var(--muted); cursor:grab; user-select:none; font-size:16px; line-height:1; } .o-grip:active { cursor:grabbing; } .orow:has(.o-txt:disabled) .o-grip { opacity:.35; cursor:default; }
+    .orow.dragging { opacity:.4; } .orow.drop-before { box-shadow:0 -4px 0 -1px var(--brand); } .orow.drop-after { box-shadow:0 4px 0 -1px var(--brand); }
     .orow .w-field { font-size:16px; padding:7px 8px; }
     .o-symw { position:relative; flex:none; display:inline-flex; }
     .o-dict { font-size:12px; font-weight:700; color:var(--brand); background:#eef1ff; border:1px solid #c9d3f5; border-radius:999px; padding:5px 8px; text-decoration:none; white-space:nowrap; flex:none; line-height:1; } .o-dict:hover { background:var(--brand); color:#fff; }
@@ -1788,7 +1790,7 @@
           +fld(4,'일상어/전문어',seg('일상어/전문어',['일상어','전문어']),'','일상어/전문어')
           +fld(5,'전문 분야',ac('전문 분야','jm'),'','전문 분야')
           +fld(6,'등재표제어',inp('등재표제어'),'','등재표제어')
-          +fld(7,'원어','<label class="chk-native"><input type="checkbox"'+attrs('고유어')+(pv('고유어')==='Y'?' checked':'')+'> <span>원어 미입력<span class="chk-sub">(e.g. 고유어 단일어)</span></span></label>'+(ed?'<div class="orows"></div><div><button type="button" class="llm-copy o-add" onclick="origAddRow(this)">+</button></div>':'')+inp('원어'),'','원어')
+          +fld(7,'원어','<label class="chk-native"><input type="checkbox"'+attrs('고유어')+(pv('고유어')==='Y'?' checked':'')+'> <span>원어 미입력<span class="chk-sub">(e.g. 고유어 단일어)</span></span></label>'+(ed?'<div class="orows" ondragover="origDragOver(event,this)" ondragleave="origDragLeave(event,this)" ondrop="origDrop(event,this)"></div><div><button type="button" class="llm-copy o-add" onclick="origAddRow(this)">+</button></div>':'')+inp('원어'),'','원어')
           +fld(8,'어종 표시',inp('어종 표시'),'','어종 표시',true)
           +fld(9,'어원',inp('어원'),'','어원',true)
           +fld(10,'의미 범주',ac('의미 범주','um'),'','의미 범주')
@@ -1845,38 +1847,37 @@
       if(!llmValueOk_(LLM_MAP[i][1], llmVal_(it, LLM_MAP[i]))){ uiAlert('LLM 생성 결과에 오류가 있습니다. 수동으로 입력해 주십시오.'); return; }
       llmSet_(i, el); toast('복사 완료');
     }
-    function origRowHtml(pi, label, sub){
+    function origRowHtml(label){
       var SYM_TIP={   // 신어 집필 지침(2022) 2.1.3 ①②③ 원문·예시 그대로
         '←':'2.1.3. ③ 변한 원어 앞에 화살표를 붙인다. 원어의 발음과 현저히 달라진 외래어는 원어 앞에 ‘←’ 기호로 표시하며, ‘<언어명 약어>←원어’의 형식으로 밝힌다.\n(《표준》 칠십^밀리^영화(七十<영>←millimeter映畫), 퀸카(<영>queen←card))',
         '▼':'2.1.3. ① 해당 언어에 존재하지 않는 원어는 원어를 제시하되 단어 앞에 ‘▼’ 기호로 표시한다. <언어명> 기호 다음으로, 원어에서 사용하는 다른 기호를 선행하여 제시한다.\n예) 콩글리시(▼Konglish)',
         '▽':'2.1.3. ② 현행 한자음과 달리 읽은 한자어인 경우, 해당 한자음 뒤에 ‘▽’을 사용한다.\n예) 시월(十▽月)\n다만, 유행어 성격의 신어에 대한 변한 한자음의 경우, 해당 한자음 뒤에 ‘▽’을 사용하되, ‘OOO’의 변형한 말이라는 정보를 뜻풀이에서 준다.\n예) 체고시다(最▽高시다), 강려크하다(强力▽하다)'};
       var NP_TIP='2.1.9. 원어의 언어명을 밝힌다.\n예) 다다미(<일>←tatami[疊])\n다만, 원어의 언어명이 불명확할 때에는 밝히지 않는다. 또한, 고유명사는 언어명을 밝히지 않는다.';   // 신어 집필 지침(2022) 원문
       function sb(sym){ return '<span class="o-symw"><button type="button" class="o-sym" onclick="origSym(this,\''+sym+'\')">'+sym+'</button><div class="sym-tip">'+esc(SYM_TIP[sym])+'</div></span>'; }
-      return '<div class="orow" data-piece="'+pi+'"><div class="o-line1">'+(sub?'<span class="o-piece sub">└</span>':'<span class="o-piece">'+esc(label)+'</span>')+'<input class="w-field o-txt" autocomplete="off" placeholder="원어" oninput="origCompose(this)"><a class="o-dict" target="_blank" rel="noopener" style="display:none">우리말샘 검색 결과</a>'+(sub?'<button type="button" class="o-del" onclick="origDelRow(this)">×</button>':'')+'</div>'
+      // 모든 행이 같은 모양: 손잡이(드래그) · 성분 칸(편집 가능, 비어 있으면 위 성분에 이어짐) · 원어 칸 · 우리말샘 · ×. 자동 생성 행은 성분 칸에 등재표제어 조각이 들어감
+      return '<div class="orow" ondragstart="origDragStart(event,this)" ondragend="origDragEnd(event,this)"><div class="o-line1"><span class="o-grip" onmousedown="origGrip(this,true)" onmouseup="origGrip(this,false)">⋮</span><input class="w-field o-piece" autocomplete="off" placeholder="└" value="'+esc(label).replace(/"/g,'&quot;')+'" oninput="normField(this);origTouch(this);origCompose(this)"><input class="w-field o-txt" autocomplete="off" placeholder="원어" oninput="origCompose(this)"><a class="o-dict" target="_blank" rel="noopener" style="display:none">우리말샘 검색 결과</a><button type="button" class="o-del" onclick="origDelRow(this)">×</button></div>'
         + '<div class="o-line2"><div class="ac"><input class="w-field ac-inp o-lang" data-ac="lang" autocomplete="off" placeholder=" " oninput="acOpen(this);origCompose(this)" onkeydown="acKey(event,this)" onfocus="if(this.classList.contains(\'auto\')) this.select();acOpen(this)" onblur="acBlur(this)"><div class="ac-list" style="display:none"></div><span class="o-lang-note"><span>외국어 언어명</span><small>* 고유어, 한자어 자동 생성</small></span></div>'+sb('▼')+sb('▽')+sb('←')
         + '<span class="o-symw"><label class="o-np"><input type="checkbox" class="o-np-chk" onchange="origCompose(this)">고유명</label><div class="sym-tip">'+esc(NP_TIP)+'</div></span></div>'
         + '</div>';
     }
-    // 등재표제어의 조각(-·공백·^)마다 행 하나. 조각이 바뀔 때마다 현재 조각 수에 맞춰 다시 만든다(늘면 행 추가, 줄면 뒤 성분의 행·그 추가 행 제거).
-    //  남는 성분의 행 값(원어·언어명·고유명)은 유지. 사라진 성분의 행 값은 성분 번호별로 보관(box._stash)했다가 그 번호의 성분이 다시 생기면 복원(추가 행 포함). 상자는 항목마다 새로 만들어지므로 보관값은 항목 안에서만 유효
+    // 등재표제어의 조각(-·공백·^)마다 행 하나를 자동 생성. 조각이 바뀔 때마다 현재 조각 수에 맞춰 다시 만든다(늘면 행 추가, 줄면 뒤 성분의 행·그 추가 행 제거).
+    //  남는 성분의 행 값(원어·언어명·고유명)은 유지. 사라진 성분의 행 값은 성분 텍스트별로 보관(box._stash)했다가 그 텍스트의 성분이 다시 생기면 복원(추가 행 포함). 상자는 항목마다 새로 만들어지므로 보관값은 항목 안에서만 유효.
+    //  작업자가 행을 손댄 뒤(성분 수정·추가·삭제·이동, data-touched)에는 등재표제어가 바뀌어도 행을 다시 만들지 않는다 — 행이 정본, 어종·원어만 현재 행에서 다시 조립(2026-09-10)
     function origRebuild(sec){
       var box=sec.querySelector('.orows'); if(!box) return;
+      if(box.getAttribute('data-touched')==='1') return;
       var ps=origPieces(secVal(sec,'등재표제어')); if(!ps.length) ps=[{txt:'', sep:''}];
       var sig=ps.map(function(x){ return x.txt+x.sep; }).join('|'); if(box.getAttribute('data-sig')===sig) return;   // 조각 글자·결합 기호가 같으면 유지
-      // 기존 행을 성분 '텍스트' 기준으로 새 성분에 붙임(중간 성분을 지워도 남은 성분의 값이 밀리거나 숨지 않게). 같은 텍스트가 여럿이면 앞에서부터
-      var groups={};   // {성분 텍스트: [행 묶음(주 행+추가 행), ...]}
-      var byPi={};
-      box.querySelectorAll('.orow').forEach(function(r){ var pi=parseInt(r.getAttribute('data-piece'),10);
-        var o={sub:!!r.querySelector('.o-piece.sub'), txt:r.querySelector('.o-txt').value, lang:r.querySelector('.o-lang').value, np:r.querySelector('.o-np-chk').checked, label:(r.querySelector('.o-piece')||{}).textContent||''};
-        (byPi[pi]=byPi[pi]||[]).push(o); });
-      Object.keys(byPi).forEach(function(pi){ var g=byPi[pi], t=(g.filter(function(o){ return !o.sub; })[0]||{}).label||''; (groups[t]=groups[t]||[]).push(g); });
+      // 기존 행을 성분 '텍스트' 기준으로 새 성분에 붙임(중간 성분을 지워도 남은 성분의 값이 밀리거나 숨지 않게). 같은 텍스트가 여럿이면 앞에서부터. 성분 칸이 빈 행은 위 성분의 묶음에 속함
+      var groups={}, cur=null;   // {성분 텍스트: [행 묶음(주 행+이어진 행), ...]}
+      box.querySelectorAll('.orow').forEach(function(r){ var lb=r.querySelector('.o-piece').value.trim();
+        var o={txt:r.querySelector('.o-txt').value, lang:r.querySelector('.o-lang').value, np:r.querySelector('.o-np-chk').checked};
+        if(lb || !cur){ cur=[o]; (groups[lb]=groups[lb]||[]).push(cur); } else cur.push(o); });
       var stash=box._stash||(box._stash={});   // {성분 텍스트: [행 묶음, ...]}
       var vals=[], h='';
-      ps.forEach(function(x,pi){
-        var g=(groups[x.txt]||[]).shift() || (stash[x.txt]||[]).shift() || [];
-        var main=g.filter(function(o){ return !o.sub; })[0]||{txt:'', lang:'', np:false}, subs=g.filter(function(o){ return o.sub; });
-        h+=origRowHtml(pi, x.txt, false); vals.push(main);
-        subs.forEach(function(o){ h+=origRowHtml(pi, '', true); vals.push(o); });
+      ps.forEach(function(x){
+        var g=(groups[x.txt]||[]).shift() || (stash[x.txt]||[]).shift() || [{txt:'', lang:'', np:false}];
+        g.forEach(function(o,k){ h+=origRowHtml(k?'':x.txt); vals.push(o); });
       });
       Object.keys(groups).forEach(function(t){ if(groups[t].length) stash[t]=(stash[t]||[]).concat(groups[t]); });   // 안 쓰인 행 묶음은 텍스트 키로 보관 → 같은 성분이 다시 생기면 복원
       box.innerHTML=h; box.setAttribute('data-sig', sig);
@@ -1890,8 +1891,22 @@
       if(sym==='▼') kong=!kong; else if(sym==='←') arrow=!arrow; else if(sym==='▽') hanja=!hanja;
       v=v.replace(/[▼←▽]/g,''); el.value=(kong?'▼':'')+(arrow?'←':'')+v+(hanja?'▽':'');
       el.focus(); try{ var e=el.value.length-(hanja?1:0); el.setSelectionRange(e,e); }catch(x){} origCompose(el); }
-    function origAddRow(btn){ var box=btn.closest('.wf').querySelector('.orows'); if(!box) return; var last=box.lastElementChild, pi=last?parseInt(last.getAttribute('data-piece'),10):0; box.insertAdjacentHTML('beforeend', origRowHtml(pi, '', true)); var oi=btn.closest('.stage-sec').querySelector('[data-f="원어"]'); if(oi) box.lastElementChild.querySelectorAll('input,button').forEach(function(b){ b.disabled=oi.disabled; }); }   // 마지막 성분에 행 추가(로마자 언어가 둘일 때). 포커스 없음
-    function origDelRow(btn){ var row=btn.closest('.orow'), box=row.parentNode; row.remove(); origCompose(box); }
+    function origTouch(el){ var box=el.closest('.orows'); if(box) box.setAttribute('data-touched','1'); }   // 작업자가 행을 손댐 → 이후 등재표제어가 바뀌어도 행 유지
+    function origAddRow(btn){ var box=btn.closest('.wf').querySelector('.orows'); if(!box) return; box.insertAdjacentHTML('beforeend', origRowHtml('')); origTouch(box.lastElementChild); var oi=btn.closest('.stage-sec').querySelector('[data-f="원어"]'); if(oi) box.lastElementChild.querySelectorAll('input,button').forEach(function(b){ b.disabled=oi.disabled; }); }   // 맨 아래에 성분 칸이 빈 행 추가(드래그로 자리 이동). 포커스 없음
+    function origDelRow(btn){ var row=btn.closest('.orow'), box=row.parentNode; if(btn.disabled) return; origTouch(row); row.remove(); origCompose(box); }
+    // 드래그로 행 이동: 손잡이를 누른 동안만 행이 draggable(원어 칸 텍스트 선택과 충돌 방지). 상자 위에서 마우스가 행의 위/아래 반쪽에 있으면 그 행 앞/뒤에 삽입선. 놓으면 그 자리로 옮기고 다시 조립
+    function origGrip(g, on){ var row=g.closest('.orow'); if(!row || row.querySelector('.o-txt').disabled) return; row.draggable=!!on; }
+    function origDragStart(e, row){ if(!row.draggable || row.querySelector('.o-txt').disabled){ e.preventDefault(); return; } var box=row.parentNode; box._drag=row; row.classList.add('dragging'); try{ e.dataTransfer.setData('text/plain',''); e.dataTransfer.effectAllowed='move'; }catch(x){} }
+    function origDragOver(e, box){ var dr=box._drag; if(!dr) return; e.preventDefault(); try{ e.dataTransfer.dropEffect='move'; }catch(x){}
+      box.querySelectorAll('.orow').forEach(function(r){ r.classList.remove('drop-before','drop-after'); });
+      var t=e.target && e.target.closest ? e.target.closest('.orow') : null; if(!t || t===dr || t.parentNode!==box) return;
+      var rc=t.getBoundingClientRect(); t.classList.add(e.clientY < rc.top+rc.height/2 ? 'drop-before' : 'drop-after'); }
+    function origDragLeave(e, box){ if(e.relatedTarget && box.contains(e.relatedTarget)) return; box.querySelectorAll('.orow').forEach(function(r){ r.classList.remove('drop-before','drop-after'); }); }
+    function origDrop(e, box){ var dr=box._drag; if(!dr) return; e.preventDefault();
+      var t=box.querySelector('.orow.drop-before,.orow.drop-after');
+      if(t){ if(t.classList.contains('drop-before')) box.insertBefore(dr, t); else box.insertBefore(dr, t.nextSibling); origTouch(dr); }
+      origDragEnd(e, dr); if(t) origCompose(box); }
+    function origDragEnd(e, row){ var box=row.parentNode; if(box){ box._drag=null; box.querySelectorAll('.orow').forEach(function(r){ r.classList.remove('dragging','drop-before','drop-after'); }); } row.draggable=false; }
     // 행 → 원어 문자열·어종 표시(지침 2·3장). 행은 등재표제어의 직접 구성 성분(-·공백·^ 조각)마다 자동 생성되므로 성분 경계 = 행.
     //  원어: 태그 없음=고·한. 같은 외국어가 이어지면 태그 생략(공백·^ 경계는 공백, 그 외는 붙임).
     //  어종: 성분이 하나면 어종을 +로 전부 나열. 여럿이면 성분마다 1행→글자, 여러 행→어종이 섞이면 ( ), 같으면 하나. 성분 사이는 -→+, _, ^.
@@ -1905,6 +1920,12 @@
       });
       return runs.filter(function(x){ return x.kind!=='외' || (x.lang && x.lang!=='고' && x.lang!=='한'); });
     }
+    // 성분 사이 기호: 성분 칸이 등재표제어 조각과 그대로 일치하면 그 조각의 기호. 아니면 등재표제어에서 '앞 성분+기호+뒤 성분'을 찾고, 없으면 -(어종에서는 +)
+    function origSep(head, ps, labels, gi){
+      if(ps.length===labels.length && ps.every(function(p,k){ return p.txt===labels[k]; })) return ps[gi-1].sep||'-';
+      var a=labels[gi-1], b=labels[gi], rx=function(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); };
+      if(a && b){ var m=new RegExp(rx(a)+'([\\s\\-^])'+rx(b)).exec(String(head||'').replace(/\d+$/,'')); if(m) return m[1]===' '?'_':m[1]; }
+      return '-'; }
     // 언어명 → 약어. 목록에 없는 언어명(직접 입력)은 첫 음절. 첫 음절이 기존 약어와 겹치면 안내하고 빈 값(행 제외)
     function origLangAbbr(li){ var name=li.value.trim(); if(!name || /^(한자어|고유어)(·(한자어|고유어))?$/.test(name)) return ''; if(ORIG_LANG_ABBR[name]) return ORIG_LANG_ABBR[name];
       var ab=name.charAt(0);
@@ -1912,17 +1933,18 @@
       return /[가-힣]/.test(ab) ? ab : ''; }
     function origCompose(el, keepOrig){
       var wf=el.closest('.wf'), sec=el.closest('.stage-sec'); if(!wf || !sec) return;
-      var rows=[]; wf.querySelectorAll('.orow').forEach(function(r){ var txt=r.querySelector('.o-txt').value.trim(), a=r.querySelector('.o-dict');
+      var rows=[], gi=-1, labels=[];   // 성분 묶음: 성분 칸이 채워진 행이 새 성분을 시작, 빈 행은 위 성분에 이어짐(첫 행은 비어 있어도 성분 시작)
+      wf.querySelectorAll('.orow').forEach(function(r){ var txt=r.querySelector('.o-txt').value.trim(), a=r.querySelector('.o-dict'), lb=r.querySelector('.o-piece').value.trim(); if(lb || gi<0){ gi++; labels.push(lb); }
         if(a){ if(txt){ a.href='https://opendict.korean.go.kr/search/searchResult?query='+encodeURIComponent(txt.replace(/[▼▽←]/g,'')); a.style.display=''; } else { a.removeAttribute('href'); a.style.display='none'; } }
         var li=r.querySelector('.o-lang'), hasRoman=/[^一-鿿㐀-䶿가-힣▼▽←\s\/]/.test(txt);   // 한자 사이 /는 로마자 아님
         if(txt && !hasRoman){ var au=[]; if(/[一-鿿㐀-䶿]/.test(txt)) au.push('한자어'); if(/[가-힣]/.test(txt)) au.push('고유어');
           var lv=li.value.trim(); if(!lv || /^(한자어|고유어)(·(한자어|고유어))?$/.test(lv)){ li.value=au.join('·'); li.classList.add('auto'); } else li.classList.remove('auto'); }   // 한자·한글만: 언어명 자동 표시(잠그지 않음). 작업자가 다른 언어를 고르면 그 언어로 조립(<중>谢谢 등, 2026-09-08)
         else if(li.classList.contains('auto')){ li.value=''; li.classList.remove('auto'); }
         li.disabled=r.closest('.wf').querySelector('[data-f="원어"]').disabled;
-        rows.push({lang:origLangAbbr(li), txt:txt, pi:parseInt(r.getAttribute('data-piece'),10)||0, np:r.querySelector('.o-np-chk').checked}); });
+        rows.push({lang:origLangAbbr(li), txt:txt, pi:gi, np:r.querySelector('.o-np-chk').checked}); });
       rows=rows.filter(function(r){ return r.txt; }); if(!rows.length) return;
       var runs=origRuns(rows); if(!runs.length) return;
-      var ps=origPieces(secVal(sec,'등재표제어')), m=Math.max(ps.length,1);
+      var head=secVal(sec,'등재표제어'), ps=origPieces(head), m=Math.max(labels.length,1);
       runs.forEach(function(x){ x.pi=Math.min(rows[x.row].pi, m-1); });
       // 원어: 성분 경계(공백·^)에서 같은 외국어가 이어지면 공백, 그 외는 태그 생략·붙임
       var out='', prev=null;
@@ -1938,7 +1960,7 @@
       for(var q3=0;q3<consts.length-1;q3++){ if(!consts[q3].length && consts[q3+1].length) consts[q3].push(consts[q3+1][0]); }   // 앞 성분이 비면 뒤 어종을 이어받음(빈 괄호 방지)
       var et;
       if(m===1) et=consts[0].join('+');
-      else et=consts.map(function(g,gi){ var u=g.filter(function(x,k){ return g.indexOf(x)===k; }), sep=gi?(ps[gi-1].sep||'-'):''; return (sep==='-'?'+':sep)+(g.length===1?g[0]:(u.length===1?u[0]:'('+g.join('+')+')')); }).join('');
+      else et=consts.map(function(g,gi){ var u=g.filter(function(x,k){ return g.indexOf(x)===k; }), sep=gi?origSep(head, ps, labels, gi):''; return (sep==='-'?'+':sep)+(g.length===1?g[0]:(u.length===1?u[0]:'('+g.join('+')+')')); }).join('');
       var oi=sec.querySelector('[data-f="원어"]'), ei=sec.querySelector('[data-f="어종 표시"]');
       if(oi && !keepOrig){ oi.value='('+out+')'; onWriteInput(oi); }
       if(ei){ ei.value=et; onWriteInput(ei); }
