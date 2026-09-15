@@ -91,7 +91,7 @@ var API = {
   getResearchers: getResearchers, saveResearchers: saveResearchers,
   getAssignees: getAssignees, genAgree: genAgree, genReal: genReal,
   getProgress: getProgress, getItems: getItems, getItem: getItem,
-  saveFirst: saveFirst, saveSecond: saveSecond, saveWrite: saveWrite, addWriteItem: addWriteItem, deleteWriteItem: deleteWriteItem, logClientFail: logClientFail,
+  saveFirst: saveFirst, saveSecond: saveSecond, saveWrite: saveWrite, addWriteItem: addWriteItem, deleteWriteItem: deleteWriteItem, logClientFail: logClientFail, adminSetCells: adminSetCells,
   requestOtp: requestOtp, registerAccount: registerAccount, login: login, resetPassword: resetPassword, adminResetPassword: adminResetPassword
 };
 function doPost(e) {
@@ -858,6 +858,41 @@ function deleteWriteItem(token, rowId) {
   if (rownum < 0) throw new Error('행 없음: ' + rowId);
   sh.deleteRow(rownum); SpreadsheetApp.flush();
   return { ok: true };
+}
+
+// 관리자 셀 일괄 갱신(데이터 정정용, 2026-09-15). updates=[{row_id, values:{헤더:값, …}}], note=변경로그 메모.
+//  프로젝트 항목 시트의 기존 헤더만(집필 프로젝트는 HEADERS_WRITE로 보강 후) 갱신. 메타(ID·작업자·상태·일시 등 WRITE_META)는 불가. 상태·일시는 건드리지 않음. 헤더별로 열 단위 1회 기록.
+//  첫 사용: 기존 저장분 원어 행 역파싱 결과 일괄 기록(1차 집필 wr-mtghniwt).
+function adminSetCells(token, projectId, updates, note) {
+  var me = me_(token); assertManager_(me);
+  var p = projById_(projectId); if (!p) throw new Error('프로젝트 없음');
+  var sh = projItemSheet_(projectId); if (!sh) throw new Error('시트 없음');
+  var lock = LockService.getDocumentLock(); lock.waitLock(20000);
+  try {
+    var idx = isWriteKind_(p.type) ? ensureCols_(sh, HEADERS_WRITE) : headerIndex_(sh);
+    var n = sh.getLastRow() - 1; if (n <= 0) throw new Error('항목 없음');
+    var ids = sh.getRange(2, idx['ID'] + 1, n, 1).getValues(), rowOf = {};
+    for (var i = 0; i < ids.length; i++) rowOf[String(ids[i][0]).trim()] = i + 2;
+    var cols = {}, cnt = 0;   // {헤더: {행 번호: 값}}
+    (updates || []).forEach(function (u) {
+      var r = rowOf[String(u.row_id || '').trim()]; if (!r) throw new Error('행 없음: ' + u.row_id);
+      Object.keys(u.values || {}).forEach(function (h) {
+        if (!(h in idx)) throw new Error('헤더 없음: ' + h);
+        if (WRITE_META.indexOf(h) >= 0 || h === 'ID') throw new Error('갱신 불가 헤더: ' + h);
+        var v = u.values[h] == null ? '' : String(u.values[h]).normalize('NFC');
+        if (v.charAt(0) === '=') throw new Error('수식 시작 값 불가: ' + h);
+        (cols[h] = cols[h] || {})[r] = v; cnt++;
+      });
+    });
+    Object.keys(cols).forEach(function (h) {
+      var rng = sh.getRange(2, idx[h] + 1, n, 1), vals = rng.getValues();
+      Object.keys(cols[h]).forEach(function (r) { vals[parseInt(r, 10) - 2][0] = cols[h][r]; });
+      rng.setValues(vals);
+    });
+    appendLog_(me, projectId, '', '관리자 셀 갱신', String(note || ''), cnt + '셀: ' + Object.keys(cols).join(', '), '', '');
+    SpreadsheetApp.flush();
+    return { updated: cnt, headers: Object.keys(cols) };
+  } finally { lock.releaseLock(); }
 }
 
 // ── 로그 ───────────────────────────────────────────────
