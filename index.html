@@ -1375,7 +1375,7 @@
     var ETY_TIP='9. 어원\n9.1. 약어의 어원을 밝히는 경우 해당 원어를 대문자로 보인다. 어원을 보일 때는 특별한 이유가 없는 한 각 어절의 첫 부분을 소문자로 한다.\n예) 나이루(NAIRU) … 【non-accelerating inflation rate of unemployment】 / 아이피^주소(IP住所) … 【IP: internet protocol】 / 그럼피족(GRUMPY族) … 【GRUMPY: grown up mature professional】\n※ 다음의 경우 대문자를 사용한다. 인명, 지명, 국가명 등 고유 명사인 경우(국제단체, 기구, 조약 등도 포함), 원어가 원래 대문자인 경우\n예) 에스에스아르(SSR) 「명사」『지명』 소련을 구성하던 소비에트 사회주의 공화국. 【Soviet Socialist Republic】 / 나토(NATO) 「명사」『정치』 =북대서양 조약 기구. 【North Atlantic Treaty Organization】\n9.2. 고유어에 ‘~ism’이 붙은 단어: 어원에 변한말 표시 기호를 넣어 주고 어원에서 기본형을 보인다.\n예) 게으르니즘 → 원어는 ‘(게으르←ism)’, 어원은 ‘【←게으르다+ism】’으로 한다.\n9.3. ‘A’가 등재어인 경우에도 ‘A’가 포함된 표제어의 어원을 밝힌다.\n예) 비-보이(B-boy) … 【B: break dancing】 / 비보이^댄스(B-boy dance) 【B: break dancing】';
     var HATE_NOTE='차별 및 비하하는 의미가 포함되어 있으므로 사용에 주의가 필요하다.';
     var PARTS=['형태부','의미부'];
-    var PART_FIELDS={ '형태부':['단어/구','조어법','품사','일상어/전문어','전문 분야','등재표제어','색인표제어','고유어','원어','어종 표시','어원','의미 범주','집필 메모(형태부)'],
+    var PART_FIELDS={ '형태부':['단어/구','조어법','품사','일상어/전문어','전문 분야','등재표제어','색인표제어','고유어','원어','어종 표시','원어 행','어원','의미 범주','집필 메모(형태부)'],
                       '의미부':['뜻풀이','용례','참고 용례','참고 용례 URL','X년 Y월 신어','집필 메모(의미부)'] };
     // LLM 참고값 → 복사 대상 필드 (컬럼명 잠정)
     var LLM_MAP=[['LLM 색인표제어','색인표제어','형태부'],['LLM 단어/구','단어/구','형태부'],['LLM 조어법','조어법','형태부'],['LLM 품사','품사','형태부'],['LLM 일상어/전문어','일상어/전문어','형태부'],['LLM 전문 분야','전문 분야','형태부'],['LLM 의미 범주','의미 범주','형태부'],['LLM 뜻풀이','뜻풀이','의미부'],['LLM 용례','용례','의미부']];
@@ -1638,6 +1638,7 @@
       en['집필 메모(형태부)']=true; en['검수 메모(형태부)']=true;
       sec.querySelectorAll('[data-f]').forEach(function(el){
         var f=el.getAttribute('data-f'), ro=el.getAttribute('data-ro')==='1';
+        if(f==='원어 행') return;   // 행 JSON(숨은 칸)은 체인·잠금 대상 아님
         var on = ro ? false : (chain ? !!en[f] : true);
         if(f==='색인표제어'){ on=(el.getAttribute('data-edit')==='1'); var ln=el.closest('.ix-line'); if(ln){ ln.querySelector('.ix-edit').disabled=on; ln.querySelector('.ix-save').disabled=!on; } }   // 수정 버튼으로 연 동안만 편집, 저장 버튼으로 반영
         if(native && (f==='원어'||f==='어원')) on=false;
@@ -1749,6 +1750,7 @@
       var who=stage===1?'작업자 '+fmtName(it['작업자']||'?'):'검수자 '+fmtName(it['검수자']||'?');
       var h='<div class="stage-sec s'+stage+'" data-part="'+part+'" data-stage="'+stage+'" data-chain="'+(chain?1:0)+'"><div class="ss-head">'+(stage===1?'1차 작업':'2차 검수')+' <span class="ss-who">'+who+'</span></div><div class="write-form rail">';
       function pv(f){   // 표시값: 해당 단계 값 → (2차면 1차 복사) → 프리필
+        if(f==='원어 행' && stage===2 && !wv(it,2,f).trim() && !tplBlank('원어', wv(it,2,'원어'))) return '';   // 2차 원어가 따로 저장돼 있으면 1차 행을 물려받지 않음(2차 행이 없으면 2차 원어 문자열에서 역파싱)
         if(f==='X년 Y월 신어'){ var mm=String(it['추출 시기']||'').match(/(\d{4})\.?(\d{2})/); if(mm) return '【'+mm[1]+'년 '+parseInt(mm[2],10)+'월 신어】'; }   // 최초 출현 시점에서 자동 생성
         var v=wv(it,stage,f); if(v.trim()) return v;
         if(stage===2){ v=wv(it,1,f); if(v.trim()) return v; }
@@ -1790,7 +1792,7 @@
           +fld(4,'일상어/전문어',seg('일상어/전문어',['일상어','전문어']),'','일상어/전문어')
           +fld(5,'전문 분야',ac('전문 분야','jm'),'','전문 분야')
           +fld(6,'등재표제어',inp('등재표제어'),'','등재표제어')
-          +fld(7,'원어','<label class="chk-native"><input type="checkbox"'+attrs('고유어')+(pv('고유어')==='Y'?' checked':'')+'> <span>원어 미입력<span class="chk-sub">(e.g. 고유어 단일어)</span></span></label>'+(ed?'<div class="orows" ondragover="origDragOver(event,this)" ondragleave="origDragLeave(event,this)" ondrop="origDrop(event,this)"></div><div><button type="button" class="llm-copy o-add" onclick="origAddRow(this)">+</button></div>':'')+inp('원어'),'','원어')
+          +fld(7,'원어','<label class="chk-native"><input type="checkbox"'+attrs('고유어')+(pv('고유어')==='Y'?' checked':'')+'> <span>원어 미입력<span class="chk-sub">(e.g. 고유어 단일어)</span></span></label>'+(ed?'<div class="orows" ondragover="origDragOver(event,this)" ondragleave="origDragLeave(event,this)" ondrop="origDrop(event,this)"></div><div><button type="button" class="llm-copy o-add" onclick="origAddRow(this)">+</button></div>':'')+inp('원어')+'<input type="hidden"'+attrs('원어 행')+' value="'+ea(pv('원어 행'))+'">','','원어')
           +fld(8,'어종 표시',inp('어종 표시'),'','어종 표시',true)
           +fld(9,'어원',inp('어원'),'','어원',true)
           +fld(10,'의미 범주',ac('의미 범주','um'),'','의미 범주')
@@ -1865,6 +1867,10 @@
     //  작업자가 행을 손댄 뒤(성분 수정·추가·삭제·이동, data-touched)에는 등재표제어가 바뀌어도 행을 다시 만들지 않는다 — 행이 정본, 어종·원어만 현재 행에서 다시 조립(2026-09-10)
     function origRebuild(sec){
       var box=sec.querySelector('.orows'); if(!box) return;
+      // 저장된 행(JSON)이 있으면 그대로 복원. 없고 처음 여는 것이면 기존 저장분(최종 원어·어종 문자열)에서 행을 역파싱(다시 조립한 결과가 저장값과 같을 때만). 이후엔 화면의 행이 정본(2026-09-15)
+      var hj=secVal(sec,'원어 행');
+      if(!hj && box.getAttribute('data-json')===null && !secVal(sec,'고유어')){ var pr=origParse(secVal(sec,'등재표제어'), secVal(sec,'원어'), secVal(sec,'어종 표시')); if(pr && pr.ok) hj=JSON.stringify(pr.rows); }
+      if(hj && box.getAttribute('data-json')!==hj && origRestore(sec, box, hj)) return;
       if(box.getAttribute('data-touched')==='1') return;
       var ps=origPieces(secVal(sec,'등재표제어')); if(!ps.length) ps=[{txt:'', sep:''}];
       var sig=ps.map(function(x){ return x.txt+x.sep; }).join('|'); if(box.getAttribute('data-sig')===sig) return;   // 조각 글자·결합 기호가 같으면 유지
@@ -1883,6 +1889,7 @@
       box.innerHTML=h; box.setAttribute('data-sig', sig);
       var rows=box.querySelectorAll('.orow'); vals.forEach(function(o,k){ rows[k].querySelector('.o-txt').value=o.txt; rows[k].querySelector('.o-lang').value=o.lang; rows[k].querySelector('.o-np-chk').checked=!!o.np; });
       var oi=sec.querySelector('[data-f="원어"]'); if(oi) box.querySelectorAll('input,button').forEach(function(b){ b.disabled=oi.disabled; });
+      origSerialize(box);
       if(vals.some(function(o){ return o.txt; })) origCompose(box.querySelector('.o-txt'));
     }
     // 기호는 커서 위치와 무관하게 제자리에: ▼·←는 원어 앞(▼ 다음 ←), ▽는 원어 뒤. 같은 기호를 다시 누르면 제거
@@ -1892,7 +1899,7 @@
       v=v.replace(/[▼←▽]/g,''); el.value=(kong?'▼':'')+(arrow?'←':'')+v+(hanja?'▽':'');
       el.focus(); try{ var e=el.value.length-(hanja?1:0); el.setSelectionRange(e,e); }catch(x){} origCompose(el); }
     function origTouch(el){ var box=el.closest('.orows'); if(box) box.setAttribute('data-touched','1'); }   // 작업자가 행을 손댐 → 이후 등재표제어가 바뀌어도 행 유지
-    function origAddRow(btn){ var box=btn.closest('.wf').querySelector('.orows'); if(!box) return; box.insertAdjacentHTML('beforeend', origRowHtml('')); origTouch(box.lastElementChild); var oi=btn.closest('.stage-sec').querySelector('[data-f="원어"]'); if(oi) box.lastElementChild.querySelectorAll('input,button').forEach(function(b){ b.disabled=oi.disabled; }); }   // 맨 아래에 성분 칸이 빈 행 추가(드래그로 자리 이동). 포커스 없음
+    function origAddRow(btn){ var box=btn.closest('.wf').querySelector('.orows'); if(!box) return; box.insertAdjacentHTML('beforeend', origRowHtml('')); origTouch(box.lastElementChild); var oi=btn.closest('.stage-sec').querySelector('[data-f="원어"]'); if(oi) box.lastElementChild.querySelectorAll('input,button').forEach(function(b){ b.disabled=oi.disabled; }); origSerialize(box); }   // 맨 아래에 성분 칸이 빈 행 추가(드래그로 자리 이동). 포커스 없음
     function origDelRow(btn){ var row=btn.closest('.orow'), box=row.parentNode; if(btn.disabled) return; origTouch(row); row.remove(); origCompose(box); }
     // 드래그로 행 이동: 손잡이를 누른 동안만 행이 draggable(원어 칸 텍스트 선택과 충돌 방지). 상자 위에서 마우스가 행의 위/아래 반쪽에 있으면 그 행 앞/뒤에 삽입선. 놓으면 그 자리로 옮기고 다시 조립
     function origGrip(g, on){ var row=g.closest('.orow'); if(!row || row.querySelector('.o-txt').disabled) return; row.draggable=!!on; }
@@ -1934,17 +1941,48 @@
     function origCompose(el, keepOrig){
       var wf=el.closest('.wf'), sec=el.closest('.stage-sec'); if(!wf || !sec) return;
       var rows=[], gi=-1, labels=[];   // 성분 묶음: 성분 칸이 채워진 행이 새 성분을 시작, 빈 행은 위 성분에 이어짐(첫 행은 비어 있어도 성분 시작)
-      wf.querySelectorAll('.orow').forEach(function(r){ var txt=r.querySelector('.o-txt').value.trim(), a=r.querySelector('.o-dict'), lb=r.querySelector('.o-piece').value.trim(); if(lb || gi<0){ gi++; labels.push(lb); }
-        if(a){ if(txt){ a.href='https://opendict.korean.go.kr/search/searchResult?query='+encodeURIComponent(txt.replace(/[▼▽←]/g,'')); a.style.display=''; } else { a.removeAttribute('href'); a.style.display='none'; } }
-        var li=r.querySelector('.o-lang'), hasRoman=/[^一-鿿㐀-䶿가-힣▼▽←\s\/]/.test(txt);   // 한자 사이 /는 로마자 아님
-        if(txt && !hasRoman){ var au=[]; if(/[一-鿿㐀-䶿]/.test(txt)) au.push('한자어'); if(/[가-힣]/.test(txt)) au.push('고유어');
-          var lv=li.value.trim(); if(!lv || /^(한자어|고유어)(·(한자어|고유어))?$/.test(lv)){ li.value=au.join('·'); li.classList.add('auto'); } else li.classList.remove('auto'); }   // 한자·한글만: 언어명 자동 표시(잠그지 않음). 작업자가 다른 언어를 고르면 그 언어로 조립(<중>谢谢 등, 2026-09-08)
-        else if(li.classList.contains('auto')){ li.value=''; li.classList.remove('auto'); }
-        li.disabled=r.closest('.wf').querySelector('[data-f="원어"]').disabled;
+      wf.querySelectorAll('.orow').forEach(function(r){ var txt=r.querySelector('.o-txt').value.trim(), lb=r.querySelector('.o-piece').value.trim(); if(lb || gi<0){ gi++; labels.push(lb); }
+        origRowUi(r);
+        var li=r.querySelector('.o-lang'); li.disabled=r.closest('.wf').querySelector('[data-f="원어"]').disabled;
         rows.push({lang:origLangAbbr(li), txt:txt, pi:gi, np:r.querySelector('.o-np-chk').checked}); });
+      origSerialize(wf.querySelector('.orows'));   // 행 → 숨은 칸 '원어 행'(저장용)
       rows=rows.filter(function(r){ return r.txt; }); if(!rows.length) return;
-      var runs=origRuns(rows); if(!runs.length) return;
-      var head=secVal(sec,'등재표제어'), ps=origPieces(head), m=Math.max(labels.length,1);
+      var res=origComposeCalc(rows, labels, secVal(sec,'등재표제어')); if(!res) return;
+      var oi=sec.querySelector('[data-f="원어"]'), ei=sec.querySelector('[data-f="어종 표시"]');
+      if(oi && !keepOrig){ oi.value='('+res.orig+')'; onWriteInput(oi); }
+      if(ei){ ei.value=res.et; onWriteInput(ei); }
+    }
+    // 행 표시 상태: 우리말샘 링크(원어 있을 때), 언어 칸 자동값(한자만→한자어, 한글만→고유어, 섞이면 한자어·고유어. 잠그지 않음 — 작업자가 다른 언어를 고르면 그 언어로 조립, 2026-09-08)
+    function origRowUi(r){
+      var txt=r.querySelector('.o-txt').value.trim(), a=r.querySelector('.o-dict'), li=r.querySelector('.o-lang');
+      if(a){ if(txt){ a.href='https://opendict.korean.go.kr/search/searchResult?query='+encodeURIComponent(txt.replace(/[▼▽←]/g,'')); a.style.display=''; } else { a.removeAttribute('href'); a.style.display='none'; } }
+      var hasRoman=/[^一-鿿㐀-䶿가-힣▼▽←\s\/]/.test(txt);   // 한자 사이 /는 로마자 아님
+      if(txt && !hasRoman){ var au=[]; if(/[一-鿿㐀-䶿]/.test(txt)) au.push('한자어'); if(/[가-힣]/.test(txt)) au.push('고유어');
+        var lv=li.value.trim(); if(!lv || /^(한자어|고유어)(·(한자어|고유어))?$/.test(lv)){ li.value=au.join('·'); li.classList.add('auto'); } else li.classList.remove('auto'); }
+      else if(li.classList.contains('auto')){ li.value=''; li.classList.remove('auto'); }
+    }
+    // 행 → 숨은 칸 '원어 행'(JSON 배열, 화면 순서, 행마다 {성분, 원어, 언어, 고유명}; 언어는 작업자가 고른 값만(자동값 한자어·고유어는 빈 값)). 원어 글자가 하나도 없으면 빈 값. 저장 시 원어·어종 문자열과 함께 시트 '{n}차 원어 행'에 기록(2026-09-15)
+    function origSerialize(box){
+      if(!box) return ''; var sec=box.closest('.stage-sec'), rows=[], any=false;
+      box.querySelectorAll('.orow').forEach(function(r){ var li=r.querySelector('.o-lang'), o={'성분':r.querySelector('.o-piece').value.trim(), '원어':r.querySelector('.o-txt').value.trim(), '언어':li.classList.contains('auto')?'':li.value.trim(), '고유명':r.querySelector('.o-np-chk').checked}; if(o['원어']) any=true; rows.push(o); });
+      var j=any?JSON.stringify(rows):''; box.setAttribute('data-json', j); if(sec) secSet(sec,'원어 행', j); return j;
+    }
+    // 저장된 행(JSON) → 행 화면 복원. 조립 문자열(원어·어종 표시)은 저장값 그대로 두고 행만 만든다. 복원한 행은 손댄 행과 같이 취급(등재표제어가 바뀌어도 재생성하지 않음). 깨진 값이면 false(일반 재생성으로)
+    function origRestore(sec, box, hj){
+      var rows; try{ rows=JSON.parse(hj); }catch(e){ rows=null; }
+      if(!Array.isArray(rows)){ box.setAttribute('data-json', hj); return false; }
+      var h=''; rows.forEach(function(o){ h+=origRowHtml(String((o&&o['성분'])||'')); }); box.innerHTML=h;
+      var els=box.querySelectorAll('.orow'); rows.forEach(function(o,k){ o=o||{}; var r=els[k]; r.querySelector('.o-txt').value=String(o['원어']||''); r.querySelector('.o-lang').value=String(o['언어']||''); r.querySelector('.o-np-chk').checked=!!o['고유명']; origRowUi(r); });
+      box.setAttribute('data-touched','1'); box.setAttribute('data-json', hj); box.removeAttribute('data-sig'); secSet(sec,'원어 행', hj);
+      var oi=sec.querySelector('[data-f="원어"]'); if(oi) box.querySelectorAll('input,button').forEach(function(b){ b.disabled=oi.disabled; });
+      return true;
+    }
+    // ── 순수 계산(DOM 없음. 기존 저장분 전수 점검 도구 workbench/_tools/orig_rows_parse.js가 같은 코드를 그대로 실행) ──
+    // 행 값 → 원어 문자열·어종 표시. rows=[{lang:약어('' = 한자→한·한글→고), txt, pi:성분 번호, np}] (원어 있는 행만), labels=성분 칸 값 목록(행 묶음 순서). 결과 {orig(괄호 없음), et} 또는 null
+    function origComposeCalc(rows, labels, head){
+      if(!rows.length) return null;
+      var runs=origRuns(rows); if(!runs.length) return null;
+      var ps=origPieces(head), m=Math.max(labels.length,1);
       runs.forEach(function(x){ x.pi=Math.min(rows[x.row].pi, m-1); });
       // 원어: 성분 경계(공백·^)에서 같은 외국어가 이어지면 공백, 그 외는 태그 생략·붙임
       var out='', prev=null;
@@ -1961,9 +1999,93 @@
       var et;
       if(m===1) et=consts[0].join('+');
       else et=consts.map(function(g,gi){ var u=g.filter(function(x,k){ return g.indexOf(x)===k; }), sep=gi?origSep(head, ps, labels, gi):''; return (sep==='-'?'+':sep)+(g.length===1?g[0]:(u.length===1?u[0]:'('+g.join('+')+')')); }).join('');
-      var oi=sec.querySelector('[data-f="원어"]'), ei=sec.querySelector('[data-f="어종 표시"]');
-      if(oi && !keepOrig){ oi.value='('+out+')'; onWriteInput(oi); }
-      if(ei){ ei.value=et; onWriteInput(ei); }
+      return {orig:out, et:et};
+    }
+    // 기존 저장분(행 없이 최종 문자열만 있는 항목) → 행 역파싱(2026-09-15).
+    //  ① 원어 문자열을 구간(한자 / 한글 / <태그>외국어 / 태그 없는 로마자=고유명)으로 나눈다. 기호(▼←)로 시작하는 로마자가 앞 로마자에 붙어 있으면 같은 구간(AI▼←work vacation), 기호만 있는 구간은 뒤 한자에 붙임(麵←半導體).
+    //  ② 어종 표시를 성분(괄호 밖 + _ ^)·글자로 편다(등재표제어 조각과 성분 수가 같아야 함. 조각이 하나뿐인데 어종이 + 나열이면 한 성분 안의 여러 행·단어).
+    //  ③ 구간을 어종 글자에 차례로 맞춘다. 같은 종류 글자가 이어지는데 구간이 하나면(內亂犬=한+한, 긁수저=고+고, <중>谢谢政權=중_한, best crew=영_영) 성분 경계는 등재표제어 조각 글자 수로, 성분 안은 글자·단어 하나씩 나눈다.
+    //  ④ 만든 행을 다시 조립해 저장된 어종·원어와 같을 때만 ok. 반환 {ok, rows:[{성분, 원어, 언어, 고유명}], why, note} / 원어·어종이 없으면 null
+    function origParse(head, orig, et){
+      orig=String(orig||'').trim(); et=String(et||'').trim(); head=String(head||'');
+      if(!orig || orig==='()' || !et) return null;
+      if(!/^\(.+\)$/.test(orig)) return {ok:false, why:'원어 괄호 형식 아님'};
+      var v=orig.slice(1,-1), abbrName={}; ORIG_LANGS.forEach(function(x){ abbrName[x[0]]=x[1]; });
+      function nameOf(l){ return abbrName[l]||l; }
+      // ① 구간: c=어종 글자('한'·'고'·태그 약어·''=태그 없는 로마자(고유명)), hanja=한자 구간 여부
+      var units=[], pend='', re=/<([^>]+)>|([^<]+)/g, m0;
+      while((m0=re.exec(v))){ if(m0[1]){ pend=m0[1]; continue; }
+        var seg=m0[2], r2=/([一-鿿㐀-䶿]+(?:\/[一-鿿㐀-䶿]+)*▽?)|([가-힣]+)|([▼←]*(?:\[[^\]]*\]|[^一-鿿㐀-䶿가-힣▼▽\[\]])+)/g, k, segStart=units.length, lastRaw='';
+        while((k=r2.exec(seg))){
+          if(k[1]){ units.push({c:pend||'한', txt:k[1], lang:pend?nameOf(pend):'', np:false, hanja:true}); pend=''; lastRaw=''; }
+          else if(k[2]){ units.push({c:'고', txt:k[2], lang:'', np:false, hanja:false}); lastRaw=''; }
+          else { var t=k[3].trim(); if(!t) continue;
+            var prev=units.length>segStart ? units[units.length-1] : null;
+            if(!pend && prev && !prev.hanja && prev.c!=='고' && /^[▼←]/.test(t)){ if(/\s$/.test(lastRaw)) units.push({c:prev.c, txt:t, lang:prev.lang, np:prev.np, hanja:false}); else prev.txt+=t; }   // 기호로 시작하는 로마자: 앞 로마자와 같은 언어(붙어 있으면 한 구간)
+            else if(pend){ units.push({c:pend, txt:t, lang:nameOf(pend), np:false, hanja:false}); pend=''; }
+            else units.push({c:'', txt:t, lang:'', np:true, hanja:false});
+            lastRaw=k[3]; } } }
+      if(pend) return {ok:false, why:'언어 태그 뒤에 원어가 없음'};
+      for(var s0=units.length-2; s0>=0; s0--){ if(units[s0].np && /^[▼←]+$/.test(units[s0].txt) && units[s0+1].hanja){ units[s0+1].txt=units[s0].txt+units[s0+1].txt; units.splice(s0,1); } }
+      if(!units.length) return {ok:false, why:'구간 없음'};
+      // ② 어종 → 성분별 글자
+      var ps=origPieces(head), segs=[], cur='', depth=0;
+      for(var i=0;i<et.length;i++){ var ch=et[i]; if(ch==='(') depth++; else if(ch===')') depth--; if(depth===0 && (ch==='+'||ch==='_'||ch==='^')){ segs.push(cur); cur=''; } else cur+=ch; }
+      segs.push(cur);
+      var labels, comps;   // comps[i]=글자 배열
+      if(ps.length<=1 && et.indexOf('(')<0){ labels=[ps.length?ps[0].txt:'']; comps=[et.replace(/[+_^]/g,'').split('')]; }
+      else if(ps.length===segs.length && ps.length>1){ labels=ps.map(function(p0){ return p0.txt; }); comps=segs.map(function(x){ return x.replace(/[()+]/g,'').split(''); }); }
+      else return {ok:false, why:'어종 분절 수('+segs.length+')≠등재표제어 성분 수('+Math.max(ps.length,1)+') — 성분 칸을 직접 고친 항목'};
+      var LV=[]; comps.forEach(function(g, gi){ g.forEach(function(l){ LV.push({comp:gi, l:l}); }); });
+      var single=(comps.length===1);
+      function fits(u, l){ return l!==undefined && (u.np ? (l!=='한' && l!=='고') : u.c===l); }
+      function cont(u, l0, l){ return u.np ? l===l0 : (u.hanja ? (l===u.c || l==='한') : l===u.c); }   // 이어지는 글자로 볼 수 있는가(태그 붙은 한자 구간 뒤에는 한자어가 이어질 수 있음: <중>谢谢政權)
+      function toks(u){ if(u.hanja || u.c==='고'){ return /[▽\/]/.test(u.txt) ? [u.txt] : u.txt.split(''); }
+        var a=u.txt.split(/\s+/), b=[]; a.forEach(function(w){ var mm=w.match(/[▼←]*[^▼←]+/g); if(mm) mm.forEach(function(x){ b.push(x); }); }); return b; }   // 로마자: 공백·기호(▼←) 앞에서 자름
+      function join(u, ts){ if(u.hanja || u.c==='고') return ts.join(''); var o=''; ts.forEach(function(t,k){ o+=(k && !/^[▼←]/.test(t) ? ' ' : '')+t; }); return o; }
+      var rowsOf=[], notes=[]; comps.forEach(function(){ rowsOf.push([]); });
+      function put(gi, u, txt, l){ var r={txt:txt, lang:u.lang, np:u.np}; if(u.hanja && l==='한' && u.c!=='한'){ r.lang=''; r.np=false; } rowsOf[gi].push(r); }   // 태그 붙은 한자 구간의 뒷부분이 한자어 성분이면 언어 없음
+      var p=0;
+      for(var ui=0; ui<units.length; ui++){ var u=units[ui], roman=!(u.hanja || u.c==='고');
+        if(!fits(u, LV[p] && LV[p].l)){
+          if(p>0 && !roman && LV[p-1].l===u.c){ put(LV[p-1].comp, u, u.txt, u.c); continue; }   // 같은 종류 구간이 한 성분 안에 둘(眞▽親): 어종은 하나로 표시됨
+          return {ok:false, why:'구간·어종 불일치: '+(p<LV.length?(LV[p].comp+1)+'번째 성분 '+LV[p].l:'(어종 글자 부족)')+' ↔ '+(u.c||'고유명')+' '+u.txt}; }
+        if(u.np) u.lang=nameOf(LV[p].l);
+        var run=1; while(p+run<LV.length && cont(u, LV[p].l, LV[p+run].l)) run++;   // 같은 종류 글자가 이어지는 길이(성분 경계를 넘어도)
+        var ts=toks(u), n, parts=[], targets=[];
+        if(single){   // 성분 하나: 로마자는 단어마다 글자 하나(행은 하나로), 한자·한글은 글자마다 행 하나
+          if(roman){ n=Math.min(run, ts.length); if(ts.length>n) return {ok:false, why:'단어 수('+ts.length+')가 어종 글자 수('+n+')보다 많음 — 성분 칸을 직접 나눈 항목: '+u.txt}; parts=[ts]; targets=[0]; }
+          else { n=run; if(ts.length<n){ parts=[ts]; n=1; } else { for(var q0=0;q0<n-1;q0++) parts.push([ts[q0]]); parts.push(ts.slice(n-1)); if(n>1 && ts.length>n) notes.push('한 성분 안 여러 행의 경계 추정: '+u.txt+' → '+parts.map(function(x){ return join(u,x); }).join(' | ')); } parts.forEach(function(){ targets.push(0); }); }
+        } else {
+          n=u.np?1:run; var first=LV[p].comp, last=LV[p+n-1].comp;
+          if(n===1 || ts.length<n){ parts=[ts]; targets=[first]; }   // 행 하나(글자·단어가 모자라면 통째로 첫 성분에, 나머지 성분은 빈 행 → 조립 때 이어받음)
+          else if(first===last){ for(var q=0;q<n-1;q++){ parts.push([ts[q]]); targets.push(first); } parts.push(ts.slice(n-1)); targets.push(first);   // 한 성분 안 여러 행: 하나씩, 남는 것은 마지막 행에
+            if(ts.length>n) notes.push('한 성분 안 여러 행의 경계 추정: '+u.txt+' → '+parts.map(function(x){ return join(u,x); }).join(' | ')); }
+          else {   // 성분 경계를 넘음: 한자·한글은 조각 글자 수로(글자 하나뿐인 성분), 로마자는 단어 하나씩
+            var lens=[], multi=-1, sum=0, cnts=[], singles=[];
+            for(var gi=first; gi<=last; gi++){ var cnt=0; for(var x=p; x<p+n; x++) if(LV[x].comp===gi) cnt++; cnts.push(cnt); targets.push(gi); singles.push(cnt===comps[gi].length && cnt===1);
+              if(!roman){ if(cnt===comps[gi].length && cnt===1){ lens.push(ps[gi].txt.length); sum+=ps[gi].txt.length; } else { multi=(multi>=0)?-2:lens.length; lens.push(-1); } }
+              else { lens.push(cnt); sum+=cnt; } }
+            if(multi===-2) return {ok:false, why:'분할 기준 모호: '+u.txt};
+            var rest=ts.length-sum, pieceTxt=ps.slice(first,last+1).map(function(x){ return x.txt; }).join('·');
+            if(multi>=0){ if(rest<=0) return {ok:false, why:'분할 글자 수 부족('+u.txt+' ↔ '+pieceTxt+')'}; lens[multi]=rest; }
+            else if(rest!==0){ if(ts.length===n){ lens=cnts; notes.push('조각 글자 수와 달라 글자 하나씩 나눔: '+u.txt+' ↔ '+pieceTxt); } else return {ok:false, why:'분할 글자 수 불일치('+u.txt+' ↔ '+pieceTxt+')'}; }
+            var off=0; lens.forEach(function(L){ parts.push(ts.slice(off, off+L)); off+=L; });
+            if(u.c==='고') parts.forEach(function(x, j){ var t3=x.join(''); if(singles[j] && t3!==ps[first+j].txt) notes.push('고유어 구간이 조각과 다름: '+t3+' ↔ '+ps[first+j].txt); });
+          }
+        }
+        var k1=p; parts.forEach(function(x, j){ var gi4=targets[j], l4=LV[k1].l; put(gi4, u, join(u, x), l4); if(single || targets.length===1 || targets[0]===targets[targets.length-1]) k1++; else { while(k1<p+n && LV[k1].comp===gi4) k1++; } });
+        p+=n;
+      }
+      // ④ 행 목록(성분마다 첫 행에 조각 이름, 구간 없는 성분은 빈 행) + 다시 조립해 검증
+      var rows=[], calc=[];
+      rowsOf.forEach(function(g, gi){ var lb=labels[gi];
+        if(!g.length) rows.push({'성분':lb, '원어':'', '언어':'', '고유명':false});
+        g.forEach(function(r, k){ rows.push({'성분':k?'':lb, '원어':r.txt, '언어':r.lang, '고유명':r.np}); calc.push({lang:r.lang?(ORIG_LANG_ABBR[r.lang]||r.lang.charAt(0)):'', txt:r.txt, pi:gi, np:r.np}); }); });
+      var res=origComposeCalc(calc, labels, head);
+      if(!res || res.et!==et) return {ok:false, why:'재조립 어종 불일치: '+(res?res.et:'(없음)'), rows:rows};
+      if('('+res.orig+')'!==orig) return {ok:false, why:'재조립 원어 불일치(원어 칸을 직접 고친 항목): '+'('+res.orig+')', rows:rows};
+      return {ok:true, rows:rows, note:notes.join(' / ')};
     }
     // 원어 최종 칸 → 행 역반영. 태그를 뺀 문자열에서 행 경계(문자 오프셋)를 수정 전후 공통 접두·접미로 유지하고, 로마자 구간의 태그 → 언어명(태그 없으면 고유명 체크)
     function origFromField(oi){
@@ -2072,7 +2194,7 @@
       var all=collectAll_(stage), errs=validateAll_(all, it), parts=Object.keys(all);   // 함께 저장되는 부(형태부 단계의 의미부 값 포함) 전부 표시
       var rows=parts.map(function(part){ var vals=all[part];
         return (parts.length>1?'<tr><th colspan="2" class="cf-part">'+esc(part)+'</th></tr>':'')
-          + Object.keys(vals).filter(function(k){ return !(k==='고유어' && vals[k]!=='Y'); }).map(function(k){ var v=tplBlank(k,vals[k])?'':vals[k]; return '<tr><th>'+esc(k)+'</th><td>'+(v?esc(v).replace(/\n/g,'<br>'):'<span class="kbd">-</span>')+'</td></tr>'; }).join(''); }).join('');
+          + Object.keys(vals).filter(function(k){ return k!=='원어 행' && !(k==='고유어' && vals[k]!=='Y'); }).map(function(k){ var v=tplBlank(k,vals[k])?'':vals[k]; return '<tr><th>'+esc(k)+'</th><td>'+(v?esc(v).replace(/\n/g,'<br>'):'<span class="kbd">-</span>')+'</td></tr>'; }).join(''); }).join('');
       var box=$('wconfirm'); if(!box){ box=document.createElement('div'); box.id='wconfirm'; box.className='modal'; box.addEventListener('click', function(e){ if(e.target===box) closeWriteConfirm(); }); document.body.appendChild(box); }
       box.innerHTML='<div class="modal-box"><button class="x" onclick="closeWriteConfirm()">×</button><h2 style="margin-top:0">'+esc(it['신어 후보'])+'</h2>'
         + (errs.length ? '<div class="vfy-err"><b>형식 오류 '+errs.length+'건 존재.</b><ul style="margin:6px 0 0 18px">'+errs.map(function(e){ return '<li>'+esc(e)+'</li>'; }).join('')+'</ul></div>' : '<div class="vfy-ok">형식 오류 없음.</div>')
@@ -2099,7 +2221,7 @@
       activeParts().forEach(function(part){
         var sec=document.querySelector('#detail .stage-sec[data-part="'+part+'"][data-stage="2"]'); if(!sec) return;
         PART_FIELDS[part].forEach(function(f){ if(f.indexOf('집필 메모')===0) return; secSet(sec, f, wv(it,1,f)); });
-        if(part==='형태부') chainApply(sec, sec.getAttribute('data-chain')==='1');
+        if(part==='형태부'){ var bx=sec.querySelector('.orows'); if(bx){ bx.removeAttribute('data-json'); bx.removeAttribute('data-touched'); } chainApply(sec, sec.getAttribute('data-chain')==='1'); }   // 2차 행은 복사된 1차 행(JSON)으로 다시 만듦(없으면 1차 원어 문자열에서 역파싱)
       });
       var all=collectAll_(2);
       if(validateAll_(all, it).length){ openWriteConfirm(2); return; }
