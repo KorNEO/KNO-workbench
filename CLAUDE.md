@@ -40,3 +40,8 @@
 - 회의 결과: 형태부는 전 항목, 의미부(뜻풀이·용례)는 NN+YT 합산 단어빈도 10 이상 항목만 집필.
 - 항목 시트 컬럼 `의미부 대상`: `Y`/`N`. **빈 값은 Y로 간주**(이전 프로젝트 호환). `N`이면 의미부 단계에서도 형태부만 점검·상태·집계(`semTarget_`), 프론트는 의미부 폼 잠금·`의미부 미집필(빈도 10미만)` 표시.
 - 업로드 CSV는 `workbench/_tools/build_write_upload.py`(계열 배분 xlsx → 32컬럼, `--llm-csv`로 LLM 컬럼 채움). 배분은 `workbench_reference/_tools/series/distribute_series.py --sem-col '단어빈도 합계' --sem-min 10`.
+
+## 원어 행 저장·관리자 셀 갱신 (2026-09-15, 백엔드 @40)
+- 형태부 필드 `원어 행`: 원어 행(성분·원어·언어·고유명) JSON 배열. 시트 `1차 원어 행`·`2차 원어 행`(기존 시트는 `ensureCols_`가 첫 저장 때 끝에 추가). 점검 없음. 프론트 `origSerialize`/`origRestore`, 기존 저장분은 `origParse`(재조립 결과가 저장값과 같을 때만 복원). 전수 점검: `workbench/_tools/orig_rows_parse.js`.
+- `adminSetCells(token, projectId, updates, note)`: 관리자 전용 데이터 정정 API. `updates=[{row_id, values:{헤더:값}}]`, 메타(WRITE_META·ID) 갱신 불가, `=` 시작 값 불가, 상태·일시 안 건드림, 변경로그 1행. 첫 사용: 기존 저장분 원어 행 일괄 기록.
+- 작업 일지: `docs/집필_워크벤치_작업_일지_20260915.md`.
