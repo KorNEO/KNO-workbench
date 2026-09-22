@@ -178,6 +178,7 @@
     body.dark .ac-item.on, body.dark .ac-item:hover { background:#213a63; }
     .seg { display:flex; gap:6px; flex-wrap:wrap; border-radius:10px; }
     .phase-row { display:flex; align-items:center; gap:12px; margin-bottom:8px; } .phase-row .phase-lbl { font-weight:700; min-width:96px; }   /* 집필 단계 카드: 작업자(1차)·검수자(2차) 줄 */
+    .phase-row .seg-btn:disabled { cursor:default; } .phase-row .seg-btn.on:disabled { opacity:1; }   /* 작업자·검수자용 읽기 전용 표시: 현재 단계는 선명하게 */
     .seg-btn { padding:6px 14px; border:1.5px solid var(--line); border-radius:8px; background:var(--surface); color:var(--ink); font-weight:700; font-size:16px; cursor:pointer; }
     .seg-btn:hover:not(:disabled) { border-color:var(--brand); }
     .seg-btn.on { background:var(--brand); color:#fff; border-color:var(--brand); }
@@ -1036,10 +1037,11 @@
     }
     function renderPhaseCtl(){   // 집필 프로젝트 단계(형태부/의미부) 전환 — 관리자 전용. 작업자(1차)·검수자(2차) 단계를 따로 둠(2026-09-22: 작업 N주차/검수 N-1주차가 겹치는 주 대응). 현재 단계가 선택된 버튼
       var card=$('phase-card'); if(!card) return;
-      if(!isWrite() || !ME.isManager || !CURRENT_PROJECT){ card.style.display='none'; return; }
+      if(!isWrite() || !CURRENT_PROJECT){ card.style.display='none'; return; }
+      var ro=!ME.isManager;   // 작업자·검수자에게도 보이되 조작 불가(2026-09-22)
       card.style.display='';
       $('phase-body').innerHTML=[[1,'작업자(1차)'],[2,'검수자(2차)']].map(function(r){ var ph=projPhase(r[0]);
-        return '<div class="phase-row"><span class="phase-lbl">'+r[1]+'</span><div class="seg">'+['형태부','의미부'].map(function(x){ return '<button type="button" class="seg-btn'+(x===ph?' on':'')+'" onclick="setPhase(\''+x+'\','+r[0]+')">'+x+'</button>'; }).join('')+'</div></div>'; }).join('')+'<span class="asg-msg" id="phase-msg"></span>';
+        return '<div class="phase-row"><span class="phase-lbl">'+r[1]+'</span><div class="seg">'+['형태부','의미부'].map(function(x){ return '<button type="button" class="seg-btn'+(x===ph?' on':'')+'"'+(ro?' disabled':' onclick="setPhase(\''+x+'\','+r[0]+')"')+'>'+x+'</button>'; }).join('')+'</div></div>'; }).join('')+(ro?'':'<span class="asg-msg" id="phase-msg"></span>');
     }
     function setPhase(nxt, stage){
       stage=(stage===2)?2:1; var who=(stage===1?'작업자(1차)':'검수자(2차)');
