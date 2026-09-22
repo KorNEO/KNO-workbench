@@ -1825,10 +1825,10 @@
       h+='</div>';
       if(foot){   // 저장 버튼: 이 부·차수만 저장(2026-09-22 부별 독립)
         var canConfirm = stage===2 && ed && /1차완료|2차완료/.test(String(it[part+' 상태']||''));   // 확정 가능 여부는 이 부의 상태로
-        var lockNote = (!ed && !partOpen(it,part,stage)) ? ((semTarget(it)||MODE==='write_test') ? '의미부 단계 아님' : '미집필 대상') : (stage===1?'작업자만 저장':'검수자만 저장');
+        var lockNote = (!ed && !partOpen(it,part,stage)) ? '' : (stage===1?'작업자만 저장':'검수자만 저장');   // 단계·대상 때문에 잠긴 칸은 문구 없음
         h+='<div class="ss-foot">'+(ed?(canConfirm?'<button class="btn confirm-first" style="margin-left:0;margin-right:6px" onclick="confirmFirstWrite(\''+part+'\')" title="작업자의 1차 작업 값을 그대로 2차에 입력하고 저장합니다 (메모는 복사하지 않음)">✓ 1차 작업 확정 및 저장</button>':'')
           +'<button class="btn save" onclick="openWriteConfirm('+stage+',\''+part+'\')">'+esc(part)+' '+(stage===1?'1차 작업 저장':'2차 검수 저장')+'</button>'
-          +' <span class="save-badge"></span>':'<span class="kbd">'+esc(lockNote)+'</span>')+'</div>';
+          +' <span class="save-badge"></span>':(lockNote?'<span class="kbd">'+esc(lockNote)+'</span>':''))+'</div>';
       }
       h+='</div>';
       return h;
