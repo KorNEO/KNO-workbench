@@ -922,7 +922,7 @@ function adminSetCells(token, projectId, updates, note) {
 function logSheet_() {
   var sh = ss_().getSheetByName(SHEET_LOG);
   if (!sh) { sh = ss_().insertSheet(SHEET_LOG); sh.getRange(1, 1, 1, LOG_HEADERS.length).setValues([LOG_HEADERS]); styleHeader_(sh, LOG_HEADERS.length); }
-  else ensureCols_(sh, LOG_HEADERS);   // 칸·이전 값·새 값 열 보강(2026-09-22)
+  else ensureCols_(sh, LOG_HEADERS.slice(9));   // 칸·이전 값·새 값 열만 보강(2026-09-22). 앞 9열은 기존 시트 헤더명(row_id·candidate·이전상태…)이 달라 이름으로 맞추지 않음(appendRow는 위치 기준)
   return sh;
 }
 // field·oldV·newV(선택) = 정정 로그의 칸·이전 값·새 값
