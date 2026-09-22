@@ -807,7 +807,7 @@ function validateWrite_(part, v, hateY) {
     if (xy && !/^【\d{4}년 \d{1,2}월 신어】$/.test(xy)) E.push('X년 Y월 신어가 【OOOO년 OO월 신어】 형식이 아닙니다');
     function romanOut(t) { return /[A-Za-z]/.test(String(t || '').replace(/\([^)]*\)/g, '')); }
     if (romanOut(def)) E.push('뜻풀이에 괄호 밖 로마자가 있습니다');
-    if (romanOut(ex)) E.push('용례에 괄호 밖 로마자가 있습니다');
+    // 용례의 괄호 밖 로마자 점검은 2026-09-22 해제(프론트와 동일)
     if (hateY && def.indexOf(HATE_NOTE) < 0) E.push('혐오 표현 항목인데 뜻풀이 끝에 주의 문구가 없습니다');
   }
   return E;

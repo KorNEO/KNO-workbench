@@ -1709,7 +1709,7 @@
         if(xy && !/^【\d{4}년 \d{1,2}월 신어】$/.test(xy)) E.push('X년 Y월 신어가 【OOOO년 OO월 신어】 형식이 아닙니다');
         function romanOut(s){ return /[A-Za-z]/.test(String(s||'').replace(/\([^)]*\)/g,'')); }
         if(romanOut(def)) E.push('뜻풀이에 괄호 밖 로마자가 있습니다');
-        if(romanOut(ex)) E.push('용례에 괄호 밖 로마자가 있습니다');
+        // 용례의 괄호 밖 로마자 점검은 2026-09-22 해제(LLM 복사 용례의 'OOO' 등으로 저장이 막힘. 사용자 결정: 일단 저장되게)
         if(String(it['2차 혐오 표현 여부']||'').trim()==='Y' && def.indexOf(HATE_NOTE)<0) E.push('혐오 표현 항목인데 뜻풀이 끝에 주의 문구가 없습니다');
       }
       return E;
