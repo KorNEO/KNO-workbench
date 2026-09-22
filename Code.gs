@@ -837,6 +837,8 @@ function saveWrite(token, payload) {
     if (!partOpen_(p, part, stage, sem)) throw new Error(part + ' ' + stage + '차는 지금 저장할 수 없습니다(' + who + ' 단계: ' + phaseNow + (sem ? '' : ', 의미부 대상 아님') + '). 화면을 새로고침하세요.');
     if (!canEditWrite_(me, p.type, cur('작업자'), cur('검수자'), stage)) throw new Error('권한 없음: 배정된 담당자만 입력할 수 있습니다.');
     var fields = payload.fields || {};
+    // 형태부 검수 완료(2차완료) 항목의 형태부는 그대로 둔다(2026-09-22 결정, 관리자만 정정 가능): 형태부 저장 거부, 다른 부 저장에 딸려온 형태부 값도 기록하지 않음
+    if (cur('형태부 상태') === STATUS.SECOND && !me.isManager) { if (part === '형태부') throw new Error('형태부 검수가 완료된 항목입니다. 형태부는 수정할 수 없습니다.'); delete fields['형태부']; }
     Object.keys(fields).forEach(function (pt) { var fv = fields[pt]; if (!fv || typeof fv !== 'object') return; Object.keys(fv).forEach(function (k) { if (typeof fv[k] === 'string') fv[k] = fv[k].normalize('NFC'); }); });   // 분해형(e+결합 부호) → 조합형(é) 통일 후 점검·저장(2026-09-08)
     var errs = validateWrite_(part, fields[part] || {}, cur('2차 혐오 표현 여부') === 'Y');   // 점검은 저장하는 부만
     if (errs.length) throw new Error('형식 오류 ' + errs.length + '건 존재. ' + errs.join(' / '));
