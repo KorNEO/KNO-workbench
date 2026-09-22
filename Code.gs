@@ -25,7 +25,7 @@ var VERDICTS = ['신어', '비신어', '판단 보류'];
 var CHECK_COLS = ['1차 고유명 여부', '1차 혐오 표현 여부', '2차 고유명 여부', '2차 혐오 표현 여부'];
 function chkOk_(v) { return v === 'Y' || v === 'N'; }
 var STATUS = { NONE: '미작업', FIRST: '1차완료', SECOND: '2차완료' };
-var LOG_HEADERS = ['일시', 'ID', '신어 후보', '단계', '행위자', '판별', '메모', '이전 상태', '새 상태'];
+var LOG_HEADERS = ['일시', 'ID', '신어 후보', '단계', '행위자', '판별', '메모', '이전 상태', '새 상태', '칸', '이전 값', '새 값'];   // 칸·이전 값·새 값 = 검수 완료 후 정정 로그(2026-09-22). 기존 시트엔 logSheet_가 끝에 추가
 var FAILLOG_HEADERS = ['일시', '행위자', '기능', 'ID', '판별', '메모', '에러', '토큰'];
 var SAVE_FNS = { saveFirst: '1차', saveSecond: '2차', saveWrite: '집필' };
 
@@ -837,8 +837,9 @@ function saveWrite(token, payload) {
     if (!partOpen_(p, part, stage, sem)) throw new Error(part + ' ' + stage + '차는 지금 저장할 수 없습니다(' + who + ' 단계: ' + phaseNow + (sem ? '' : ', 의미부 대상 아님') + '). 화면을 새로고침하세요.');
     if (!canEditWrite_(me, p.type, cur('작업자'), cur('검수자'), stage)) throw new Error('권한 없음: 배정된 담당자만 입력할 수 있습니다.');
     var fields = payload.fields || {};
-    // 형태부 검수 완료(2차완료) 항목의 형태부는 그대로 둔다(2026-09-22 결정, 관리자만 정정 가능): 형태부 저장 거부, 다른 부 저장에 딸려온 형태부 값도 기록하지 않음
-    if (cur('형태부 상태') === STATUS.SECOND && !me.isManager) { if (part === '형태부') throw new Error('형태부 검수가 완료된 항목입니다. 형태부는 수정할 수 없습니다.'); delete fields['형태부']; }
+    // 검수 완료(2차완료)된 부를 다시 저장하면 정정 로그(2026-09-22 결정: 잠그지 않고 수정 전후 값을 남김). 바뀐 칸마다 변경로그 1행: 단계='{부} 정정 {n}차', 칸·이전 값·새 값 열. 원어 행(JSON)은 원어 문자열로 갈음
+    var postReview = cur(part + ' 상태') === STATUS.SECOND, diffs = [];
+    if (postReview) writeStageCols_(part, stage).forEach(function (c) { var f = c.slice(3), fv = fields[part] || {}; if (!(f in fv) || f === '원어 행') return; var nv = String(fv[f] == null ? '' : fv[f]).trim(), ov = cur(c); if (nv !== ov) diffs.push([f, ov, nv]); });
     Object.keys(fields).forEach(function (pt) { var fv = fields[pt]; if (!fv || typeof fv !== 'object') return; Object.keys(fv).forEach(function (k) { if (typeof fv[k] === 'string') fv[k] = fv[k].normalize('NFC'); }); });   // 분해형(e+결합 부호) → 조합형(é) 통일 후 점검·저장(2026-09-08)
     var errs = validateWrite_(part, fields[part] || {}, cur('2차 혐오 표현 여부') === 'Y');   // 점검은 저장하는 부만
     if (errs.length) throw new Error('형식 오류 ' + errs.length + '건 존재. ' + errs.join(' / '));
@@ -852,6 +853,7 @@ function saveWrite(token, payload) {
     setCell_(sh, rownum, idx, stKey, ns); setCell_(sh, rownum, idx, part + ' ' + stage + '차 일시', now_());
     var summ = part === '형태부' ? String((fields['형태부'] || {})['등재표제어'] || '') : String((fields['의미부'] || {})['뜻풀이'] || '');
     appendLog_(me, payload.row_id, cur('신어 후보'), '집필 ' + part + ' ' + stage + '차', summ.slice(0, 40), '', prev, ns);
+    diffs.forEach(function (d) { appendLog_(me, payload.row_id, cur('신어 후보'), part + ' 정정 ' + stage + '차', '', '', prev, ns, d[0], d[1], d[2]); });   // 검수 완료 후 정정 내역: 칸·이전 값·새 값 열에 기록
     SpreadsheetApp.flush(); opMark_(payload.op_id);
     return { ok: true };
   } finally { lock.releaseLock(); }
@@ -920,10 +922,12 @@ function adminSetCells(token, projectId, updates, note) {
 function logSheet_() {
   var sh = ss_().getSheetByName(SHEET_LOG);
   if (!sh) { sh = ss_().insertSheet(SHEET_LOG); sh.getRange(1, 1, 1, LOG_HEADERS.length).setValues([LOG_HEADERS]); styleHeader_(sh, LOG_HEADERS.length); }
+  else ensureCols_(sh, LOG_HEADERS);   // 칸·이전 값·새 값 열 보강(2026-09-22)
   return sh;
 }
-function appendLog_(me, rowId, cand, stage, verdict, memo, prevStatus, newStatus) {
-  var row = [now_(), rowId, cand, stage, me.name, verdict, memo, prevStatus, newStatus];
+// field·oldV·newV(선택) = 정정 로그의 칸·이전 값·새 값
+function appendLog_(me, rowId, cand, stage, verdict, memo, prevStatus, newStatus, field, oldV, newV) {
+  var row = [now_(), rowId, cand, stage, me.name, verdict, memo, prevStatus, newStatus, field == null ? '' : field, oldV == null ? '' : oldV, newV == null ? '' : newV];
   try { logSheet_().appendRow(row); return; } catch (e) {}
   // 폴백: 관리 시트 셀 한계로 append 실패 → 별도 로그 파일로 롤오버(그 파일도 차면 다음 번호). 로그 유실 방지.
   for (var k = 0; k < 3; k++) { try { overflowLogSheet_(k > 0).appendRow(row); return; } catch (e2) {} }

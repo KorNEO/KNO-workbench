@@ -1427,7 +1427,7 @@
       if(wk){ if(String(it['형태부 주차']||'').trim()===wk) return '형태부'; if(semTarget(it) && String(it['의미부 주차']||'').trim()===wk) return '의미부'; }
       var ph=stage?projPhase(stage):rolePhase(); return (ph==='의미부' && !semTarget(it)) ? '형태부' : ph; }
     function partOpen(it, part, stage){ return part==='형태부' || (projPhase(stage)==='의미부' && (semTarget(it) || MODE==='write_test')); }   // 부가 그 차수에 열려 있는지(백엔드 partOpen_과 동일. 집필 테스트는 대상 아님도 열어 둠)
-    function morphLocked(it){ return String((it||{})['형태부 상태']||'').trim()==='2차완료' && !ME.isManager; }   // 형태부 검수 완료 항목의 형태부는 그대로 둔다(2026-09-22 결정): 1차·2차 폼 잠금, LLM 복사 제외. 관리자만 정정 가능. 서버 saveWrite도 거부
+    function partReviewed(it, part){ return String((it||{})[part+' 상태']||'').trim()==='2차완료'; }   // 검수 완료된 부(2026-09-22 결정: 잠그지 않음. 다시 저장하면 서버가 바뀐 칸마다 정정 로그. '전체 복사하기'는 이 부를 건너뜀)
     function tok_(s){ return String(s||'').trim().split(/\s+/).filter(Boolean); }
     function wordDiff_(prev, cur, cls){
       if(!String(cur||'').trim()) return '<span class="kbd">-</span>';
@@ -1741,11 +1741,11 @@
         + jrow(1, '작업자', it['판별 작업자']) + jrow(2, '검수자', it['판별 검수자']) + '</tbody></table></div>';
       // 형태부 → 의미부 세로 섹션. 부·차수마다 독립(2026-09-22 작업자/검수자 단계 분리): 형태부는 항상 편집·저장 가능, 의미부 1차는 작업자 단계가 의미부일 때, 의미부 2차는 검수자 단계가 의미부일 때만(의미부 대상 항목만. 집필 테스트는 대상 아님도 열어 둠, 라벨은 유지).
       // 저장 버튼은 칸마다 따로(형태부 1차/2차, 의미부 1차/2차), 저장은 그 부의 필드·상태만. 잠긴 의미부 칸에는 LLM 복사값만 들어가고 형태부 저장 시 함께 기록.
-      var semOk=semTarget(it), mLock=morphLocked(it);   // 형태부 검수 완료 → 형태부 잠금(관리자 제외)
+      var semOk=semTarget(it);
       PARTS.forEach(function(part){
-        var na=(part==='의미부' && !semOk), locked=(part==='형태부' && mLock);
-        h+='<div class="part-sec'+(na?' part-na':'')+'" data-part="'+part+'"><div class="ps-head">'+esc(part)+(na?'<span class="pill na">미집필 대상(빈도 10미만)</span>':locked?'<span class="pill s2">검수 완료 · 수정 불가</span>':'<span class="pill s1">집필 대상</span>')+'</div>';
-        var ed1=isW && partOpen(it,part,1) && !locked, ed2=isR && partOpen(it,part,2) && !locked;
+        var na=(part==='의미부' && !semOk), reviewed=partReviewed(it,part);
+        h+='<div class="part-sec'+(na?' part-na':'')+'" data-part="'+part+'"><div class="ps-head">'+esc(part)+(na?'<span class="pill na">미집필 대상(빈도 10미만)</span>':reviewed?'<span class="pill s2">검수 완료 · 수정하면 정정 로그 기록</span>':'<span class="pill s1">집필 대상</span>')+'</div>';
+        var ed1=isW && partOpen(it,part,1), ed2=isR && partOpen(it,part,2);
         h+='<div class="write-cols">'+stageSec(it,part,1,ed1,true)+stageSec(it,part,2,ed2,true)+'</div></div>';
       });
       // 뜻풀이 변경 이력(맨 아래)
@@ -1825,7 +1825,7 @@
       h+='</div>';
       if(foot){   // 저장 버튼: 이 부·차수만 저장(2026-09-22 부별 독립)
         var canConfirm = stage===2 && ed && /1차완료|2차완료/.test(String(it[part+' 상태']||''));   // 확정 가능 여부는 이 부의 상태로
-        var lockNote = (part==='형태부' && morphLocked(it)) ? '형태부 검수 완료 · 수정 불가' : (!ed && !partOpen(it,part,stage)) ? ((semTarget(it)||MODE==='write_test') ? (stage===1?'작업자':'검수자')+' 단계가 의미부일 때 저장' : '미집필 대상') : (stage===1?'작업자만 저장':'검수자만 저장');
+        var lockNote = (!ed && !partOpen(it,part,stage)) ? ((semTarget(it)||MODE==='write_test') ? (stage===1?'작업자':'검수자')+' 단계가 의미부일 때 저장' : '미집필 대상') : (stage===1?'작업자만 저장':'검수자만 저장');
         h+='<div class="ss-foot">'+(ed?(canConfirm?'<button class="btn confirm-first" style="margin-left:0;margin-right:6px" onclick="confirmFirstWrite(\''+part+'\')" title="작업자의 1차 작업 값을 그대로 2차에 입력하고 저장합니다 (메모는 복사하지 않음)">✓ 1차 작업 확정 및 저장</button>':'')
           +'<button class="btn save" onclick="openWriteConfirm('+stage+',\''+part+'\')">'+esc(part)+' '+(stage===1?'1차 작업 저장':'2차 검수 저장')+'</button>'
           +' <span class="save-badge"></span>':'<span class="kbd">'+esc(lockNote)+'</span>')+'</div>';
@@ -2193,17 +2193,18 @@
       uiPrompt('규범 표기', function(v){ appendNoteText_(btn, '⇒규범 표기는 ‘'+v.replace(/^[‘’'"]+|[‘’'"]+$/g,'')+'’이다.'); }, {ph:"작은따옴표('') 없이 입력해 주세요."}); }
     function appendSynNote(btn){ var ta=btn.closest('.wf').querySelector('textarea[data-f="뜻풀이"]'); if(!ta || ta.disabled) return;
       uiPrompt('동의어', function(xs){ xs=xs.map(function(x){ return x.replace(/\.$/,'').trim(); }).filter(Boolean); if(!xs.length) return; appendNoteText_(btn, '='+xs.join(', ')+'.'); }, {addLabel:'+', ph:'등호(=) 없이 입력해 주세요.'}); }
-    // 전체 복사하기: 순서대로 복사하며 체인 활성화를 따라감(비활성 필드는 건너뜀)
+    // 전체 복사하기: 순서대로 복사하며 체인 활성화를 따라감(비활성 필드는 건너뜀). 검수 완료(2차완료)된 부의 칸은 건너뜀(2026-09-22: 검수 끝난 형태부를 LLM 값으로 덮어쓰지 않게). 개별 복사하기는 그대로
     function llmCopyAll(){
       var it=ITEMS[CUR]; if(!it) return;
-      var bad=0;
+      var bad=0, skipped=0;
       LLM_MAP.forEach(function(m,i){ var el=llmTargetOf(i); if(!llmOk_(i, el)) return;
+        if(partReviewed(it, m[2])){ skipped++; return; }
         if(!llmValueOk_(m[1], llmVal_(it, m))){ bad++; return; }   // 허용값 밖 필드는 복사하지 않음
         llmSet_(i, el); });
-      refreshLlmBtns(); if(bad) uiAlert('LLM 생성 결과에 오류가 있습니다. 수동으로 입력해 주십시오.'); else toast('복사 완료');
+      refreshLlmBtns(); if(bad) uiAlert('LLM 생성 결과에 오류가 있습니다. 수동으로 입력해 주십시오.'); else toast(skipped?'복사 완료 (검수 완료된 부는 제외)':'복사 완료');
     }
     // 저장 전 확인 창: 저장할 부(part)의 전 필드 + 점검 결과. 형태부 저장 시 그 차수에 잠긴 의미부 칸에 적힌 값(LLM 복사값)도 함께 저장(점검·상태 갱신은 형태부만)
-    function collectAll_(stage, part){ var it=ITEMS[CUR]||{}, o={}; if(part==='형태부' && morphLocked(it)) return o; o[part]=collectWrite_(part, stage);   // 형태부 검수 완료 항목은 형태부 저장 불가(버튼도 없음. 방어)
+    function collectAll_(stage, part){ var it=ITEMS[CUR]||{}, o={}; o[part]=collectWrite_(part, stage);
       if(part==='형태부' && !partOpen(it,'의미부',stage)){ var m=collectWrite_('의미부',stage), any=false; for(var k in m){ if(!tplBlank(k,m[k]) && k!=='X년 Y월 신어') any=true; } if(any) o['의미부']=m; }
       return o; }
     function validateAll_(all, it, part){ return validateWrite(part, all[part]||{}, it); }   // 점검은 저장하는 부만
