@@ -1087,16 +1087,13 @@
           $('second-title').textContent = (MODE==='agree'?'연구원별 진행률':'작업자·검수자별 진행률');
           var head = MODE==='agree'
             ? '<th>연구원</th><th>진행</th><th>완료</th><th>전체</th>'
-            : '<th>작업자</th><th>검수자</th>'+wl.map(function(w){return '<th>'+esc(weekLabel(w))+'</th>';}).join('')+(isWrite()?'<th>전체<br><small>형태부 / 의미부</small></th><th>1차 작업 완료<br><small>형태부 / 의미부</small></th><th>2차 검수 완료<br><small>형태부 / 의미부</small></th><th>진행률</th>':'<th>전체</th><th>1차 작업 완료</th><th>2차 검수 완료</th><th>진행률</th>');
+            : '<th>작업자</th><th>검수자</th>'+wl.map(function(w){return '<th>'+esc(weekLabel(w))+'</th>';}).join('')+'<th>전체</th><th>1차 작업 완료</th><th>2차 검수 완료</th><th>진행률</th>';
           var rows = p.groups.map(function(g){
             if(MODE==='agree')
               return '<tr><td><b>'+esc(g.label)+'</b></td><td class="minibar">'+progBar({total:g.total,'2차완료':g['1차완료']})+'</td><td>'+(g['1차완료']||0)+'</td><td>'+g.total+'</td></tr>';
             var gd1=(g.done1!=null)?g.done1:((g['1차완료']||0)+(g['2차완료']||0));
             var gd2=(g.done2!=null)?g.done2:(g['2차완료']||0);
             var wk=g.weeks||{}, pct=g.total?Math.round(gd2/g.total*100):0;
-            if(isWrite() && g.parts){ var pf=g.parts['형태부']||{}, ps=g.parts['의미부']||{}, gt=(pf.total||0)+(ps.total||0), gdn=(pf.done2||0)+(ps.done2||0);   // 집필: 부별로 표시(전체=부별 대상 수, 진행률=두 부 2차 완료 합/대상 합)
-              return '<tr><td><b>'+esc(g.worker)+'</b></td><td>'+esc(g.reviewer)+'</td>'+wl.map(function(w){return '<td>'+(wk[w]||0)+'</td>';}).join('')
-                +'<td><b>'+(pf.total||0)+'</b> / <b>'+(ps.total||0)+'</b></td><td>'+(pf.done1||0)+' / '+(ps.done1||0)+'</td><td>'+(pf.done2||0)+' / '+(ps.done2||0)+'</td><td><b>'+(gt?Math.round(gdn/gt*100):0)+'%</b></td></tr>'; }
             return '<tr><td><b>'+esc(g.worker)+'</b></td><td>'+esc(g.reviewer)+'</td>'
               +wl.map(function(w){return '<td>'+(wk[w]||0)+'</td>';}).join('')
               +'<td><b>'+g.total+'</b></td><td>'+gd1+'</td><td>'+gd2+'</td><td><b>'+pct+'%</b></td></tr>';
@@ -1112,13 +1109,30 @@
               tableHtml+='</div>';
             }
           }
-          $('second-body').innerHTML = tableHtml;
+          if(isWrite() && o.parts){ window.__progW=p; renderWriteGroups(window.__progPart||'형태부'); }   // 집필: 형태부/의미부 탭으로 부별 표(2026-09-22)
+          else $('second-body').innerHTML = tableHtml;
         } else {
           $('second-title').textContent='나의 작업';
           $('second-body').innerHTML='<span class="kbd">불러오는 중…</span>';
           google.script.run.withSuccessHandler(renderMyCard).withFailureHandler(function(e){ $('second-body').innerHTML='<span class="kbd">실패: '+esc(e.message)+'</span>'; }).getItems(TOKEN, { kind:modeKind(), onlyMine:true, projectId:(CURRENT_PROJECT&&CURRENT_PROJECT.id) });
         }
       }).withFailureHandler(function(e){ $('overall').innerHTML='<span class="kbd">진행률 실패: '+esc(e.message)+'</span>'; }).getProgress(TOKEN, modeKind(), CURRENT_PROJECT&&CURRENT_PROJECT.id);
+    }
+    // 집필 관리자 표: 형태부/의미부 탭. 탭의 부에 속한 주차만, 전체·1차·2차·진행률은 그 부 기준(의미부 분모=의미부 대상). 미완료 N건 버튼은 단계 기준(작업자 단계 부/검수자 단계 부)
+    function renderWriteGroups(pt){
+      var p=window.__progW; if(!p) return; window.__progPart=pt;
+      var o=p.overall, wp=p.weekParts||{}, wl=(p.weeks||[]).filter(function(w){ return wp[w]===pt; });
+      var seg='<div class="seg" style="margin-bottom:10px">'+['형태부','의미부'].map(function(x){ return '<button type="button" class="seg-btn'+(x===pt?' on':'')+'" onclick="renderWriteGroups(\''+x+'\')">'+x+'</button>'; }).join('')+'</div>';
+      var head='<th>작업자</th><th>검수자</th>'+wl.map(function(w){ return '<th>'+esc(w)+'주차</th>'; }).join('')+'<th>전체</th><th>1차 작업 완료</th><th>2차 검수 완료</th><th>진행률</th>';
+      var rows=p.groups.map(function(g){ var q=(g.parts||{})[pt]||{}, wk=g.weeks||{}, t=q.total||0;
+        return '<tr><td><b>'+esc(g.worker)+'</b></td><td>'+esc(g.reviewer)+'</td>'+wl.map(function(w){ return '<td>'+(wk[w]||0)+'</td>'; }).join('')+'<td><b>'+t+'</b></td><td>'+(q.done1||0)+'</td><td>'+(q.done2||0)+'</td><td><b>'+(t?Math.round((q.done2||0)/t*100):0)+'%</b></td></tr>'; }).join('');
+      var html=seg+'<table class="grp"><thead><tr>'+head+'</tr></thead><tbody>'+(rows||'<tr><td class="kbd">데이터 없음</td></tr>')+'</tbody></table>';
+      var q1=o.parts[projPhase(1)]||{}, q2=o.parts[projPhase(2)]||{}, inc1=(q1.total||0)-(q1.done1||0), inc2=(q2.total||0)-(q2.done2||0);
+      if(inc1||inc2){ html+='<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">';
+        if(inc1) html+='<button class="btn ghost" onclick="goIncomplete(\'_no1\')" style="font-size:13px"> 1차 미완료 ('+projPhase(1)+') '+inc1+'건 보기</button>';
+        if(inc2) html+='<button class="btn ghost" onclick="goIncomplete(\'_no2\')" style="font-size:13px"> 2차 미완료 ('+projPhase(2)+') '+inc2+'건 보기</button>';
+        html+='</div>'; }
+      $('second-body').innerHTML=html;
     }
     function renderMyCard(items){
       var assigned=items.length, html='';
