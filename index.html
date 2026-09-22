@@ -1744,7 +1744,7 @@
       var semOk=semTarget(it);
       PARTS.forEach(function(part){
         var na=(part==='의미부' && !semOk), reviewed=partReviewed(it,part);
-        h+='<div class="part-sec'+(na?' part-na':'')+'" data-part="'+part+'"><div class="ps-head">'+esc(part)+(na?'<span class="pill na">미집필 대상(빈도 10미만)</span>':reviewed?'<span class="pill s2">검수 완료 · 수정하면 정정 로그 기록</span>':'<span class="pill s1">집필 대상</span>')+'</div>';
+        h+='<div class="part-sec'+(na?' part-na':'')+'" data-part="'+part+'"><div class="ps-head">'+esc(part)+(na?'<span class="pill na">미집필 대상(빈도 10미만)</span>':reviewed?'<span class="pill s2">검수 완료</span>':'<span class="pill s1">집필 대상</span>')+'</div>';
         var ed1=isW && partOpen(it,part,1), ed2=isR && partOpen(it,part,2);
         h+='<div class="write-cols">'+stageSec(it,part,1,ed1,true)+stageSec(it,part,2,ed2,true)+'</div></div>';
       });
@@ -1825,7 +1825,7 @@
       h+='</div>';
       if(foot){   // 저장 버튼: 이 부·차수만 저장(2026-09-22 부별 독립)
         var canConfirm = stage===2 && ed && /1차완료|2차완료/.test(String(it[part+' 상태']||''));   // 확정 가능 여부는 이 부의 상태로
-        var lockNote = (!ed && !partOpen(it,part,stage)) ? ((semTarget(it)||MODE==='write_test') ? (stage===1?'작업자':'검수자')+' 단계가 의미부일 때 저장' : '미집필 대상') : (stage===1?'작업자만 저장':'검수자만 저장');
+        var lockNote = (!ed && !partOpen(it,part,stage)) ? ((semTarget(it)||MODE==='write_test') ? '의미부 단계 아님' : '미집필 대상') : (stage===1?'작업자만 저장':'검수자만 저장');
         h+='<div class="ss-foot">'+(ed?(canConfirm?'<button class="btn confirm-first" style="margin-left:0;margin-right:6px" onclick="confirmFirstWrite(\''+part+'\')" title="작업자의 1차 작업 값을 그대로 2차에 입력하고 저장합니다 (메모는 복사하지 않음)">✓ 1차 작업 확정 및 저장</button>':'')
           +'<button class="btn save" onclick="openWriteConfirm('+stage+',\''+part+'\')">'+esc(part)+' '+(stage===1?'1차 작업 저장':'2차 검수 저장')+'</button>'
           +' <span class="save-badge"></span>':'<span class="kbd">'+esc(lockNote)+'</span>')+'</div>';
@@ -2196,12 +2196,12 @@
     // 전체 복사하기: 순서대로 복사하며 체인 활성화를 따라감(비활성 필드는 건너뜀). 검수 완료(2차완료)된 부의 칸은 건너뜀(2026-09-22: 검수 끝난 형태부를 LLM 값으로 덮어쓰지 않게). 개별 복사하기는 그대로
     function llmCopyAll(){
       var it=ITEMS[CUR]; if(!it) return;
-      var bad=0, skipped=0;
+      var bad=0;
       LLM_MAP.forEach(function(m,i){ var el=llmTargetOf(i); if(!llmOk_(i, el)) return;
-        if(partReviewed(it, m[2])){ skipped++; return; }
+        if(partReviewed(it, m[2])) return;
         if(!llmValueOk_(m[1], llmVal_(it, m))){ bad++; return; }   // 허용값 밖 필드는 복사하지 않음
         llmSet_(i, el); });
-      refreshLlmBtns(); if(bad) uiAlert('LLM 생성 결과에 오류가 있습니다. 수동으로 입력해 주십시오.'); else toast(skipped?'복사 완료 (검수 완료된 부는 제외)':'복사 완료');
+      refreshLlmBtns(); if(bad) uiAlert('LLM 생성 결과에 오류가 있습니다. 수동으로 입력해 주십시오.'); else toast('복사 완료');
     }
     // 저장 전 확인 창: 저장할 부(part)의 전 필드 + 점검 결과. 형태부 저장 시 그 차수에 잠긴 의미부 칸에 적힌 값(LLM 복사값)도 함께 저장(점검·상태 갱신은 형태부만)
     function collectAll_(stage, part){ var it=ITEMS[CUR]||{}, o={}; o[part]=collectWrite_(part, stage);
