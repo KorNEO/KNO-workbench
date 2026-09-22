@@ -586,7 +586,7 @@ function getItems(token, opts) {
     } catch (e) { startRow = 2; numRows = n; }
   }
   var isW = isWriteKind_(opts.kind), LF = isW ? LIST_FIELDS_WRITE : LIST_FIELDS, pj = isW ? projById_(opts.projectId) : null;
-  // 집필의 상태·주차 기준 부(2026-09-22): 주차 선택 시 그 주차가 속한 부(형태부 주차 우선, 의미부 주차는 의미부 대상만), 미선택 시 opts.part(프론트: 작업자=작업자 단계, 검수자·관리자=검수자 단계). 의미부 대상이 아니면 형태부
+  // 집필의 상태·주차 기준 부(2026-09-22): 주차 선택 시 그 주차가 속한 부(형태부 주차 우선, 의미부 주차는 의미부 대상만), 미선택 시 opts.part. 상태 필터가 있으면 opts.part가 상태의 부(프론트 옵션 '{부}:{상태}'), 없으면 역할 기준 단계(주차 정렬용). 의미부 대상이 아니면 형태부
   var defPart = (isW && WRITE_PARTS.indexOf(String(opts.part || '')) >= 0) ? String(opts.part) : phaseOf_(pj, 2);
   var seeAll = me.isManager || (opts.kind === '집필 테스트' && WRITE_TEST_BOTH.indexOf(me.name) >= 0);
   var full = !!opts.full, blkCols = lastCol;
@@ -601,6 +601,11 @@ function getItems(token, opts) {
       var sem = semTarget_(g(r, '의미부 대상'));
       if (opts.week) { var wq = String(opts.week); ph = (g(r, '형태부 주차') === wq) ? '형태부' : (sem && g(r, '의미부 주차') === wq) ? '의미부' : ''; wk = ph ? wq : ''; }
       else { ph = (defPart === '의미부' && !sem) ? '형태부' : defPart; wk = g(r, ph + ' 주차'); }
+      if (opts.status && WRITE_PARTS.indexOf(String(opts.part || '')) >= 0) {   // 상태 필터의 부가 명시되면(2026-09-22 세분화) 그 부의 상태로만 판정: 의미부는 대상만, 주차 선택 시 주차의 부와 다르면 제외
+        if (opts.part === '의미부' && !sem) continue;
+        if (opts.week && ph !== opts.part) continue;
+        ph = opts.part;
+      }
       st = ph ? g(r, ph + ' 상태') : '';
     } else { st = g(r, '상태'); wk = g(r, '배정 주차'); }
     if (opts.kind && k !== opts.kind) continue;

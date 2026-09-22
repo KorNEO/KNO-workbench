@@ -765,7 +765,7 @@
       $('view-researchers').classList.toggle('hidden', v!=='researchers');
       if(v==='projects') renderProjects();
       else if(v==='home'){ loadProgress(); loadAssign(); }
-      else if(v==='mine' || v==='all'){ var ps=_pendingStatus; _pendingStatus=''; $('f-status').value=ps; $('f-q').value=''; $('f-v1').value=''; $('f-v2').value=''; $('f-proper').innerHTML=chkOptions('고유명 여부'); $('f-hate').innerHTML=chkOptions('혐오 표현 여부'); $('f-proper').value=''; $('f-hate').value=''; $('f-proper').style.display=(!isWrite())?'':'none'; $('f-hate').style.display=(!isWrite())?'':'none'; $('f-v1').style.display=(!isWrite())?'':'none'; $('f-v2').style.display=(MODE==='real')?'':'none'; document.querySelectorAll('.opt-incomplete').forEach(function(o){o.hidden=!((MODE==='real'||isWrite())&&ME.isManager);}); var _wl=window.__weekList||[]; $('f-week').innerHTML='<option value="">전체 주차</option>'+_wl.map(function(w){return '<option value="'+esc(w)+'">'+esc(weekLabel(w))+'</option>';}).join(''); $('f-week').style.display=(MODE==='real'||isWrite())?'':'none'; populateAssignees(v); loadItems(); }
+      else if(v==='mine' || v==='all'){ var ps=_pendingStatus; _pendingStatus=''; buildStatusOptions(); $('f-status').value=ps; $('f-q').value=''; $('f-v1').value=''; $('f-v2').value=''; $('f-proper').innerHTML=chkOptions('고유명 여부'); $('f-hate').innerHTML=chkOptions('혐오 표현 여부'); $('f-proper').value=''; $('f-hate').value=''; $('f-proper').style.display=(!isWrite())?'':'none'; $('f-hate').style.display=(!isWrite())?'':'none'; $('f-v1').style.display=(!isWrite())?'':'none'; $('f-v2').style.display=(MODE==='real')?'':'none'; document.querySelectorAll('.opt-incomplete').forEach(function(o){o.hidden=!((MODE==='real'||isWrite())&&ME.isManager);}); var _wl=window.__weekList||[]; $('f-week').innerHTML='<option value="">전체 주차</option>'+_wl.map(function(w){return '<option value="'+esc(w)+'">'+esc(weekLabel(w))+'</option>';}).join(''); $('f-week').style.display=(MODE==='real'||isWrite())?'':'none'; populateAssignees(v); loadItems(); }
       else if(v==='researchers') loadResearchers();
     }
     var CURRENT_PROJECT = null, PROJ_LIST = [];
@@ -1129,8 +1129,8 @@
       var html=seg+'<table class="grp"><thead><tr>'+head+'</tr></thead><tbody>'+(rows||'<tr><td class="kbd">데이터 없음</td></tr>')+'</tbody></table>';
       var q1=o.parts[projPhase(1)]||{}, q2=o.parts[projPhase(2)]||{}, inc1=(q1.total||0)-(q1.done1||0), inc2=(q2.total||0)-(q2.done2||0);
       if(inc1||inc2){ html+='<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">';
-        if(inc1) html+='<button class="btn ghost" onclick="goIncomplete(\'_no1\')" style="font-size:13px"> 1차 미완료 ('+projPhase(1)+') '+inc1+'건 보기</button>';
-        if(inc2) html+='<button class="btn ghost" onclick="goIncomplete(\'_no2\')" style="font-size:13px"> 2차 미완료 ('+projPhase(2)+') '+inc2+'건 보기</button>';
+        if(inc1) html+='<button class="btn ghost" onclick="goIncomplete(\'_'+projPhase(1)+':no1\')" style="font-size:13px"> '+projPhase(1)+' 1차 미완료 '+inc1+'건 보기</button>';
+        if(inc2) html+='<button class="btn ghost" onclick="goIncomplete(\'_'+projPhase(2)+':no2\')" style="font-size:13px"> '+projPhase(2)+' 2차 미완료 '+inc2+'건 보기</button>';
         html+='</div>'; }
       $('second-body').innerHTML=html;
     }
@@ -1193,12 +1193,13 @@
 
     /* 목록 */
     function loadItems(){
-      var rawStatus=$('f-status').value, isClientFilter=rawStatus.charAt(0)==='_';
-      var opts={ kind:modeKind(), status:isClientFilter?'':rawStatus, q:$('f-q').value.trim(), onlyMine:(SCOPE==='mine'), projectId:(CURRENT_PROJECT&&CURRENT_PROJECT.id) };
+      var rawStatus=$('f-status').value, isClientFilter=rawStatus.charAt(0)==='_', stPart='', stVal=rawStatus;
+      if(isWrite() && !isClientFilter && rawStatus.indexOf(':')>0){ stPart=rawStatus.split(':')[0]; stVal=rawStatus.split(':')[1]; }   // 집필: '{부}:{상태}'
+      var opts={ kind:modeKind(), status:isClientFilter?'':stVal, q:$('f-q').value.trim(), onlyMine:(SCOPE==='mine'), projectId:(CURRENT_PROJECT&&CURRENT_PROJECT.id) };
       opts.full = opts.onlyMine;   // 본인 항목(한정 집합)은 상세까지 한 번에 받아 클릭 즉시 표시(서버 왕복 0)
       if($('f-assignee') && $('f-assignee').value) opts.worker=$('f-assignee').value;
       if((MODE==='real'||isWrite()) && $('f-week') && $('f-week').value) opts.week=$('f-week').value;
-      if(isWrite()) opts.part=rolePhase();   // 주차 미선택 시 상태 필터의 기준 부(작업자=작업자 단계, 검수자·관리자=검수자 단계). 주차 선택 시 서버가 그 주차의 부로 판정
+      if(isWrite()) opts.part=stPart||rolePhase();   // 상태 필터의 부(옵션에서 선택). 상태 미선택 시 역할 기준 단계(주차 정렬용)
       $('list').innerHTML='<p class="kbd">불러오는 중…</p>';
       google.script.run.withSuccessHandler(function(items){ if(opts.full){ items.forEach(function(it){ it.__full=true; }); } ITEMS=items; CUR=-1; applyResults(); })
         .withFailureHandler(function(e){ $('list').innerHTML='<p class="kbd">조회 실패: '+esc(e.message)+'</p>'; }).getItems(TOKEN, opts);
@@ -1213,9 +1214,11 @@
     var CHK_FILTERS = [['f-proper','고유명 여부'],['f-hate','혐오 표현 여부']];
     function itemPasses(it){
       var fst=$('f-status').value;
-      if(isWrite()){ var p1=String(it[filterPart(it,1)+' 상태']||'').trim(), p2=String(it[filterPart(it,2)+' 상태']||'').trim();   // 1차 미완료=작업자 단계 부, 2차 미완료=검수자 단계 부(주차 선택 시 그 주차의 부)
-        if(fst==='_no1' && (p1==='1차완료'||p1==='2차완료')) return false;
-        if(fst==='_no2' && p2==='2차완료') return false;
+      if(isWrite()){ var m=fst.match(/^_(형태부|의미부):no([12])$/); if(!m) return true;   // 관리자 미완료 필터: '_{부}:no1|no2'. 의미부는 대상만
+        if(m[1]==='의미부' && !semTarget(it)) return false;
+        var pst=String(it[m[1]+' 상태']||'').trim();
+        if(m[2]==='1' && (pst==='1차완료'||pst==='2차완료')) return false;
+        if(m[2]==='2' && pst==='2차완료') return false;
         return true; }
       if(fst==='_no1' && String(it['1차 판별']||'').trim()) return false;
       if(fst==='_no2' && String(it['2차 판별']||'').trim()) return false;
@@ -1433,13 +1436,17 @@
     function projPhase(stage){ var p=CURRENT_PROJECT||{}; return (stage===2 ? (p.phase2||p.phase) : p.phase)||'형태부'; }   // 차수별 집필 단계(1=작업자, 2=검수자. 2026-09-22 분리). 생략 시 작업자 단계
     function rolePhase(){ return ME.role==='작업자' ? projPhase(1) : projPhase(2); }   // 로그인 역할 기준 단계: 작업자=작업자 단계, 검수자·관리자=검수자 단계(상태 필터·나의 작업 기준)
     function weekLabel(w){ var wp=window.__weekParts||{}; return w+'주차'+(isWrite()&&wp[w]?'('+wp[w]+')':''); }   // 집필 주차 라벨: 1주차(형태부) … 4주차(의미부)
+    // 집필 상태 필터(2026-09-22 세분화): 값 '{부}:{상태}'(서버 필터), 관리자 전용 '_{부}:no1|no2'(클라이언트 필터). 의미부 옵션은 의미부 대상만. 판별은 원래 옵션 그대로
+    var STATUS_OPTS_DEFAULT=null;
+    function buildStatusOptions(){ var sel=$('f-status'); if(!sel) return; if(STATUS_OPTS_DEFAULT==null) STATUS_OPTS_DEFAULT=sel.innerHTML;
+      if(!isWrite()){ sel.innerHTML=STATUS_OPTS_DEFAULT; return; }
+      var h='<option value="">전체 상태</option>';
+      ['형태부','의미부'].forEach(function(pt){ h+='<option value="'+pt+':미작업">'+pt+' 미완료</option><option value="'+pt+':1차완료">'+pt+' 1차 작업 완료</option><option value="'+pt+':2차완료">'+pt+' 2차 검수 완료</option>'; });
+      if(ME.isManager) ['형태부','의미부'].forEach(function(pt){ h+='<option value="_'+pt+':no1" class="opt-incomplete"> '+pt+' 1차 미완료</option><option value="_'+pt+':no2" class="opt-incomplete"> '+pt+' 2차 미완료</option>'; });
+      sel.innerHTML=h; }
     function phaseTag_(p, pt){ var t=[]; if(p.phase===pt) t.push('작업자'); if((p.phase2||p.phase)===pt) t.push('검수자'); return t.length?' ('+t.join('·')+' 현재 단계)':''; }
     // 의미부 대상(2026-08-30 회의: 형태부 전수, 의미부는 NN+YT 합산 빈도 10 이상만). 시트 '의미부 대상' N = 형태부만. 빈 값·Y = 대상(기존 프로젝트 호환)
     function semTarget(it){ return String((it||{})['의미부 대상']||'').trim().toUpperCase()!=='N'; }
-    // 목록 필터에 쓰는 항목의 부: 주차 선택 시 그 주차가 속한 부(형태부 주차 우선, 의미부 주차는 의미부 대상만), 미선택 시 stage가 있으면 그 차수의 단계, 없으면 역할 기준 단계. 의미부 대상이 아니면 형태부(백엔드 getItems와 동일)
-    function filterPart(it, stage){ var fw=$('f-week'), wk=(fw && fw.style.display!=='none')?String(fw.value||'').trim():'';
-      if(wk){ if(String(it['형태부 주차']||'').trim()===wk) return '형태부'; if(semTarget(it) && String(it['의미부 주차']||'').trim()===wk) return '의미부'; }
-      var ph=stage?projPhase(stage):rolePhase(); return (ph==='의미부' && !semTarget(it)) ? '형태부' : ph; }
     function partOpen(it, part, stage){ return part==='형태부' || (projPhase(stage)==='의미부' && (semTarget(it) || MODE==='write_test')); }   // 부가 그 차수에 열려 있는지(백엔드 partOpen_과 동일. 집필 테스트는 대상 아님도 열어 둠)
     function partReviewed(it, part){ return String((it||{})[part+' 상태']||'').trim()==='2차완료'; }   // 검수 완료된 부(2026-09-22 결정: 잠그지 않음. 다시 저장하면 서버가 바뀐 칸마다 정정 로그. '전체 복사하기'는 이 부를 건너뜀)
     function tok_(s){ return String(s||'').trim().split(/\s+/).filter(Boolean); }
