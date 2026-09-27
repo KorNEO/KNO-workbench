@@ -807,9 +807,9 @@ function validateWrite_(part, v, hateY) {
       if (head && seqH && seqH !== seqE) E.push('어종 표시의 기호(+ _ ^)가 등재표제어의 분절(- 공백 ^)과 맞지 않습니다');
     }
   } else {
-    var def = S('뜻풀이'), ex = wBlank_('용례', v['용례']) ? '' : S('용례'), xy = S('X년 Y월 신어');
+    var def = S('뜻풀이'), ex = wBlank_('용례', v['용례']) ? '' : S('용례');
     if (!def) E.push('뜻풀이가 비어 있습니다');
-    if (xy && !/^【\d{4}년 \d{1,2}월 신어】$/.test(xy)) E.push('X년 Y월 신어가 【OOOO년 OO월 신어】 형식이 아닙니다');
+    // X년 Y월 신어 형식 점검은 2026-09-28 해제(프론트와 동일)
     function romanOut(t) { return /[A-Za-z]/.test(String(t || '').replace(/\([^)]*\)/g, '')); }
     if (romanOut(def)) E.push('뜻풀이에 괄호 밖 로마자가 있습니다');
     // 용례의 괄호 밖 로마자 점검은 2026-09-22 해제(프론트와 동일)
