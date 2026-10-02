@@ -850,6 +850,7 @@ function saveWrite(token, payload) {
     if (errs.length) throw new Error('형식 오류 ' + errs.length + '건 존재. ' + errs.join(' / '));
     WRITE_PARTS.forEach(function (pt) {   // 저장 부 외의 값(형태부 저장 시 잠긴 의미부 칸의 복사값)도 오면 기록. 점검·상태는 저장 부만
       if (!fields[pt]) return;
+      if (stage === 2 && pt !== part) return;   // 검수자(2차)는 저장 부만 기록(2026-10-02). 잠긴 의미부 칸의 물려받은 1차 값이 2차로 들어가 작업자의 이후 저장을 가리던 문제. 구버전 화면이 보내도 무시
       var cols = writeStageCols_(pt, stage), fv = fields[pt] || {};
       cols.forEach(function (c) { var f = c.slice(3); if (f in fv) setCell_(sh, rownum, idx, c, fv[f] == null ? '' : fv[f]); });
     });

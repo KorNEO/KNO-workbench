@@ -1793,7 +1793,7 @@
         if(f==='원어 행' && stage===2 && !wv(it,2,f).trim() && !tplBlank('원어', wv(it,2,'원어'))) return '';   // 2차 원어가 따로 저장돼 있으면 1차 행을 물려받지 않음(2차 행이 없으면 2차 원어 문자열에서 역파싱)
         if(f==='X년 Y월 신어'){ var mm=String(it['추출 시기']||'').match(/(\d{4})\.?(\d{2})/); if(mm) return '【'+mm[1]+'년 '+parseInt(mm[2],10)+'월 신어】'; }   // 최초 출현 시점에서 자동 생성
         var v=wv(it,stage,f); if(v.trim()) return v;
-        if(stage===2){ v=wv(it,1,f); if(v.trim()) return v; }
+        if(stage===2 && /1차완료|2차완료/.test(String(it[part+' 상태']||''))){ v=wv(it,1,f); if(v.trim()) return v; }   // 2차는 작업자가 그 부를 저장한 뒤에만 1차 값을 물려받음(2026-10-02: 형태부 단계에 복사해 둔 LLM 의미부 값이 검수자에게 보이던 문제)
         if(f==='X년 Y월 신어'){ var m=String(it['추출 시기']||'').match(/(\d{4})\.?(\d{2})/); return m ? '【'+m[1]+'년 '+parseInt(m[2],10)+'월 신어】' : '【    년   월 신어】'; }
         if(f==='뜻풀이' && String(it['2차 혐오 표현 여부']||'').trim()==='Y') return HATE_NOTE;
         return TPL[f]||'';
@@ -2228,7 +2228,7 @@
     }
     // 저장 전 확인 창: 저장할 부(part)의 전 필드 + 점검 결과. 형태부 저장 시 그 차수에 잠긴 의미부 칸에 적힌 값(LLM 복사값)도 함께 저장(점검·상태 갱신은 형태부만)
     function collectAll_(stage, part){ var it=ITEMS[CUR]||{}, o={}; o[part]=collectWrite_(part, stage);
-      if(part==='형태부' && !partOpen(it,'의미부',stage)){ var m=collectWrite_('의미부',stage), any=false; for(var k in m){ if(!tplBlank(k,m[k]) && k!=='X년 Y월 신어') any=true; } if(any) o['의미부']=m; }
+      if(part==='형태부' && stage===1 && !partOpen(it,'의미부',stage)){ var m=collectWrite_('의미부',stage), any=false; for(var k in m){ if(!tplBlank(k,m[k]) && k!=='X년 Y월 신어') any=true; } if(any) o['의미부']=m; }   // 잠긴 의미부 값 동반 저장은 작업자(1차)만(2026-10-02). 검수자(2차)의 잠긴 의미부 칸은 1차 값을 물려받아 보여 줄 뿐이라, 함께 저장하면 작업자의 이후 의미부 저장이 가려짐
       return o; }
     function validateAll_(all, it, part){ return validateWrite(part, all[part]||{}, it); }   // 점검은 저장하는 부만
     function openWriteConfirm(stage, part){
