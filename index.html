@@ -693,10 +693,10 @@
       $('uiConfirmOk').onclick=function(){ box.classList.add('hidden'); onOk(); };
       $('uiConfirmOk').focus();
     }
-    function uiAlert(msg){   // 안내 팝업 — uiConfirm과 같은 디자인(확인 버튼만). 안내 메시지 팝업은 전부 이 함수로 통일
+    function uiAlert(msg, center){   // 안내 팝업 — uiConfirm과 같은 디자인(확인 버튼만). 안내 메시지 팝업은 전부 이 함수로 통일. center=확인 버튼 가운데
       var box=$('uiAlert'); if(!box){ box=document.createElement('div'); box.id='uiAlert'; box.className='modal'; document.body.appendChild(box); }
       box.innerHTML='<div class="modal-box" style="width:min(440px,92vw)"><div class="cf-msg">'+esc(msg).replace(/\n/g,'<br>')+'</div>'
-        + '<div class="actions" style="margin-top:16px"><button class="btn save" id="uiAlertOk">확인</button></div></div>';
+        + '<div class="actions" style="margin-top:16px'+(center?';justify-content:center':'')+'"><button class="btn save" id="uiAlertOk">확인</button></div></div>';
       box.classList.remove('hidden');
       $('uiAlertOk').onclick=function(){ box.classList.add('hidden'); };
       $('uiAlertOk').focus();
@@ -2231,8 +2231,10 @@
       if(part==='형태부' && stage===1 && !partOpen(it,'의미부',stage)){ var m=collectWrite_('의미부',stage), any=false; for(var k in m){ if(!tplBlank(k,m[k]) && k!=='X년 Y월 신어') any=true; } if(any) o['의미부']=m; }   // 잠긴 의미부 값 동반 저장은 작업자(1차)만(2026-10-02). 검수자(2차)의 잠긴 의미부 칸은 1차 값을 물려받아 보여 줄 뿐이라, 함께 저장하면 작업자의 이후 의미부 저장이 가려짐
       return o; }
     function validateAll_(all, it, part){ return validateWrite(part, all[part]||{}, it); }   // 점검은 저장하는 부만
+    var REVIEWED_MSG='2차 검수 완료 이후의 변경 사항은 검수자에게 말씀해 주세요!';   // 검수 완료(2차완료)된 부는 작업자(1차) 저장 차단(2026-10-02). 최종본은 검수자 결과. 백엔드 saveWrite도 같은 문구로 거부
     function openWriteConfirm(stage, part){
       var it=ITEMS[CUR]; if(!it) return; part=part||'형태부';
+      if(stage===1 && partReviewed(it, part)){ uiAlert(REVIEWED_MSG, true); return; }
       var all=collectAll_(stage, part), errs=validateAll_(all, it, part), parts=Object.keys(all);   // 함께 저장되는 부(형태부 저장 시 잠긴 의미부 값 포함) 전부 표시
       var rows=parts.map(function(part){ var vals=all[part];
         return (parts.length>1?'<tr><th colspan="2" class="cf-part">'+esc(part)+'</th></tr>':'')
@@ -2248,6 +2250,7 @@
     // 저장: 이 부·차수만(2026-09-22 부별 독립). 상태는 그 부만 갱신. 형태부 저장엔 잠긴 의미부 칸의 값이 딸려갈 수 있음(기록만)
     function saveWriteForm(stage, part){
       var it=ITEMS[CUR]; if(!it) return; part=part||'형태부';
+      if(stage===1 && partReviewed(it, part)){ uiAlert(REVIEWED_MSG, true); return; }
       var all=collectAll_(stage, part); if(validateAll_(all, it, part).length) return;
       closeWriteConfirm();
       Object.keys(all).forEach(function(pt){ for(var k in all[pt]) it[stage+'차 '+k]=all[pt][k]; });   // 함께 저장되는 부 전부 로컬 반영

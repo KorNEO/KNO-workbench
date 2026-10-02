@@ -841,6 +841,7 @@ function saveWrite(token, payload) {
     var sem = semTarget_(cur('의미부 대상'));
     if (!partOpen_(p, part, stage, sem)) throw new Error(part + ' ' + stage + '차는 지금 저장할 수 없습니다(' + who + ' 단계: ' + phaseNow + (sem ? '' : ', 의미부 대상 아님') + '). 화면을 새로고침하세요.');
     if (!canEditWrite_(me, p.type, cur('작업자'), cur('검수자'), stage)) throw new Error('권한 없음: 배정된 담당자만 입력할 수 있습니다.');
+    if (stage === 1 && cur(part + ' 상태') === STATUS.SECOND) throw new Error('2차 검수 완료 이후의 변경 사항은 검수자에게 말씀해 주세요!');   // 검수 완료된 부는 작업자 저장 차단(2026-10-02). 최종본은 검수자 결과. 검수자(2차) 재저장은 아래 정정 로그로 허용
     var fields = payload.fields || {};
     // 검수 완료(2차완료)된 부를 다시 저장하면 정정 로그(2026-09-22 결정: 잠그지 않고 수정 전후 값을 남김). 바뀐 칸마다 변경로그 1행: 단계='{부} 정정 {n}차', 칸·이전 값·새 값 열. 원어 행(JSON)은 원어 문자열로 갈음
     var postReview = cur(part + ' 상태') === STATUS.SECOND, diffs = [];
