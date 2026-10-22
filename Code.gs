@@ -367,7 +367,7 @@ function projList_(kind) {
 function projById_(id) { var a = projList_(null); for (var i = 0; i < a.length; i++) if (a[i].id === id) return a[i]; return null; }
 function phaseOf_(p, stage) { return (parseInt(stage, 10) === 2) ? ((p && p.phase2) || (p && p.phase) || '형태부') : ((p && p.phase) || '형태부'); }   // 차수별 집필 단계(1=작업자, 2=검수자)
 // 부가 그 차수에 열려 있는지: 형태부는 항상, 의미부는 그 차수의 단계가 의미부이고 의미부 대상일 때만(프론트 partOpen과 동일 규칙)
-function partOpen_(p, part, stage, sem) { return part === '형태부' || (phaseOf_(p, stage) === '의미부' && !!sem); }
+function partOpen_(p, part, stage, sem, self) { return part === '형태부' || ((!!self || phaseOf_(p, stage) === '의미부') && !!sem); }   // self=작업자·검수자가 같은 항목: 단계와 무관하게 형태부·의미부 모두 열림(2026-10-22)
 function projItemSheet_(projectId) {   // 프로젝트 전용 스프레드시트의 '항목' 탭
   var p = projById_(projectId); if (!p || !p.fileId) return null;
   try { var pss = SpreadsheetApp.openById(p.fileId); return pss.getSheetByName('항목') || pss.getSheets()[0]; } catch (e) { return null; }
@@ -839,9 +839,10 @@ function saveWrite(token, payload) {
     var row = sh.getRange(rownum, 1, 1, sh.getLastColumn()).getValues()[0];
     function cur(k) { return idx[k] != null ? String(row[idx[k]] == null ? '' : row[idx[k]]).trim() : ''; }
     var sem = semTarget_(cur('의미부 대상'));
-    if (!partOpen_(p, part, stage, sem)) throw new Error(part + ' ' + stage + '차는 지금 저장할 수 없습니다(' + who + ' 단계: ' + phaseNow + (sem ? '' : ', 의미부 대상 아님') + '). 화면을 새로고침하세요.');
+    var self = !!cur('작업자') && cur('작업자') === cur('검수자') && me.name === cur('작업자');   // 작업자=검수자(2차 집필 등, 2026-10-22)
+    if (!partOpen_(p, part, stage, sem, self)) throw new Error(part + ' ' + stage + '차는 지금 저장할 수 없습니다(' + who + ' 단계: ' + phaseNow + (sem ? '' : ', 의미부 대상 아님') + '). 화면을 새로고침하세요.');
     if (!canEditWrite_(me, p.type, cur('작업자'), cur('검수자'), stage)) throw new Error('권한 없음: 배정된 담당자만 입력할 수 있습니다.');
-    if (stage === 1 && cur(part + ' 상태') === STATUS.SECOND) throw new Error('2차 검수 완료 이후의 변경 사항은 검수자에게 말씀해 주세요!');   // 검수 완료된 부는 작업자 저장 차단(2026-10-02). 최종본은 검수자 결과. 검수자(2차) 재저장은 아래 정정 로그로 허용
+    if (stage === 1 && cur(part + ' 상태') === STATUS.SECOND && !self) throw new Error('2차 검수 완료 이후의 변경 사항은 검수자에게 말씀해 주세요!');   // 검수 완료된 부는 작업자 저장 차단(2026-10-02). 최종본은 검수자 결과. 검수자(2차) 재저장은 아래 정정 로그로 허용
     var fields = payload.fields || {};
     // 검수 완료(2차완료)된 부를 다시 저장하면 정정 로그(2026-09-22 결정: 잠그지 않고 수정 전후 값을 남김). 바뀐 칸마다 변경로그 1행: 단계='{부} 정정 {n}차', 칸·이전 값·새 값 열. 원어 행(JSON)은 원어 문자열로 갈음
     var postReview = cur(part + ' 상태') === STATUS.SECOND, diffs = [];

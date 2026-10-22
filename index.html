@@ -1449,7 +1449,8 @@
     function phaseTag_(p, pt){ var t=[]; if(p.phase===pt) t.push('작업자'); if((p.phase2||p.phase)===pt) t.push('검수자'); return t.length?' ('+t.join('·')+' 현재 단계)':''; }
     // 의미부 대상(2026-08-30 회의: 형태부 전수, 의미부는 NN+YT 합산 빈도 10 이상만). 시트 '의미부 대상' N = 형태부만. 빈 값·Y = 대상(기존 프로젝트 호환)
     function semTarget(it){ return String((it||{})['의미부 대상']||'').trim().toUpperCase()!=='N'; }
-    function partOpen(it, part, stage){ return part==='형태부' || (projPhase(stage)==='의미부' && (semTarget(it) || MODE==='write_test')); }   // 부가 그 차수에 열려 있는지(백엔드 partOpen_과 동일. 집필 테스트는 대상 아님도 열어 둠)
+    function selfItem(it){ var w=String((it||{})['작업자']||'').trim(); return !!w && w===String((it||{})['검수자']||'').trim() && ME.name===w; }   // 작업자=검수자 항목(2차 집필 등, 2026-10-22)
+    function partOpen(it, part, stage){ return part==='형태부' || ((selfItem(it) || projPhase(stage)==='의미부') && (semTarget(it) || MODE==='write_test')); }   // 부가 그 차수에 열려 있는지(백엔드 partOpen_과 동일. 집필 테스트는 대상 아님도 열어 둠)
     function partReviewed(it, part){ return String((it||{})[part+' 상태']||'').trim()==='2차완료'; }   // 검수 완료된 부(2026-09-22 결정: 잠그지 않음. 다시 저장하면 서버가 바뀐 칸마다 정정 로그. '전체 복사하기'는 이 부를 건너뜀)
     function tok_(s){ return String(s||'').trim().split(/\s+/).filter(Boolean); }
     function wordDiff_(prev, cur, cls){
@@ -1780,6 +1781,7 @@
       $('detail').innerHTML=h;
       document.querySelectorAll('#detail .stage-sec [data-ro="1"]').forEach(function(el){ el.disabled=true; });   // 읽기 전용(상대 차수) 칸은 모든 부에서 잠금
       document.querySelectorAll('#detail .stage-sec[data-part="형태부"]').forEach(function(sec){ chainApply(sec, sec.getAttribute('data-chain')==='1'); });
+      WRITE_SNAP={}; document.querySelectorAll('#detail .stage-sec').forEach(function(sec){ var pt=sec.getAttribute('data-part'), st=parseInt(sec.getAttribute('data-stage'),10); WRITE_SNAP[pt+'|'+st]=JSON.stringify(collectWrite_(pt, st)); });   // 렌더 직후 값. 이 값과 달라진 칸 = 사용자가 실제로 입력한 칸
       refreshLlmBtns();
       refUpdate();
     }
@@ -1788,7 +1790,7 @@
     function stageSec(it, part, stage, ed, foot){
       var chain=(part==='형태부' && ed);   // 체인은 형태부 폼이 편집 가능하면 항상(형태부·의미부 단계, 1차·2차 동일)
       var who=stage===1?'작업자 '+fmtName(it['작업자']||'?'):'검수자 '+fmtName(it['검수자']||'?');
-      var h='<div class="stage-sec s'+stage+'" data-part="'+part+'" data-stage="'+stage+'" data-chain="'+(chain?1:0)+'"><div class="ss-head">'+(stage===1?'1차 작업':'2차 검수')+' <span class="ss-who">'+who+'</span></div><div class="write-form rail">';
+      var h='<div class="stage-sec s'+stage+'" data-part="'+part+'" data-stage="'+stage+'" data-chain="'+(chain?1:0)+'" data-ed="'+(ed?1:0)+'"><div class="ss-head">'+(stage===1?'1차 작업':'2차 검수')+' <span class="ss-who">'+who+'</span></div><div class="write-form rail">';
       function pv(f){   // 표시값: 해당 단계 값 → (2차면 1차 복사) → 프리필
         if(f==='원어 행' && stage===2 && !wv(it,2,f).trim() && !tplBlank('원어', wv(it,2,'원어'))) return '';   // 2차 원어가 따로 저장돼 있으면 1차 행을 물려받지 않음(2차 행이 없으면 2차 원어 문자열에서 역파싱)
         if(f==='X년 Y월 신어'){ var mm=String(it['추출 시기']||'').match(/(\d{4})\.?(\d{2})/); if(mm) return '【'+mm[1]+'년 '+parseInt(mm[2],10)+'월 신어】'; }   // 최초 출현 시점에서 자동 생성
@@ -2231,13 +2233,24 @@
       if(part==='형태부' && stage===1 && !partOpen(it,'의미부',stage)){ var m=collectWrite_('의미부',stage), any=false; for(var k in m){ if(!tplBlank(k,m[k]) && k!=='X년 Y월 신어') any=true; } if(any) o['의미부']=m; }   // 잠긴 의미부 값 동반 저장은 작업자(1차)만(2026-10-02). 검수자(2차)의 잠긴 의미부 칸은 1차 값을 물려받아 보여 줄 뿐이라, 함께 저장하면 작업자의 이후 의미부 저장이 가려짐
       return o; }
     function validateAll_(all, it, part){ return validateWrite(part, all[part]||{}, it); }   // 점검은 저장하는 부만
+    // 저장 대상(2026-10-22): 누른 칸 + 편집 가능한 다른 칸 중 렌더 뒤 값이 바뀐 칸(사용자가 실제로 입력한 칸). 물려받아 보여 주기만 한 값·잠긴 칸은 대상 아님.
+    //  칸마다 따로 저장(saveWrite 1건씩, 점검·상태도 그 칸의 부·차수만). 순서: 1차→2차, 형태부→의미부
+    var WRITE_SNAP={};
+    function writeJobs_(stage, part){ var it=ITEMS[CUR]||{}, jobs=[];
+      [1,2].forEach(function(st){ PARTS.forEach(function(pt){
+        var hit=(st===stage && pt===part);
+        if(!hit){ var sec=document.querySelector('#detail .stage-sec[data-part="'+pt+'"][data-stage="'+st+'"]'); if(!sec || sec.getAttribute('data-ed')!=='1') return;
+          if(JSON.stringify(collectWrite_(pt, st))===WRITE_SNAP[pt+'|'+st]) return; }
+        var all=collectAll_(st, pt); jobs.push({ stage:st, part:pt, all:all, errs:validateAll_(all, it, pt) }); }); });
+      return jobs; }
+    function jobBlocked_(it, jobs){ return jobs.some(function(j){ return j.stage===1 && partReviewed(it, j.part) && !selfItem(it); }); }
     var REVIEWED_MSG='2차 검수 완료 이후의 변경 사항은 검수자에게 말씀해 주세요!';   // 검수 완료(2차완료)된 부는 작업자(1차) 저장 차단(2026-10-02). 최종본은 검수자 결과. 백엔드 saveWrite도 같은 문구로 거부
     function openWriteConfirm(stage, part){
       var it=ITEMS[CUR]; if(!it) return; part=part||'형태부';
-      if(stage===1 && partReviewed(it, part)){ uiAlert(REVIEWED_MSG, true); return; }
-      var all=collectAll_(stage, part), errs=validateAll_(all, it, part), parts=Object.keys(all);   // 함께 저장되는 부(형태부 저장 시 잠긴 의미부 값 포함) 전부 표시
-      var rows=parts.map(function(part){ var vals=all[part];
-        return (parts.length>1?'<tr><th colspan="2" class="cf-part">'+esc(part)+'</th></tr>':'')
+      var jobs=writeJobs_(stage, part); if(jobBlocked_(it, jobs)){ uiAlert(REVIEWED_MSG, true); return; }
+      var secs=[], errs=[]; jobs.forEach(function(j){ Object.keys(j.all).forEach(function(pt){ secs.push({ label:pt+(jobs.length>1?' '+(j.stage===1?'1차 작업':'2차 검수'):''), vals:j.all[pt] }); }); j.errs.forEach(function(e){ errs.push((jobs.length>1?j.part+' '+j.stage+'차: ':'')+e); }); });   // 함께 저장되는 칸(손댄 다른 칸, 형태부 저장 시 잠긴 의미부 값 포함) 전부 표시
+      var rows=secs.map(function(s){ var vals=s.vals;
+        return (secs.length>1?'<tr><th colspan="2" class="cf-part">'+esc(s.label)+'</th></tr>':'')
           + Object.keys(vals).filter(function(k){ return k!=='원어 행' && !(k==='고유어' && vals[k]!=='Y'); }).map(function(k){ var v=tplBlank(k,vals[k])?'':vals[k]; return '<tr><th>'+esc(k)+'</th><td>'+(v?esc(v).replace(/\n/g,'<br>'):'<span class="kbd">-</span>')+'</td></tr>'; }).join(''); }).join('');
       var box=$('wconfirm'); if(!box){ box=document.createElement('div'); box.id='wconfirm'; box.className='modal'; box.addEventListener('click', function(e){ if(e.target===box) closeWriteConfirm(); }); document.body.appendChild(box); }
       box.innerHTML='<div class="modal-box"><button class="x" onclick="closeWriteConfirm()">×</button><h2 style="margin-top:0">'+esc(it['신어 후보'])+'</h2>'
@@ -2250,14 +2263,15 @@
     // 저장: 이 부·차수만(2026-09-22 부별 독립). 상태는 그 부만 갱신. 형태부 저장엔 잠긴 의미부 칸의 값이 딸려갈 수 있음(기록만)
     function saveWriteForm(stage, part){
       var it=ITEMS[CUR]; if(!it) return; part=part||'형태부';
-      if(stage===1 && partReviewed(it, part)){ uiAlert(REVIEWED_MSG, true); return; }
-      var all=collectAll_(stage, part); if(validateAll_(all, it, part).length) return;
+      var jobs=writeJobs_(stage, part); if(jobBlocked_(it, jobs)){ uiAlert(REVIEWED_MSG, true); return; }
+      if(jobs.some(function(j){ return j.errs.length; })) return;
       closeWriteConfirm();
-      Object.keys(all).forEach(function(pt){ for(var k in all[pt]) it[stage+'차 '+k]=all[pt][k]; });   // 함께 저장되는 부 전부 로컬 반영
-      var stKey=part+' 상태'; it[stKey] = stage===2 ? '2차완료' : (String(it[stKey]||'')==='2차완료' ? '2차완료' : '1차완료');
+      jobs.forEach(function(j){ var all=j.all;
+        Object.keys(all).forEach(function(pt){ for(var k in all[pt]) it[j.stage+'차 '+k]=all[pt][k]; });   // 함께 저장되는 부 전부 로컬 반영
+        var stKey=j.part+' 상태'; it[stKey] = j.stage===2 ? '2차완료' : (String(it[stKey]||'')==='2차완료' ? '2차완료' : '1차완료');
+        enqueueSave('saveWrite', { row_id:it['ID'], part:j.part, phase:projPhase(j.stage), stage:j.stage, fields:all, op_id:newOpId() }); });   // 무손실 큐(순서대로 1건씩): 재시도·localStorage 보존·이탈 경고·실패 로그. phase=이 차수의 단계(화면 기준, 서버 검증용)
       renderList(); renderDetail();
-      enqueueSave('saveWrite', { row_id:it['ID'], part:part, phase:projPhase(stage), stage:stage, fields:all, op_id:newOpId() });   // 무손실 큐: 재시도·localStorage 보존·이탈 경고·실패 로그. phase=이 차수의 단계(화면 기준, 서버 검증용)
-      toast(part+' '+stage+'차 저장');
+      toast(jobs.map(function(j){ return j.part+' '+j.stage+'차'; }).join(', ')+' 저장');
     }
     // 1차 작업 확정(부별): 작업자 1차 값을 그 부의 2차에 그대로 복사 후 즉시 저장·다음 항목(판별과 동일). 점검 오류가 있으면 확인 창으로.
     function confirmFirstWrite(part){
@@ -2265,8 +2279,7 @@
       var sec=document.querySelector('#detail .stage-sec[data-part="'+part+'"][data-stage="2"]'); if(!sec) return;
       PART_FIELDS[part].forEach(function(f){ if(f.indexOf('집필 메모')===0) return; secSet(sec, f, wv(it,1,f)); });
       if(part==='형태부'){ var bx=sec.querySelector('.orows'); if(bx){ bx.removeAttribute('data-json'); bx.removeAttribute('data-touched'); } chainApply(sec, sec.getAttribute('data-chain')==='1'); }   // 2차 행은 복사된 1차 행(JSON)으로 다시 만듦(없으면 1차 원어 문자열에서 역파싱)
-      var all=collectAll_(2, part);
-      if(validateAll_(all, it, part).length){ openWriteConfirm(2, part); return; }
+      if(writeJobs_(2, part).some(function(j){ return j.errs.length; })){ openWriteConfirm(2, part); return; }
       saveWriteForm(2, part); nextItem();
     }
     function addNewWriteItem(){
